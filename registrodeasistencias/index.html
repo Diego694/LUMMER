@@ -156,7 +156,7 @@
 <div id="app">
   <div class="topbar">
     <div class="brand">Sistema de Registro Académico</div>
-    <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
+    <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido/a: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
   </div>
   <div class="layout">
     <div class="sidebar">
@@ -173,6 +173,7 @@
       <div class="nav-item" data-page="niveles">Niveles</div>
       <div class="nav-item" data-page="grados">Grados</div>
       <div class="nav-item" data-page="alumnos">Alumnos</div>
+      <div class="nav-item" data-page="docentes">Docentes</div>
       <div class="nav-item" data-page="comunicados">Comunicados</div>
     </div>
 
@@ -297,6 +298,12 @@
         <div id="alumnos-list"></div>
       </div>
 
+      <div class="page" id="page-docentes">
+        <div class="page-head"><h1>Docentes</h1><div class="actions"><button class="btn btn-outline" onclick="renderDocentes()">Consultar</button><button class="btn btn-navy" onclick="openDocenteModal()">+ Agregar</button></div></div>
+        <div class="toolbar"><input class="search-input" id="do-search" placeholder="Buscar por nombre, rol o profesión..." oninput="renderDocentes()"></div>
+        <div id="docentes-list"></div>
+      </div>
+
       <div class="page" id="page-comunicados">
         <div class="page-head"><h1>Comunicados</h1><div class="actions"><button class="btn btn-navy" onclick="openComunicadoModal()">+ Nuevo comunicado</button></div></div>
         <div id="comunicados-list"></div>
@@ -356,6 +363,34 @@
       <div class="field"><label>Mensaje</label><textarea id="co-mensaje" rows="4"></textarea></div>
     </div>
     <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-comunicado')">Cancelar</button><button class="btn btn-navy" onclick="saveComunicado()">Publicar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-docente">
+  <div class="modal">
+    <div class="modal-head"><h3 id="docente-modal-title">Agregar docente</h3><button class="modal-close" onclick="closeModal('modal-docente')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="do-id">
+      <div class="field"><label>Nombre completo</label><input id="do-nombre" placeholder="Ej: Rosa Mendoza Ruiz"></div>
+      <div class="field"><label>Profesión</label><input id="do-profesion" placeholder="Ej: Profesora de Comunicación, Psicólogo escolar..."></div>
+      <div class="field"><label>Rol dentro del sistema</label>
+        <div class="pill-select">
+          <div class="pill active" data-val="Docente" onclick="selectPill(this,'do-rol')">Docente</div>
+          <div class="pill" data-val="Coordinador" onclick="selectPill(this,'do-rol')">Coordinador</div>
+          <div class="pill" data-val="Auxiliar" onclick="selectPill(this,'do-rol')">Auxiliar</div>
+          <div class="pill" data-val="Administrativo" onclick="selectPill(this,'do-rol')">Administrativo</div>
+        </div>
+        <input type="hidden" id="do-rol" value="Docente">
+      </div>
+      <div class="field"><label>Estado</label>
+        <div class="pill-select">
+          <div class="pill active" data-val="ACTIVO" onclick="selectPill(this,'do-estado')">Activo</div>
+          <div class="pill" data-val="INACTIVO" onclick="selectPill(this,'do-estado')">Inactivo</div>
+        </div>
+        <input type="hidden" id="do-estado" value="ACTIVO">
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-docente')">Cancelar</button><button class="btn btn-navy" onclick="saveDocente()">Guardar</button></div>
   </div>
 </div>
 
@@ -483,15 +518,16 @@ async function doLogout(){
 /* ================= CARGA DE DATOS ================= */
 async function loadAll(){
   const cid = DB.colegioId;
-  const [{data:alumnos},{data:niveles},{data:grados},{data:asistencias},{data:comunicados}] = await Promise.all([
+  const [{data:alumnos},{data:niveles},{data:grados},{data:asistencias},{data:comunicados},{data:docentes}] = await Promise.all([
     sb.from('alumnos').select('*').eq('colegio_id',cid).order('nombre'),
     sb.from('niveles').select('*').eq('colegio_id',cid).order('nombre'),
     sb.from('grados').select('*').eq('colegio_id',cid).order('nombre'),
     sb.from('asistencias').select('*').eq('colegio_id',cid),
-    sb.from('comunicados').select('*').eq('colegio_id',cid).order('fecha',{ascending:false})
+    sb.from('comunicados').select('*').eq('colegio_id',cid).order('fecha',{ascending:false}),
+    sb.from('docentes').select('*').eq('colegio_id',cid).order('nombre')
   ]);
   DB.alumnos = alumnos||[]; DB.niveles = (niveles||[]).map(n=>n.nombre); DB.gradosRaw = grados||[];
-  DB.grados = grados||[]; DB.asistencias = asistencias||[]; DB.comunicados = comunicados||[];
+  DB.grados = grados||[]; DB.asistencias = asistencias||[]; DB.comunicados = comunicados||[]; DB.docentes = docentes||[];
 }
 
 /* ================= NAVEGACIÓN ================= */
@@ -512,6 +548,7 @@ function renderPage(page){
   if(page==='niveles') renderNiveles();
   if(page==='grados') renderGrados();
   if(page==='comunicados') renderComunicados();
+  if(page==='docentes') renderDocentes();
   if(page==='registro-alumno') renderRegistroAlumno();
   if(page==='registro-masivo'){ fillNivelSelect('rm-nivel', true); fillGradosFilter('rm-nivel','rm-grado'); document.getElementById('rm-fecha').value = todayStr(); renderRegistroMasivo(); }
   if(page==='dashboard') renderDashboard();
@@ -702,6 +739,68 @@ async function saveComunicado(){
   await loadAll(); closeModal('modal-comunicado'); renderComunicados(); showToast('Comunicado publicado');
 }
 async function deleteComunicado(id){ await sb.from('comunicados').delete().eq('id',id); await loadAll(); renderComunicados(); }
+
+/* ================= DOCENTES ================= */
+function renderDocentes(){
+  const q = (document.getElementById('do-search').value||'').toLowerCase();
+  const list = DB.docentes.filter(d=> !q || [d.nombre,d.rol,d.profesion].join(' ').toLowerCase().includes(q));
+  const el = document.getElementById('docentes-list');
+  if(list.length===0){ el.innerHTML = emptyState('','No se encontraron docentes','Agrega un nuevo docente o ajusta tu búsqueda.'); return; }
+  el.innerHTML = list.map(d=>`
+    <div class="student-card">
+      <div class="row1"><h3>${esc(d.nombre)}</h3><span class="badge ${d.estado==='ACTIVO'?'badge-activo':'badge-inactivo'}">${d.estado}</span></div>
+      <div class="meta-grid">
+        <div><div class="m-label">ROL</div><div>${esc(d.rol)}</div></div>
+        <div><div class="m-label">PROFESIÓN</div><div>${d.profesion? esc(d.profesion):'(Vacío)'}</div></div>
+        <div></div><div></div>
+      </div>
+      <div class="actions-row">
+        <button class="icon-btn" onclick="openDocenteModal('${d.id}')">Editar</button>
+        <button class="icon-btn" onclick="deleteDocente('${d.id}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+function openDocenteModal(id){
+  document.getElementById('docente-modal-title').textContent = id? 'Editar docente' : 'Agregar docente';
+  if(id){
+    const d = DB.docentes.find(x=>x.id===id);
+    document.getElementById('do-id').value = d.id;
+    document.getElementById('do-nombre').value = d.nombre;
+    document.getElementById('do-profesion').value = d.profesion||'';
+    document.getElementById('do-rol').value = d.rol;
+    document.getElementById('do-estado').value = d.estado;
+    document.querySelectorAll('#modal-docente .pill[onclick*="do-rol"]').forEach(p=>p.classList.toggle('active', p.dataset.val===d.rol));
+    document.querySelectorAll('#modal-docente .pill[onclick*="do-estado"]').forEach(p=>p.classList.toggle('active', p.dataset.val===d.estado));
+  } else {
+    document.getElementById('do-id').value='';
+    document.getElementById('do-nombre').value='';
+    document.getElementById('do-profesion').value='';
+    document.getElementById('do-rol').value='Docente';
+    document.getElementById('do-estado').value='ACTIVO';
+    document.querySelectorAll('#modal-docente .pill[onclick*="do-rol"]').forEach(p=>p.classList.toggle('active', p.dataset.val==='Docente'));
+    document.querySelectorAll('#modal-docente .pill[onclick*="do-estado"]').forEach(p=>p.classList.toggle('active', p.dataset.val==='ACTIVO'));
+  }
+  openModal('modal-docente');
+}
+async function saveDocente(){
+  const id = document.getElementById('do-id').value;
+  const nombre = document.getElementById('do-nombre').value.trim();
+  if(!nombre){ showToast('El nombre es obligatorio'); return; }
+  const data = {
+    colegio_id: DB.colegioId, nombre,
+    profesion: document.getElementById('do-profesion').value.trim(),
+    rol: document.getElementById('do-rol').value,
+    estado: document.getElementById('do-estado').value
+  };
+  const { error } = id ? await sb.from('docentes').update(data).eq('id',id) : await sb.from('docentes').insert(data);
+  if(error){ showToast('Error: '+error.message); return; }
+  await loadAll(); closeModal('modal-docente'); renderDocentes(); showToast('Docente guardado correctamente');
+}
+async function deleteDocente(id){
+  if(!confirm('¿Eliminar este docente?')) return;
+  await sb.from('docentes').delete().eq('id',id);
+  await loadAll(); renderDocentes(); showToast('Docente eliminado');
+}
 
 /* ================= REGISTRO POR ALUMNO ================= */
 function renderRegistroAlumno(){
