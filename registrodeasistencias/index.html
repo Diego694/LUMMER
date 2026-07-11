@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Campus Virtual · Control de Asistencia</title>
+<title>Sistema de Registro Académico · Control de Asistencia</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -134,7 +134,7 @@
   <div class="login-card">
     <div class="brand">
       <div class="brand-mark">CV</div>
-      <div><h1>Campus Virtual</h1><p class="sub">Control de asistencia escolar</p></div>
+      <div><h1>Sistema de Registro Académico</h1><p class="sub">Control de asistencia escolar</p></div>
     </div>
 
     <div style="text-align:center;font-weight:700;margin:18px 0 16px;color:var(--ink-soft);font-size:12px;letter-spacing:.05em;">INICIAR SESIÓN</div>
@@ -152,32 +152,32 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><span style="color:var(--amber)">◆</span>&nbsp;Campus Virtual</div>
+    <div class="brand">Sistema de Registro Académico</div>
     <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
   </div>
   <div class="layout">
     <div class="sidebar">
-      <div class="nav-item active" data-page="inicio"><span class="ic">🏠</span> Inicio</div>
-      <div class="nav-item" data-page="registro-qr"><span class="ic">▦</span> Registro por QR</div>
-      <div class="nav-item" data-page="registro-alumno"><span class="ic">🔍</span> Registro por Alumno</div>
-      <div class="nav-item" data-page="registro-masivo"><span class="ic">⚡</span> Registro Masivo por Grado</div>
+      <div class="nav-item active" data-page="inicio">Inicio</div>
+      <div class="nav-item" data-page="registro-qr">Registro por QR</div>
+      <div class="nav-item" data-page="registro-alumno">Registro por Alumno</div>
+      <div class="nav-item" data-page="registro-masivo">Registro Masivo por Grado</div>
       <div class="nav-group-title">Consultas</div>
-      <div class="nav-item" data-page="dashboard"><span class="ic">📈</span> Dashboard</div>
-      <div class="nav-item" data-page="asist-grado"><span class="ic">📋</span> Asistencia por Grado</div>
-      <div class="nav-item" data-page="asist-alumno"><span class="ic">🧑‍🎓</span> Asistencia por Alumno</div>
+      <div class="nav-item" data-page="dashboard">Dashboard</div>
+      <div class="nav-item" data-page="asist-grado">Asistencia por Grado</div>
+      <div class="nav-item" data-page="asist-alumno">Asistencia por Alumno</div>
       <div class="nav-group-title">Registrar</div>
-      <div class="nav-item" data-page="carnet"><span class="ic">🪪</span> Carnet</div>
-      <div class="nav-item" data-page="niveles"><span class="ic">📚</span> Niveles</div>
-      <div class="nav-item" data-page="grados"><span class="ic">🎓</span> Grados</div>
-      <div class="nav-item" data-page="alumnos"><span class="ic">🧑‍🏫</span> Alumnos</div>
-      <div class="nav-item" data-page="comunicados"><span class="ic">📣</span> Comunicados</div>
+      <div class="nav-item" data-page="carnet">Carnet</div>
+      <div class="nav-item" data-page="niveles">Niveles</div>
+      <div class="nav-item" data-page="grados">Grados</div>
+      <div class="nav-item" data-page="alumnos">Alumnos</div>
+      <div class="nav-item" data-page="comunicados">Comunicados</div>
     </div>
 
     <div class="main">
       <div class="page active" id="page-inicio">
         <div class="card" style="margin-bottom:20px;">
           <span class="badge tag-amber" style="display:inline-block;margin-bottom:10px;">ADMIN</span>
-          <h1 style="font-size:22px;margin:2px 0 6px;">¡Hola de nuevo! 👋</h1>
+          <h1 style="font-size:22px;margin:2px 0 6px;">¡Hola de nuevo!</h1>
           <p style="color:var(--ink-soft);margin:0;max-width:560px;">Resumen de asistencias, alumnos registrados y novedades institucionales.</p>
         </div>
         <div class="grid-4" id="inicio-stats"></div>
@@ -226,7 +226,7 @@
           </div>
           <div id="registro-masivo-list"></div>
           <div style="margin-top:16px;text-align:right;">
-            <button class="btn btn-navy" onclick="guardarRegistroMasivo()">✔ Guardar asistencia del grupo</button>
+            <button class="btn btn-navy" onclick="guardarRegistroMasivo()">Guardar asistencia del grupo</button>
           </div>
         </div>
       </div>
@@ -267,8 +267,8 @@
           <div class="card" style="text-align:center;">
             <div id="carnet-preview-holder"><p class="small-note">Selecciona un alumno para previsualizar su carnet.</p></div>
             <div id="carnet-preview-actions" style="display:none;margin-top:16px;gap:10px;justify-content:center;">
-              <button class="btn btn-navy" onclick="downloadCarnetImage()">⬇ Imagen</button>
-              <button class="btn btn-teal" onclick="downloadCarnetPDF()">⬇ PDF</button>
+              <button class="btn btn-navy" onclick="downloadCarnetImage()">Descargar imagen</button>
+              <button class="btn btn-teal" onclick="downloadCarnetPDF()">Descargar PDF</button>
             </div>
           </div>
         </div>
@@ -285,7 +285,7 @@
       </div>
 
       <div class="page" id="page-alumnos">
-        <div class="page-head"><h1>Alumnos</h1><div class="actions"><button class="btn btn-outline" onclick="renderAlumnos()">↻ Consultar</button><button class="btn btn-navy" onclick="openAlumnoModal()">+ Agregar</button></div></div>
+        <div class="page-head"><h1>Alumnos</h1><div class="actions"><button class="btn btn-outline" onclick="renderAlumnos()">Consultar</button><button class="btn btn-navy" onclick="openAlumnoModal()">+ Agregar</button></div></div>
         <div class="toolbar">
           <input class="search-input" id="al-search" placeholder="Buscar en todos los campos..." oninput="renderAlumnos()">
           <select class="filter" id="al-filtro-nivel" onchange="fillGradosFilter('al-filtro-nivel','al-filtro-grado');renderAlumnos()"></select>
@@ -366,7 +366,7 @@
       </div>
       <p class="small-note" id="mc-count"></p>
     </div>
-    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-mass-carnet')">Cerrar</button><button class="btn btn-teal" onclick="massDownload()">📄 Carnets PDF</button></div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-mass-carnet')">Cerrar</button><button class="btn btn-teal" onclick="massDownload()">Carnets PDF</button></div>
   </div>
 </div>
 
@@ -375,7 +375,7 @@
 <script>
 /* ================================================================
    CONFIGURACIÓN DE SUPABASE
-   Reemplaza estos dos valores con los de Supabase(No olvidar):
+   Reemplaza estos dos valores con los de TU proyecto de Supabase:
    Project Settings > API > Project URL / anon public key
    ================================================================ */
 const SUPABASE_URL = "https://wotumvamyglfquahdnet.supabase.co";
@@ -386,15 +386,21 @@ let DB = { colegioId:null, rol:null, alumnos:[], niveles:[], grados:[], asistenc
 let selectedCarnetAlumno = null, selectedAsistAlumno = null;
 let scannerStream = null, scannerRAF = null;
 
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+function todayStr(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
 function esc(s){ return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function emptyState(icon,title,sub){ return `<div class="empty-state"><div class="big">${icon}</div><h3>${title}</h3><p>${sub}</p></div>`; }
+function emptyState(icon,title,sub){ return `<div class="empty-state"><h3>${title}</h3><p>${sub}</p></div>`; }
 function statCard(label,value,tagClass,tagText){ return `<div class="stat-card"><span class="tag ${tagClass}">${tagText}</span><div class="label">${label}</div><div class="value">${value}</div></div>`; }
 
 window.addEventListener('DOMContentLoaded', ()=>{
   if(SUPABASE_URL.includes('TU-PROYECTO') || SUPABASE_ANON_KEY.includes('TU-ANON-KEY')){
-    document.getElementById('config-warning').innerHTML = `<div class="setup-warning">⚠ Falta configurar Supabase. Edita las constantes SUPABASE_URL y SUPABASE_ANON_KEY al inicio del archivo (etiqueta &lt;script&gt;) con los datos de tu proyecto.</div>`;
+    document.getElementById('config-warning').innerHTML = `<div class="setup-warning">Falta configurar Supabase. Edita las constantes SUPABASE_URL y SUPABASE_ANON_KEY al inicio del archivo (etiqueta &lt;script&gt;) con los datos de tu proyecto.</div>`;
     return;
   }
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -406,7 +412,7 @@ async function checkExistingSession(){
   if(session) await afterLogin(session.user);
 }
 
-
+/* ================= AUTENTICACIÓN ================= */
 function switchAuthTab(which){
   document.getElementById('tab-login').classList.toggle('active', which==='login');
   document.getElementById('tab-signup').classList.toggle('active', which==='signup');
@@ -485,7 +491,7 @@ async function loadAll(){
   DB.grados = grados||[]; DB.asistencias = asistencias||[]; DB.comunicados = comunicados||[];
 }
 
-
+/* ================= NAVEGACIÓN ================= */
 document.querySelectorAll('.nav-item').forEach(item=>{
   item.addEventListener('click', ()=>{
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -535,7 +541,7 @@ function fillGradosFilter(nivelSelectId, gradoSelectId){
   sel.innerHTML = (withAll? '<option value="">Todos los grados</option>':'') + list.map(g=>`<option value="${esc(g.nombre)}">${esc(g.nombre)}</option>`).join('');
 }
 
-
+/* ================= INICIO ================= */
 function renderInicio(){
   const total = DB.alumnos.length;
   const activos = DB.alumnos.filter(a=>a.estado==='ACTIVO').length;
@@ -551,7 +557,7 @@ function renderInicio(){
     : `<p class="small-note">Aún no hay comunicados publicados.</p>`;
 }
 
-
+/* ================= ALUMNOS (CRUD) ================= */
 function renderAlumnos(){
   const q = (document.getElementById('al-search').value||'').toLowerCase();
   const nivel = document.getElementById('al-filtro-nivel').value;
@@ -561,7 +567,7 @@ function renderAlumnos(){
     return matchQ && (!nivel||a.nivel===nivel) && (!grado||a.grado===grado);
   });
   const el = document.getElementById('alumnos-list');
-  if(list.length===0){ el.innerHTML = emptyState('👤','No se encontraron alumnos','Prueba con otro criterio o agrega un nuevo alumno.'); return; }
+  if(list.length===0){ el.innerHTML = emptyState('','No se encontraron alumnos','Prueba con otro criterio o agrega un nuevo alumno.'); return; }
   el.innerHTML = list.map(a=>`
     <div class="student-card">
       <div class="row1"><h3>${esc(a.nombre)}</h3><span class="badge ${a.estado==='ACTIVO'?'badge-activo':'badge-inactivo'}">${a.estado}</span></div>
@@ -572,10 +578,10 @@ function renderAlumnos(){
         <div><div class="m-label">APODERADO</div><div>${a.apoderado? esc(a.apoderado):'(Vacío)'}</div></div>
       </div>
       <div class="actions-row">
-        <button class="icon-btn" title="Editar" onclick="openAlumnoModal('${a.id}')">✏️</button>
-        <button class="icon-btn" title="Eliminar" onclick="deleteAlumno('${a.id}')">🗑️</button>
-        <button class="icon-btn" title="Carnet" onclick="goToCarnet('${a.id}')">🪪</button>
-        <button class="icon-btn" title="Historial" onclick="goToHistorial('${a.id}')">📋</button>
+        <button class="icon-btn" title="Editar" onclick="openAlumnoModal('${a.id}')">Editar</button>
+        <button class="icon-btn" title="Eliminar" onclick="deleteAlumno('${a.id}')">Eliminar</button>
+        <button class="icon-btn" title="Carnet" onclick="goToCarnet('${a.id}')">Carnet</button>
+        <button class="icon-btn" title="Historial" onclick="goToHistorial('${a.id}')">Historial</button>
       </div>
     </div>`).join('');
 }
@@ -633,9 +639,10 @@ async function deleteAlumno(id){
 function goToCarnet(id){ document.querySelector('[data-page="carnet"]').click(); selectedCarnetAlumno = DB.alumnos.find(a=>a.id===id); renderCarnetPreview(); }
 function goToHistorial(id){ document.querySelector('[data-page="asist-alumno"]').click(); selectedAsistAlumno = DB.alumnos.find(a=>a.id===id); renderAsistAlumnoHistory(); }
 
+/* ================= NIVELES ================= */
 function renderNiveles(){
   document.getElementById('niveles-table').innerHTML = `<table><thead><tr><th>Nivel</th><th>Grados asociados</th><th></th></tr></thead><tbody>
-    ${DB.niveles.map(n=>`<tr><td>${esc(n)}</td><td>${DB.grados.filter(g=>g.nivel===n).length}</td><td><button class="icon-btn" onclick="deleteNivel('${esc(n)}')">🗑️</button></td></tr>`).join('')}
+    ${DB.niveles.map(n=>`<tr><td>${esc(n)}</td><td>${DB.grados.filter(g=>g.nivel===n).length}</td><td><button class="icon-btn" onclick="deleteNivel('${esc(n)}')">Eliminar</button></td></tr>`).join('')}
   </tbody></table>`;
 }
 function openNivelModal(){ document.getElementById('niv-nombre').value=''; openModal('modal-nivel'); }
@@ -654,10 +661,10 @@ async function deleteNivel(n){
   await loadAll(); renderNiveles();
 }
 
-
+/* ================= GRADOS ================= */
 function renderGrados(){
   document.getElementById('grados-table').innerHTML = `<table><thead><tr><th>Grado</th><th>Nivel</th><th></th></tr></thead><tbody>
-    ${DB.grados.map(g=>`<tr><td>${esc(g.nombre)}</td><td>${esc(g.nivel)}</td><td><button class="icon-btn" onclick="deleteGrado('${g.id}')">🗑️</button></td></tr>`).join('')}
+    ${DB.grados.map(g=>`<tr><td>${esc(g.nombre)}</td><td>${esc(g.nivel)}</td><td><button class="icon-btn" onclick="deleteGrado('${g.id}')">Eliminar</button></td></tr>`).join('')}
   </tbody></table>`;
 }
 function openGradoModal(){ fillNivelSelect('gr-nivel'); document.getElementById('gr-nombre').value=''; openModal('modal-grado'); }
@@ -674,13 +681,14 @@ async function deleteGrado(id){
   await loadAll(); renderGrados();
 }
 
+/* ================= COMUNICADOS ================= */
 function renderComunicados(){
   const el = document.getElementById('comunicados-list');
-  if(DB.comunicados.length===0){ el.innerHTML = emptyState('📣','Sin comunicados','Publica el primer comunicado para tus alumnos y apoderados.'); return; }
+  if(DB.comunicados.length===0){ el.innerHTML = emptyState('','Sin comunicados','Publica el primer comunicado para tus alumnos y apoderados.'); return; }
   el.innerHTML = DB.comunicados.map(c=>`
     <div class="student-card"><div class="row1"><h3>${esc(c.titulo)}</h3><span class="small-note">${c.fecha}</span></div>
     <p style="margin:0;color:var(--ink-soft);">${esc(c.mensaje)}</p>
-    <div class="actions-row"><button class="icon-btn" onclick="deleteComunicado('${c.id}')">🗑️</button></div></div>`).join('');
+    <div class="actions-row"><button class="icon-btn" onclick="deleteComunicado('${c.id}')">Eliminar</button></div></div>`).join('');
 }
 function openComunicadoModal(){ document.getElementById('co-titulo').value=''; document.getElementById('co-mensaje').value=''; openModal('modal-comunicado'); }
 async function saveComunicado(){
@@ -692,12 +700,12 @@ async function saveComunicado(){
 }
 async function deleteComunicado(id){ await sb.from('comunicados').delete().eq('id',id); await loadAll(); renderComunicados(); }
 
-
+/* ================= REGISTRO POR ALUMNO ================= */
 function renderRegistroAlumno(){
   const q = (document.getElementById('reg-alumno-search').value||'').toLowerCase();
   const list = DB.alumnos.filter(a=> !q || [a.nombre,a.codigo].join(' ').toLowerCase().includes(q));
   const el = document.getElementById('registro-alumno-list');
-  if(list.length===0){ el.innerHTML = emptyState('🔍','Sin resultados','Busca por nombre o código de alumno.'); return; }
+  if(list.length===0){ el.innerHTML = emptyState('','Sin resultados','Busca por nombre o código de alumno.'); return; }
   const hoy = todayStr();
   el.innerHTML = list.map(a=>{
     const yaRegistrado = DB.asistencias.some(x=>x.alumno_id===a.id && x.fecha===hoy);
@@ -706,7 +714,7 @@ function renderRegistroAlumno(){
       <div class="meta-grid"><div><div class="m-label">CÓDIGO</div><div class="mono">${esc(a.codigo)}</div></div>
       <div><div class="m-label">NIVEL</div><div>${esc(a.nivel)}</div></div>
       <div><div class="m-label">GRADO</div><div>${esc(a.grado)}</div></div><div></div></div>
-      <div class="actions-row"><button class="btn btn-teal" ${yaRegistrado?'disabled':''} onclick="registrarAsistencia('${a.id}')">✔ Registrar asistencia</button></div>
+      <div class="actions-row"><button class="btn btn-teal" ${yaRegistrado?'disabled':''} onclick="registrarAsistencia('${a.id}')">Registrar asistencia</button></div>
     </div>`;
   }).join('');
 }
@@ -724,10 +732,10 @@ async function registrarPorCodigo(){
   if(!a){ showToast('Código no encontrado'); return; }
   await registrarAsistencia(a.id);
   document.getElementById('manual-qr-code').value='';
-  const res = document.getElementById('scan-result'); res.style.display='block'; res.textContent = `✔ ${a.nombre} — asistencia registrada`;
+  const res = document.getElementById('scan-result'); res.style.display='block'; res.textContent = `${a.nombre} — asistencia registrada`;
 }
 
-
+/* ================= REGISTRO MASIVO POR GRADO ================= */
 function renderRegistroMasivo(){
   const nivel = document.getElementById('rm-nivel').value;
   const grado = document.getElementById('rm-grado').value;
@@ -735,7 +743,7 @@ function renderRegistroMasivo(){
   const list = DB.alumnos.filter(a=> (!nivel||a.nivel===nivel) && (!grado||a.grado===grado) && a.estado==='ACTIVO');
   const el = document.getElementById('registro-masivo-list');
   document.getElementById('rm-count').textContent = `${list.length} alumno(s) en este grupo`;
-  if(list.length===0){ el.innerHTML = emptyState('⚡','Selecciona nivel y grado','Elige un grado con alumnos para registrar asistencia en lote.'); return; }
+  if(list.length===0){ el.innerHTML = emptyState('','Selecciona nivel y grado','Elige un grado con alumnos para registrar asistencia en lote.'); return; }
   el.innerHTML = list.map(a=>{
     const yaRegistrado = DB.asistencias.some(x=>x.alumno_id===a.id && x.fecha===fecha);
     return `<label class="checkbox-row"><input type="checkbox" data-alumno-id="${a.id}" ${yaRegistrado?'checked disabled':''}>
@@ -758,7 +766,7 @@ async function guardarRegistroMasivo(){
   await loadAll(); renderRegistroMasivo(); showToast(`${rows.length} asistencias registradas`);
 }
 
-
+/* ================= REGISTRO POR QR (cámara) ================= */
 async function startScanner(){
   try{
     scannerStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
@@ -786,7 +794,7 @@ function tickScanner(){
         const a = DB.alumnos.find(x=>x.codigo===code.data);
         if(a){
           registrarAsistencia(a.id);
-          const res = document.getElementById('scan-result'); res.style.display='block'; res.textContent = `✔ ${a.nombre} — asistencia registrada`;
+          const res = document.getElementById('scan-result'); res.style.display='block'; res.textContent = `${a.nombre} — asistencia registrada`;
         }
       }
     }
@@ -795,7 +803,7 @@ function tickScanner(){
   loop();
 }
 
-
+/* ================= DASHBOARD ================= */
 function renderDashboard(){
   const total = DB.alumnos.length;
   const activos = DB.alumnos.filter(a=>a.estado==='ACTIVO').length;
@@ -830,14 +838,14 @@ function drawBarChart(ctx,w,h,labels,values,color){
   });
 }
 
-
+/* ================= ASISTENCIA POR GRADO ================= */
 function renderAsistGrado(){
   const nivel = document.getElementById('ag-nivel').value;
   const grado = document.getElementById('ag-grado').value;
   const fecha = document.getElementById('ag-fecha').value || todayStr();
   const alumnos = DB.alumnos.filter(a=> (!nivel||a.nivel===nivel) && (!grado||a.grado===grado));
   const el = document.getElementById('asist-grado-table');
-  if(alumnos.length===0){ el.innerHTML = emptyState('📋','Sin alumnos','Selecciona un nivel y grado con alumnos registrados.'); return; }
+  if(alumnos.length===0){ el.innerHTML = emptyState('','Sin alumnos','Selecciona un nivel y grado con alumnos registrados.'); return; }
   el.innerHTML = `<table><thead><tr><th>Alumno</th><th>Código</th><th>Estado</th><th>Hora</th></tr></thead><tbody>
     ${alumnos.map(a=>{
       const asis = DB.asistencias.find(x=>x.alumno_id===a.id && x.fecha===fecha);
@@ -846,12 +854,12 @@ function renderAsistGrado(){
     }).join('')}</tbody></table>`;
 }
 
-
+/* ================= ASISTENCIA POR ALUMNO ================= */
 function renderAsistAlumnoList(){
   const q = (document.getElementById('aa-search').value||'').toLowerCase();
   const list = DB.alumnos.filter(a=> !q || a.nombre.toLowerCase().includes(q));
   document.getElementById('aa-list').innerHTML = list.map(a=>`<div class="student-card" style="cursor:pointer;padding:12px 16px;margin-bottom:8px;" onclick='selectAsistAlumno("${a.id}")'>
-    <b>${esc(a.nombre)}</b><div class="small-note">${esc(a.grado)} · ${esc(a.nivel)}</div></div>`).join('') || emptyState('🧑‍🎓','Sin alumnos','Ajusta tu búsqueda.');
+    <b>${esc(a.nombre)}</b><div class="small-note">${esc(a.grado)} · ${esc(a.nivel)}</div></div>`).join('') || emptyState('','Sin alumnos','Ajusta tu búsqueda.');
 }
 function selectAsistAlumno(id){ selectedAsistAlumno = DB.alumnos.find(a=>a.id===id); renderAsistAlumnoHistory(); }
 function renderAsistAlumnoHistory(){
@@ -862,20 +870,20 @@ function renderAsistAlumnoHistory(){
     ${hist.map(h=>`<tr><td>${h.fecha}</td><td>${h.hora}</td></tr>`).join('')}</tbody></table>` : `<p class="small-note">Sin registros de asistencia todavía.</p>`;
 }
 
-
+/* ================= CARNET ================= */
 function renderCarnetList(){
   const q = (document.getElementById('carnet-search').value||'').toLowerCase();
   const list = DB.alumnos.filter(a=> !q || a.nombre.toLowerCase().includes(q));
   document.getElementById('carnet-list').innerHTML = list.map(a=>`
     <div class="student-card" style="cursor:pointer;padding:12px 16px;margin-bottom:8px;" onclick='selectCarnetAlumno("${a.id}")'>
-      <b>${esc(a.nombre)}</b><div class="small-note mono">${esc(a.codigo)} · ${esc(a.grado)}</div></div>`).join('') || emptyState('🪪','Sin alumnos','Ajusta tu búsqueda.');
+      <b>${esc(a.nombre)}</b><div class="small-note mono">${esc(a.codigo)} · ${esc(a.grado)}</div></div>`).join('') || emptyState('','Sin alumnos','Ajusta tu búsqueda.');
 }
 function selectCarnetAlumno(id){ selectedCarnetAlumno = DB.alumnos.find(a=>a.id===id); renderCarnetPreview(); }
 function renderCarnetPreview(){
   const holder = document.getElementById('carnet-preview-holder'); const actions = document.getElementById('carnet-preview-actions');
   if(!selectedCarnetAlumno){ holder.innerHTML = '<p class="small-note">Selecciona un alumno para previsualizar su carnet.</p>'; actions.style.display='none'; return; }
   const a = selectedCarnetAlumno;
-  holder.innerHTML = `<div class="carnet-preview"><div class="c-head">Campus Virtual · Carnet Escolar</div>
+  holder.innerHTML = `<div class="carnet-preview"><div class="c-head">Sistema de Registro Académico · Carnet Escolar</div>
     <div class="c-name">${esc(a.nombre)}</div><div class="c-code">${esc(a.codigo)}</div>
     <div class="c-info"><span>${esc(a.nivel)}</span><span>${esc(a.grado)}</span></div>
     <div class="c-qr" id="carnet-qr-holder"></div></div>`;
@@ -945,10 +953,10 @@ async function massDownload(){
   closeModal('modal-mass-carnet'); showToast('Descarga completada');
 }
 
+/* ================= MODALES ================= */
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(ov=>{ ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); }); });
 </script>
 </body>
 </html>
-
