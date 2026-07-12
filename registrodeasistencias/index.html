@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -175,7 +175,7 @@
 <div id="app">
   <div class="topbar">
     <div class="brand"><button class="menu-btn" id="menu-toggle" onclick="toggleSidebar()">☰</button>Sistema de Registro Académico</div>
-    <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido/a: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
+    <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
   </div>
   <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
   <div class="layout">
