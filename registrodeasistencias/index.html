@@ -70,11 +70,15 @@
   .card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
   .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  @media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);} .sidebar{display:none;}}
+  @media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);}}
+  .menu-btn{display:none;background:none;border:none;font-size:20px;color:var(--ink);margin-right:12px;padding:4px 6px;border-radius:6px;}
+  .menu-btn:hover{background:#F1F2F5;}
+  .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(22,34,61,0.5);z-index:29;}
+  .sidebar-backdrop.open{display:block;}
   .stat-card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;position:relative;overflow:hidden;}
-  .stat-card .label{font-size:12px;color:var(--ink-soft);font-weight:600;}
+  .stat-card .label{font-size:12px;color:var(--ink-soft);font-weight:600;padding-right:64px;}
   .stat-card .value{font-size:30px;font-weight:700;font-family:'Space Grotesk';margin-top:4px;}
-  .stat-card .tag{position:absolute;top:14px;right:14px;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;}
+  .stat-card .tag{position:absolute;top:14px;right:14px;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;white-space:nowrap;}
   .tag-teal{background:var(--teal-soft);color:var(--teal);}
   .tag-amber{background:#FBEBD2;color:var(--amber-dark);}
   .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
@@ -88,6 +92,21 @@
   .badge-inactivo{background:#F1F2F5;color:#8A94A8;}
   .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;font-size:12.5px;}
   .meta-grid .m-label{color:var(--ink-soft);font-weight:600;margin-bottom:2px;}
+  @media(max-width:900px){
+    .grid-4{grid-template-columns:repeat(2,1fr);}
+    .menu-btn{display:inline-block;}
+    .sidebar{
+      display:block;position:fixed;left:0;top:60px;bottom:0;z-index:30;
+      transform:translateX(-105%);transition:transform .22s ease;overflow-y:auto;
+    }
+    .sidebar.open{transform:translateX(0);}
+    .main{padding:20px 16px;}
+  }
+  @media(max-width:520px){
+    .grid-4{grid-template-columns:1fr;}
+    .stat-card .label{padding-right:0;}
+    .meta-grid{grid-template-columns:1fr 1fr;}
+  }
   .student-card .actions-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
   .icon-btn{
     height:34px;padding:0 14px;border-radius:8px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);
@@ -155,9 +174,10 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand">Sistema de Registro Académico</div>
+    <div class="brand"><button class="menu-btn" id="menu-toggle" onclick="toggleSidebar()">☰</button>Sistema de Registro Académico</div>
     <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido/a: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
   </div>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nav-item active" data-page="inicio">Inicio</div>
@@ -432,7 +452,7 @@ function todayStr(){
   return `${y}-${m}-${day}`;
 }
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
-function esc(s){ return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function emptyState(icon,title,sub){ return `<div class="empty-state"><h3>${title}</h3><p>${sub}</p></div>`; }
 function statCard(label,value,tagClass,tagText){ return `<div class="stat-card"><span class="tag ${tagClass}">${tagText}</span><div class="label">${label}</div><div class="value">${value}</div></div>`; }
 
@@ -451,13 +471,6 @@ async function checkExistingSession(){
 }
 
 /* ================= AUTENTICACIÓN ================= */
-function switchAuthTab(which){
-  document.getElementById('tab-login').classList.toggle('active', which==='login');
-  document.getElementById('tab-signup').classList.toggle('active', which==='signup');
-  document.getElementById('form-login').style.display = which==='login' ? 'block':'none';
-  document.getElementById('form-signup').style.display = which==='signup' ? 'block':'none';
-}
-
 async function doLogin(){
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
@@ -465,34 +478,6 @@ async function doLogin(){
   errEl.style.display='none';
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
   if(error){ errEl.textContent = 'Correo o contraseña incorrectos.'; errEl.style.display='block'; return; }
-  await afterLogin(data.user);
-}
-
-async function doSignup(){
-  const colegioNombre = document.getElementById('su-colegio').value.trim();
-  const nombreAdmin = document.getElementById('su-nombre').value.trim();
-  const email = document.getElementById('su-email').value.trim();
-  const pass = document.getElementById('su-pass').value;
-  const errEl = document.getElementById('signup-err'), okEl = document.getElementById('signup-ok');
-  errEl.style.display='none'; okEl.style.display='none';
-  if(!colegioNombre || !nombreAdmin || !email || pass.length<6){
-    errEl.textContent = 'Completa todos los campos (contraseña mínimo 6 caracteres).';
-    errEl.style.display='block'; return;
-  }
-  const { data, error } = await sb.auth.signUp({ email, password: pass });
-  if(error){ errEl.textContent = error.message; errEl.style.display='block'; return; }
-  if(!data.session){
-    okEl.textContent = 'Cuenta creada. Revisa tu correo para confirmar y luego inicia sesión.';
-    okEl.style.display='block'; return;
-  }
-  // Crear colegio y perfil (generamos el id nosotros para evitar problemas de orden con RLS)
-  const colegioId = crypto.randomUUID();
-  const { error:colErr } = await sb.from('colegios').insert({ id: colegioId, nombre: colegioNombre });
-  if(colErr){ errEl.textContent = 'Error creando el colegio: '+colErr.message; errEl.style.display='block'; return; }
-  await sb.from('perfiles').insert({ id:data.user.id, colegio_id:colegioId, nombre:nombreAdmin, rol:'Administrador' });
-  await sb.from('niveles').insert([
-    {colegio_id:colegioId, nombre:'Inicial'}, {colegio_id:colegioId, nombre:'Primaria'}, {colegio_id:colegioId, nombre:'Secundaria'}
-  ]);
   await afterLogin(data.user);
 }
 
@@ -531,6 +516,14 @@ async function loadAll(){
 }
 
 /* ================= NAVEGACIÓN ================= */
+function toggleSidebar(force){
+  const sb = document.querySelector('.sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  const shouldOpen = typeof force === 'boolean' ? force : !sb.classList.contains('open');
+  sb.classList.toggle('open', shouldOpen);
+  bd.classList.toggle('open', shouldOpen);
+}
+
 document.querySelectorAll('.nav-item').forEach(item=>{
   item.addEventListener('click', ()=>{
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -539,6 +532,7 @@ document.querySelectorAll('.nav-item').forEach(item=>{
     document.getElementById('page-'+item.dataset.page).classList.add('active');
     renderPage(item.dataset.page);
     if(item.dataset.page !== 'registro-qr') stopScanner();
+    toggleSidebar(false);
   });
 });
 
