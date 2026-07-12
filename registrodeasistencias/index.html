@@ -175,7 +175,7 @@
 <div id="app">
   <div class="topbar">
     <div class="brand"><button class="menu-btn" id="menu-toggle" onclick="toggleSidebar()">☰</button>Sistema de Registro Académico</div>
-    <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido/a: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
+    <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
   </div>
   <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
   <div class="layout">
@@ -212,9 +212,10 @@
         <div class="page-head"><h1>Registro por QR</h1></div>
         <div class="card" style="max-width:420px;margin:0 auto;">
           <div class="qr-frame"><video id="qr-video" playsinline></video></div>
-          <div style="display:flex;gap:10px;justify-content:center;">
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
             <button class="btn btn-navy" onclick="startScanner()">Iniciar cámara</button>
             <button class="btn btn-outline" onclick="stopScanner()">Detener</button>
+            <button class="btn btn-outline" id="flip-camera-btn" onclick="flipCamera()" style="display:none;">Voltear cámara</button>
           </div>
           <p class="small-note" style="text-align:center;">Apunta la cámara al carnet QR del alumno.</p>
           <div class="scan-result" id="scan-result"></div>
@@ -442,7 +443,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_V0wt4JdNVXHc20_0tJWBHA_D47gcmbf";
 let sb = null;
 let DB = { colegioId:null, rol:null, alumnos:[], niveles:[], grados:[], asistencias:[], comunicados:[] };
 let selectedCarnetAlumno = null, selectedAsistAlumno = null;
-let scannerStream = null, scannerRAF = null;
+let scannerStream = null, scannerRAF = null, currentFacingMode = 'environment';
 
 function todayStr(){
   const d = new Date();
@@ -865,10 +866,23 @@ async function guardarRegistroMasivo(){
 /* ================= REGISTRO POR QR (cámara) ================= */
 async function startScanner(){
   try{
-    scannerStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    scannerStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:currentFacingMode}});
     const video = document.getElementById('qr-video');
     video.srcObject = scannerStream; await video.play(); tickScanner();
+    checkMultipleCameras();
   }catch(e){ showToast('No se pudo acceder a la cámara. Usa el registro manual.'); }
+}
+async function checkMultipleCameras(){
+  try{
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d=>d.kind==='videoinput');
+    document.getElementById('flip-camera-btn').style.display = cams.length > 1 ? 'inline-flex' : 'none';
+  }catch(e){ /* si el navegador no lo permite, simplemente no mostramos el botón */ }
+}
+async function flipCamera(){
+  currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+  stopScanner();
+  await startScanner();
 }
 function stopScanner(){
   if(scannerRAF) cancelAnimationFrame(scannerRAF);
