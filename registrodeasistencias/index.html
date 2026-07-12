@@ -1016,16 +1016,21 @@ function carnetToCanvasPromise(alumno){
     ctx.fillStyle = '#B8C2DC'; ctx.font='16px monospace'; ctx.fillText(alumno.codigo, 30, 128);
     ctx.fillStyle = '#CFD7EA'; ctx.font='14px Arial'; ctx.fillText(alumno.nivel+'  ·  '+alumno.grado, 30, 160);
     const qrTemp = document.createElement('div'); qrTemp.style.position='absolute'; qrTemp.style.left='-9999px'; document.body.appendChild(qrTemp);
-    new QRCode(qrTemp, {text:alumno.codigo, width:140, height:140});
-    setTimeout(()=>{
-      const qrImgEl = qrTemp.querySelector('img') || qrTemp.querySelector('canvas');
-      const draw = ()=>{
-        ctx.fillStyle='#fff'; roundRect(ctx,30,190,150,150,10); ctx.fill();
-        try{ ctx.drawImage(qrImgEl,40,200,130,130); }catch(e){}
-        document.body.removeChild(qrTemp); resolve(canvas);
-      };
-      if(qrImgEl && qrImgEl.tagName==='IMG'){ if(qrImgEl.complete) draw(); else qrImgEl.onload = draw; } else { draw(); }
-    }, 60);
+    new QRCode(qrTemp, {text:alumno.codigo, width:140, height:140, correctLevel: QRCode.CorrectLevel.M});
+    // El QR se dibuja de forma síncrona sobre un <canvas> interno; lo tomamos directamente
+    // en vez de esperar a la versión <img> (que se genera de forma asíncrona y causaba
+    // que a veces el código quedara en blanco en el PDF).
+    const drawQr = ()=>{
+      const qrCanvas = qrTemp.querySelector('canvas');
+      ctx.fillStyle='#fff'; roundRect(ctx,30,190,150,150,10); ctx.fill();
+      try{
+        if(qrCanvas) ctx.drawImage(qrCanvas,40,200,130,130);
+        else { const qrImg = qrTemp.querySelector('img'); if(qrImg) ctx.drawImage(qrImg,40,200,130,130); }
+      }catch(e){}
+      document.body.removeChild(qrTemp); resolve(canvas);
+    };
+    // Un pequeño margen (requestAnimationFrame) asegura que el navegador ya pintó el canvas del QR
+    requestAnimationFrame(()=> requestAnimationFrame(drawQr));
   });
 }
 async function downloadCarnetImage(){
