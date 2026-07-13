@@ -154,12 +154,16 @@
   .pill-select{display:flex;gap:8px;flex-wrap:wrap;}
   .pill{padding:7px 13px;border-radius:20px;border:1.5px solid var(--line);font-size:12.5px;cursor:pointer;}
   .pill.active{background:var(--navy);color:#fff;border-color:var(--navy);}
-  .theme-toggle-btn{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;}
+  .theme-toggle-btn{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;}
   .theme-toggle-btn:hover{background:var(--hover-bg);}
+  .theme-toggle-btn svg{width:18px;height:18px;}
+  .theme-toggle-btn .icon-sun{display:none;}
+  .theme-toggle-btn .icon-moon{display:block;}
+  [data-theme="dark"] .theme-toggle-btn .icon-sun{display:block;}
+  [data-theme="dark"] .theme-toggle-btn .icon-moon{display:none;}
   .theme-toggle-desktop{margin-right:14px;}
-  .theme-toggle-mobile{display:none;margin-top:18px;}
+  .theme-toggle-mobile{display:none;margin:18px auto 0;}
   @media(max-width:900px){
-    .theme-toggle-desktop{display:none;}
     .theme-toggle-mobile{display:inline-flex;}
   }
   .setup-warning{background:#FDEDEC;color:var(--red);padding:14px 18px;border-radius:10px;font-size:13px;max-width:480px;margin:16px auto 0;}
@@ -191,7 +195,10 @@
 <div id="app">
   <div class="topbar">
     <div class="brand"><button class="menu-btn" id="menu-toggle" onclick="toggleSidebar()">☰</button>Sistema de Registro Académico</div>
-    <div class="welcome"><button class="theme-toggle-btn theme-toggle-desktop" onclick="toggleTheme()">Modo oscuro</button><span id="topbar-colegio"></span> · Bienvenido/a: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
+    <div class="welcome"><button class="theme-toggle-btn theme-toggle-desktop" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"></path></svg>
+    </button><span id="topbar-colegio"></span> · Bienvenido: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
   </div>
   <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
   <div class="layout">
@@ -358,7 +365,10 @@
         <div class="page-head"><h1>Comunicados</h1><div class="actions"><button class="btn btn-navy" onclick="openComunicadoModal()">+ Nuevo comunicado</button></div></div>
         <div id="comunicados-list"></div>
         <div style="text-align:center;">
-          <button class="btn btn-outline theme-toggle-btn theme-toggle-mobile" onclick="toggleTheme()">Modo oscuro</button>
+          <button class="theme-toggle-btn theme-toggle-mobile" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"></path></svg>
+          </button>
         </div>
       </div>
     </div>
@@ -504,7 +514,6 @@ function setTheme(theme){
   if(theme==='dark'){ document.documentElement.setAttribute('data-theme','dark'); }
   else { document.documentElement.removeAttribute('data-theme'); }
   try{ localStorage.setItem('cv-theme', theme); }catch(e){}
-  document.querySelectorAll('.theme-toggle-btn').forEach(b=> b.textContent = theme==='dark' ? 'Modo claro' : 'Modo oscuro');
 }
 function esc(s){ return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function emptyState(icon,title,sub){ return `<div class="empty-state"><h3>${title}</h3><p>${sub}</p></div>`; }
