@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -175,7 +176,7 @@
 <div id="app">
   <div class="topbar">
     <div class="brand"><button class="menu-btn" id="menu-toggle" onclick="toggleSidebar()">☰</button>Sistema de Registro Académico</div>
-    <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
+    <div class="welcome"><span id="topbar-colegio"></span> · Bienvenido/a: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
   </div>
   <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
   <div class="layout">
@@ -224,6 +225,18 @@
           <div style="display:flex;gap:8px;">
             <input class="search-input" id="manual-qr-code" placeholder="Código único, ej: a1234">
             <button class="btn btn-teal" onclick="registrarPorCodigo()">Registrar</button>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:420px;margin:20px auto 0;">
+          <h3 style="margin-top:0;">Registro por NFC</h3>
+          <p class="small-note" id="nfc-support-msg"></p>
+          <div id="nfc-controls" style="display:none;">
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:10px;">
+              <button class="btn btn-navy" id="nfc-start-btn" onclick="startNFC()">Activar lector NFC</button>
+              <button class="btn btn-outline" onclick="stopNFC()">Detener</button>
+            </div>
+            <p class="small-note" style="text-align:center;">Acerca el tag NFC del alumno a la parte trasera del teléfono.</p>
           </div>
         </div>
       </div>
@@ -310,13 +323,14 @@
       </div>
 
       <div class="page" id="page-alumnos">
-        <div class="page-head"><h1>Alumnos</h1><div class="actions"><button class="btn btn-outline" onclick="renderAlumnos()">Consultar</button><button class="btn btn-navy" onclick="openAlumnoModal()">+ Agregar</button></div></div>
+        <div class="page-head"><h1>Alumnos</h1><div class="actions"><button class="btn btn-outline" onclick="renderAlumnos()">Consultar</button><button class="btn btn-outline" onclick="openImportModal()">Importar CSV</button><button class="btn btn-navy" onclick="openAlumnoModal()">+ Agregar</button></div></div>
         <div class="toolbar">
-          <input class="search-input" id="al-search" placeholder="Buscar en todos los campos..." oninput="renderAlumnos()">
-          <select class="filter" id="al-filtro-nivel" onchange="fillGradosFilter('al-filtro-nivel','al-filtro-grado');renderAlumnos()"></select>
-          <select class="filter" id="al-filtro-grado" onchange="renderAlumnos()"></select>
+          <input class="search-input" id="al-search" placeholder="Buscar en todos los campos..." oninput="alumnosPage=1;renderAlumnos()">
+          <select class="filter" id="al-filtro-nivel" onchange="alumnosPage=1;fillGradosFilter('al-filtro-nivel','al-filtro-grado');renderAlumnos()"></select>
+          <select class="filter" id="al-filtro-grado" onchange="alumnosPage=1;renderAlumnos()"></select>
         </div>
         <div id="alumnos-list"></div>
+        <div id="alumnos-pagination" style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:20px;"></div>
       </div>
 
       <div class="page" id="page-docentes">
@@ -429,6 +443,22 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <div class="modal-head"><h3>Importar alumnos desde CSV</h3><button class="modal-close" onclick="closeModal('modal-import')">✕</button></div>
+    <div class="modal-body">
+      <p class="small-note" style="margin-top:0;">El archivo debe tener estas columnas exactas en la primera fila (en cualquier orden): <b>nombre, codigo, nivel, grado, apoderado, estado</b>. La columna "apoderado" y "estado" son opcionales (si falta "estado", se asigna ACTIVO).</p>
+      <button class="btn btn-outline" style="margin-bottom:14px;" onclick="downloadCsvTemplate()">Descargar plantilla de ejemplo</button>
+      <div class="field"><label>Archivo CSV</label><input type="file" id="import-file-input" accept=".csv"></div>
+      <div id="import-preview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn btn-navy" id="import-confirm-btn" onclick="confirmImport()" style="display:none;">Importar alumnos</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -504,16 +534,21 @@ async function doLogout(){
 /* ================= CARGA DE DATOS ================= */
 async function loadAll(){
   const cid = DB.colegioId;
-  const [{data:alumnos},{data:niveles},{data:grados},{data:asistencias},{data:comunicados},{data:docentes}] = await Promise.all([
+  const [{data:alumnos},{data:niveles},{data:grados},{data:comunicados},{data:docentes}] = await Promise.all([
     sb.from('alumnos').select('*').eq('colegio_id',cid).order('nombre'),
     sb.from('niveles').select('*').eq('colegio_id',cid).order('nombre'),
     sb.from('grados').select('*').eq('colegio_id',cid).order('nombre'),
-    sb.from('asistencias').select('*').eq('colegio_id',cid),
     sb.from('comunicados').select('*').eq('colegio_id',cid).order('fecha',{ascending:false}),
     sb.from('docentes').select('*').eq('colegio_id',cid).order('nombre')
   ]);
   DB.alumnos = alumnos||[]; DB.niveles = (niveles||[]).map(n=>n.nombre); DB.gradosRaw = grados||[];
-  DB.grados = grados||[]; DB.asistencias = asistencias||[]; DB.comunicados = comunicados||[]; DB.docentes = docentes||[];
+  DB.grados = grados||[]; DB.comunicados = comunicados||[]; DB.docentes = docentes||[];
+  await refreshAsistenciasHoy();
+}
+// Solo trae las asistencias del día de hoy (liviano, sin importar cuántos años de historial tenga el colegio).
+async function refreshAsistenciasHoy(){
+  const { data } = await sb.from('asistencias').select('*').eq('colegio_id',DB.colegioId).eq('fecha', todayStr());
+  DB.asistenciasHoy = data||[];
 }
 
 /* ================= NAVEGACIÓN ================= */
@@ -532,7 +567,8 @@ document.querySelectorAll('.nav-item').forEach(item=>{
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.getElementById('page-'+item.dataset.page).classList.add('active');
     renderPage(item.dataset.page);
-    if(item.dataset.page !== 'registro-qr') stopScanner();
+    if(item.dataset.page !== 'registro-qr'){ stopScanner(); stopNFC(); }
+    if(item.dataset.page === 'registro-qr') initNfcSupport();
     toggleSidebar(false);
   });
 });
@@ -580,7 +616,7 @@ function fillGradosFilter(nivelSelectId, gradoSelectId){
 function renderInicio(){
   const total = DB.alumnos.length;
   const activos = DB.alumnos.filter(a=>a.estado==='ACTIVO').length;
-  const asistHoy = DB.asistencias.filter(a=>a.fecha===todayStr()).length;
+  const asistHoy = DB.asistenciasHoy.length;
   document.getElementById('inicio-stats').innerHTML = `
     ${statCard('Alumnos registrados', total, 'tag-teal', 'Total')}
     ${statCard('Alumnos activos', activos, 'tag-amber', 'Activos')}
@@ -593,16 +629,23 @@ function renderInicio(){
 }
 
 /* ================= ALUMNOS (CRUD) ================= */
+let alumnosPage = 1;
+const ALUMNOS_POR_PAGINA = 25;
 function renderAlumnos(){
   const q = (document.getElementById('al-search').value||'').toLowerCase();
   const nivel = document.getElementById('al-filtro-nivel').value;
   const grado = document.getElementById('al-filtro-grado').value;
-  const list = DB.alumnos.filter(a=>{
+  const listaCompleta = DB.alumnos.filter(a=>{
     const matchQ = !q || [a.nombre,a.codigo,a.nivel,a.grado].join(' ').toLowerCase().includes(q);
     return matchQ && (!nivel||a.nivel===nivel) && (!grado||a.grado===grado);
   });
   const el = document.getElementById('alumnos-list');
-  if(list.length===0){ el.innerHTML = emptyState('','No se encontraron alumnos','Prueba con otro criterio o agrega un nuevo alumno.'); return; }
+  const pagEl = document.getElementById('alumnos-pagination');
+  if(listaCompleta.length===0){ el.innerHTML = emptyState('','No se encontraron alumnos','Prueba con otro criterio o agrega un nuevo alumno.'); pagEl.innerHTML=''; return; }
+  const totalPaginas = Math.max(1, Math.ceil(listaCompleta.length / ALUMNOS_POR_PAGINA));
+  if(alumnosPage > totalPaginas) alumnosPage = totalPaginas;
+  const inicio = (alumnosPage-1) * ALUMNOS_POR_PAGINA;
+  const list = listaCompleta.slice(inicio, inicio + ALUMNOS_POR_PAGINA);
   el.innerHTML = list.map(a=>`
     <div class="student-card">
       <div class="row1"><h3>${esc(a.nombre)}</h3><span class="badge ${a.estado==='ACTIVO'?'badge-activo':'badge-inactivo'}">${a.estado}</span></div>
@@ -619,7 +662,12 @@ function renderAlumnos(){
         <button class="icon-btn" title="Historial" onclick="goToHistorial('${a.id}')">Historial</button>
       </div>
     </div>`).join('');
+  pagEl.innerHTML = totalPaginas > 1 ? `
+    <button class="btn btn-outline" ${alumnosPage<=1?'disabled':''} onclick="cambiarPaginaAlumnos(-1)">Anterior</button>
+    <span class="small-note">Página ${alumnosPage} de ${totalPaginas} (${listaCompleta.length} alumnos)</span>
+    <button class="btn btn-outline" ${alumnosPage>=totalPaginas?'disabled':''} onclick="cambiarPaginaAlumnos(1)">Siguiente</button>` : '';
 }
+function cambiarPaginaAlumnos(delta){ alumnosPage += delta; renderAlumnos(); window.scrollTo({top:0, behavior:'smooth'}); }
 function openAlumnoModal(id){
   fillNivelSelect('al-nivel');
   document.getElementById('alumno-modal-title').textContent = id? 'Editar alumno' : 'Agregar alumno';
@@ -673,6 +721,75 @@ async function deleteAlumno(id){
 }
 function goToCarnet(id){ document.querySelector('[data-page="carnet"]').click(); selectedCarnetAlumno = DB.alumnos.find(a=>a.id===id); renderCarnetPreview(); }
 function goToHistorial(id){ document.querySelector('[data-page="asist-alumno"]').click(); selectedAsistAlumno = DB.alumnos.find(a=>a.id===id); renderAsistAlumnoHistory(); }
+
+/* ================= IMPORTACIÓN MASIVA DE ALUMNOS (CSV) ================= */
+let importedRows = [];
+function openImportModal(){
+  importedRows = [];
+  document.getElementById('import-preview').innerHTML = '';
+  document.getElementById('import-confirm-btn').style.display = 'none';
+  document.getElementById('import-file-input').value = '';
+  openModal('modal-import');
+}
+function downloadCsvTemplate(){
+  const csv = 'nombre,codigo,nivel,grado,apoderado,estado\nJuan Perez Rios,a2001,Primaria,1er grado,Maria Rios,ACTIVO\nAna Torres Vega,a2002,Secundaria,2do grado,,ACTIVO\n';
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'plantilla-alumnos.csv';
+  link.click();
+}
+document.getElementById('import-file-input')?.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results)=>{
+      const cols = (results.meta.fields||[]).map(f=>f.trim().toLowerCase());
+      if(!cols.includes('nombre') || !cols.includes('codigo')){
+        document.getElementById('import-preview').innerHTML = `<p class="err-msg" style="display:block;">El archivo debe tener al menos las columnas "nombre" y "codigo".</p>`;
+        return;
+      }
+      // Normaliza las llaves (por si el CSV trae mayúsculas o espacios)
+      importedRows = results.data.map(row=>{
+        const norm = {};
+        Object.keys(row).forEach(k=> norm[k.trim().toLowerCase()] = (row[k]||'').toString().trim());
+        return {
+          nombre: norm.nombre||'', codigo: norm.codigo||'', nivel: norm.nivel||'', grado: norm.grado||'',
+          apoderado: norm.apoderado||'', estado: (norm.estado||'ACTIVO').toUpperCase()==='INACTIVO' ? 'INACTIVO':'ACTIVO'
+        };
+      }).filter(r=> r.nombre && r.codigo);
+      const invalidas = results.data.length - importedRows.length;
+      document.getElementById('import-preview').innerHTML = `
+        <p class="ok-msg" style="display:block;">${importedRows.length} alumno(s) listos para importar${invalidas>0? ` (se ignoraron ${invalidas} filas sin nombre o código)`:''}.</p>
+        <div style="max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;">
+          <table><thead><tr><th>Nombre</th><th>Código</th><th>Nivel</th><th>Grado</th></tr></thead><tbody>
+            ${importedRows.slice(0,50).map(r=>`<tr><td>${esc(r.nombre)}</td><td class="mono">${esc(r.codigo)}</td><td>${esc(r.nivel)}</td><td>${esc(r.grado)}</td></tr>`).join('')}
+          </tbody></table>
+        </div>
+        ${importedRows.length>50? `<p class="small-note">Mostrando los primeros 50 de ${importedRows.length}.</p>`:''}`;
+      document.getElementById('import-confirm-btn').style.display = importedRows.length? 'inline-flex':'none';
+    },
+    error: ()=>{ document.getElementById('import-preview').innerHTML = `<p class="err-msg" style="display:block;">No se pudo leer el archivo. Verifica que sea un CSV válido.</p>`; }
+  });
+});
+async function confirmImport(){
+  if(importedRows.length===0) return;
+  const btn = document.getElementById('import-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Importando...';
+  const rows = importedRows.map(r=>({ colegio_id: DB.colegioId, nombre:r.nombre, codigo:r.codigo, nivel:r.nivel, grado:r.grado, apoderado:r.apoderado, estado:r.estado }));
+  // Se sube en lotes de 200 para no saturar la petición si son miles de alumnos
+  const tam = 200; let insertados = 0, fallidos = 0;
+  for(let i=0;i<rows.length;i+=tam){
+    const lote = rows.slice(i, i+tam);
+    const { error, count } = await sb.from('alumnos').upsert(lote, { onConflict:'colegio_id,codigo', ignoreDuplicates:false, count:'exact' });
+    if(error){ fallidos += lote.length; } else { insertados += lote.length; }
+  }
+  btn.disabled = false; btn.textContent = 'Importar alumnos';
+  await loadAll(); closeModal('modal-import'); renderAlumnos();
+  showToast(fallidos===0 ? `${insertados} alumnos importados correctamente` : `${insertados} importados, ${fallidos} con errores`);
+}
 
 /* ================= NIVELES ================= */
 function renderNiveles(){
@@ -805,7 +922,7 @@ function renderRegistroAlumno(){
   if(list.length===0){ el.innerHTML = emptyState('','Sin resultados','Busca por nombre o código de alumno.'); return; }
   const hoy = todayStr();
   el.innerHTML = list.map(a=>{
-    const yaRegistrado = DB.asistencias.some(x=>x.alumno_id===a.id && x.fecha===hoy);
+    const yaRegistrado = DB.asistenciasHoy.some(x=>x.alumno_id===a.id);
     return `<div class="student-card">
       <div class="row1"><h3>${esc(a.nombre)}</h3>${yaRegistrado?'<span class="badge badge-activo">Asistió hoy</span>':''}</div>
       <div class="meta-grid"><div><div class="m-label">CÓDIGO</div><div class="mono">${esc(a.codigo)}</div></div>
@@ -817,23 +934,33 @@ function renderRegistroAlumno(){
 }
 async function registrarAsistencia(alumnoId){
   const hoy = todayStr();
-  if(DB.asistencias.some(x=>x.alumno_id===alumnoId && x.fecha===hoy)){ showToast('Ya registrado hoy'); return; }
+  if(DB.asistenciasHoy.some(x=>x.alumno_id===alumnoId && x.fecha===hoy)){ showToast('Ya registrado hoy'); return; }
   const { data:{ user } } = await sb.auth.getUser();
-  await sb.from('asistencias').insert({ colegio_id:DB.colegioId, alumno_id:alumnoId, fecha:hoy,
+  const { error } = await sb.from('asistencias').insert({ colegio_id:DB.colegioId, alumno_id:alumnoId, fecha:hoy,
     hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}), registrado_por:user.id });
-  await loadAll(); renderRegistroAlumno(); showToast('Asistencia registrada');
+  if(error){ if(!error.message.includes('duplicate')) showToast('Error al registrar: '+error.message); }
+  await refreshAsistenciasHoy();
+  renderRegistroAlumno();
+  showToast('Asistencia registrada');
+}
+async function procesarCodigoDetectado(codigo, mostrarErrorSiNoExiste){
+  const a = DB.alumnos.find(x=>x.codigo===codigo);
+  if(!a){ if(mostrarErrorSiNoExiste) showToast('Código no encontrado: '+codigo); return null; }
+  await registrarAsistencia(a.id);
+  const res = document.getElementById('scan-result');
+  res.style.display='block';
+  res.textContent = `${a.nombre} — asistencia registrada`;
+  return a;
 }
 async function registrarPorCodigo(){
   const code = document.getElementById('manual-qr-code').value.trim();
-  const a = DB.alumnos.find(x=>x.codigo===code);
-  if(!a){ showToast('Código no encontrado'); return; }
-  await registrarAsistencia(a.id);
-  document.getElementById('manual-qr-code').value='';
-  const res = document.getElementById('scan-result'); res.style.display='block'; res.textContent = `${a.nombre} — asistencia registrada`;
+  if(!code) return;
+  const a = await procesarCodigoDetectado(code, true);
+  if(a) document.getElementById('manual-qr-code').value='';
 }
 
 /* ================= REGISTRO MASIVO POR GRADO ================= */
-function renderRegistroMasivo(){
+async function renderRegistroMasivo(){
   const nivel = document.getElementById('rm-nivel').value;
   const grado = document.getElementById('rm-grado').value;
   const fecha = document.getElementById('rm-fecha').value || todayStr();
@@ -841,8 +968,12 @@ function renderRegistroMasivo(){
   const el = document.getElementById('registro-masivo-list');
   document.getElementById('rm-count').textContent = `${list.length} alumno(s) en este grupo`;
   if(list.length===0){ el.innerHTML = emptyState('','Selecciona nivel y grado','Elige un grado con alumnos para registrar asistencia en lote.'); return; }
+  el.innerHTML = `<p class="small-note">Cargando asistencia del ${fecha}...</p>`;
+  // Solo consulta la fecha elegida (liviano, sin importar cuántos años de historial tenga el colegio)
+  const asistenciasDelDia = fecha===todayStr() ? DB.asistenciasHoy :
+    (await sb.from('asistencias').select('*').eq('colegio_id',DB.colegioId).eq('fecha',fecha)).data || [];
   el.innerHTML = list.map(a=>{
-    const yaRegistrado = DB.asistencias.some(x=>x.alumno_id===a.id && x.fecha===fecha);
+    const yaRegistrado = asistenciasDelDia.some(x=>x.alumno_id===a.id);
     return `<label class="checkbox-row"><input type="checkbox" data-alumno-id="${a.id}" ${yaRegistrado?'checked disabled':''}>
       <span>${esc(a.nombre)} <span class="mono small-note">(${esc(a.codigo)})</span> ${yaRegistrado?'<span class="badge badge-activo" style="margin-left:6px;">Ya registrado</span>':''}</span>
     </label>`;
@@ -860,7 +991,8 @@ async function guardarRegistroMasivo(){
   const rows = checks.map(cb=>({ colegio_id:DB.colegioId, alumno_id:cb.dataset.alumnoId, fecha, hora, registrado_por:user.id }));
   const { error } = await sb.from('asistencias').upsert(rows, { onConflict:'alumno_id,fecha', ignoreDuplicates:true });
   if(error){ showToast('Error al guardar: '+error.message); return; }
-  await loadAll(); renderRegistroMasivo(); showToast(`${rows.length} asistencias registradas`);
+  if(fecha===todayStr()) await refreshAsistenciasHoy();
+  await renderRegistroMasivo(); showToast(`${rows.length} asistencias registradas`);
 }
 
 /* ================= REGISTRO POR QR (cámara) ================= */
@@ -901,11 +1033,7 @@ function tickScanner(){
       const code = jsQR(img.data, img.width, img.height);
       if(code && code.data && Date.now()-lastScan > 2000){
         lastScan = Date.now();
-        const a = DB.alumnos.find(x=>x.codigo===code.data);
-        if(a){
-          registrarAsistencia(a.id);
-          const res = document.getElementById('scan-result'); res.style.display='block'; res.textContent = `${a.nombre} — asistencia registrada`;
-        }
+        procesarCodigoDetectado(code.data, false);
       }
     }
     scannerRAF = requestAnimationFrame(loop);
@@ -913,22 +1041,75 @@ function tickScanner(){
   loop();
 }
 
-/* ================= DASHBOARD ================= */
-function renderDashboard(){
+/* ================= REGISTRO POR NFC ================= */
+let nfcController = null;
+function initNfcSupport(){
+  const msg = document.getElementById('nfc-support-msg');
+  const controls = document.getElementById('nfc-controls');
+  if(!msg) return;
+  if('NDEFReader' in window){
+    msg.textContent = 'Tu navegador soporta NFC. Solo funciona con Android + Chrome (o similar), con NFC activado en el equipo.';
+    controls.style.display = 'block';
+  } else {
+    msg.textContent = 'Este dispositivo o navegador no soporta lectura NFC desde la web. Esta función solo está disponible en Android con Chrome (no funciona en iPhone ni en computadoras).';
+    controls.style.display = 'none';
+  }
+}
+async function startNFC(){
+  if(!('NDEFReader' in window)){ showToast('Este dispositivo no soporta NFC'); return; }
+  try{
+    nfcController = new AbortController();
+    const ndef = new NDEFReader();
+    await ndef.scan({ signal: nfcController.signal });
+    showToast('Lector NFC activado, acerca un tag');
+    let lastRead = 0;
+    ndef.onreading = (event) => {
+      if(Date.now()-lastRead < 1500) return;
+      lastRead = Date.now();
+      let codigo = null;
+      for(const record of event.message.records){
+        try{
+          if(record.recordType === 'text'){
+            codigo = new TextDecoder(record.encoding || 'utf-8').decode(record.data).trim();
+          } else if(record.recordType === 'url'){
+            codigo = new TextDecoder().decode(record.data).trim();
+          } else {
+            codigo = new TextDecoder().decode(record.data).trim();
+          }
+        }catch(e){ continue; }
+        if(codigo) break;
+      }
+      if(codigo){ procesarCodigoDetectado(codigo, true); }
+      else { showToast('No se pudo leer el contenido del tag NFC'); }
+    };
+    ndef.onreadingerror = () => { showToast('No se pudo leer el tag NFC, intenta de nuevo'); };
+  }catch(error){
+    if(error.name === 'NotAllowedError'){ showToast('Permiso de NFC denegado. Actívalo en la configuración del navegador.'); }
+    else if(error.name === 'NotSupportedError'){ showToast('Este dispositivo no tiene NFC o está desactivado.'); }
+    else { showToast('No se pudo iniciar el lector NFC: '+error.message); }
+  }
+}
+function stopNFC(){
+  if(nfcController){ nfcController.abort(); nfcController = null; showToast('Lector NFC detenido'); }
+}
+async function renderDashboard(){
   const total = DB.alumnos.length;
   const activos = DB.alumnos.filter(a=>a.estado==='ACTIVO').length;
-  const hoy = DB.asistencias.filter(a=>a.fecha===todayStr()).length;
+  const hoy = DB.asistenciasHoy.length;
   const pct = total? Math.round((hoy/total)*100):0;
   document.getElementById('dash-stats').innerHTML = `
     ${statCard('Total alumnos', total, 'tag-teal','Total')} ${statCard('Activos', activos, 'tag-amber','Activos')}
     ${statCard('Asistieron hoy', hoy, 'tag-teal','Hoy')} ${statCard('% asistencia hoy', pct+'%', 'tag-amber','Hoy')}`;
-  draw7Dias(); drawNiveles();
+  await draw7Dias(); drawNiveles();
 }
-function draw7Dias(){
+async function draw7Dias(){
   const canvas = document.getElementById('chart-7dias'); const ctx = canvas.getContext('2d');
   canvas.width = canvas.clientWidth; canvas.height=180;
   const days = [...Array(7)].map((_,i)=>{ const d = new Date(); d.setDate(d.getDate()-(6-i)); return d.toISOString().slice(0,10); });
-  drawBarChart(ctx, canvas.width, canvas.height, days.map(d=>d.slice(5)), days.map(d=> DB.asistencias.filter(a=>a.fecha===d).length), '#177E67');
+  // Solo trae los últimos 7 días (liviano), no todo el historial del colegio
+  const { data } = await sb.from('asistencias').select('fecha').eq('colegio_id',DB.colegioId).gte('fecha', days[0]);
+  const rows = data||[];
+  drawBarChart(ctx, canvas.width, canvas.height, days.map(d=>d.slice(5)), days.map(d=> rows.filter(a=>a.fecha===d).length), '#177E67');
 }
 function drawNiveles(){
   const canvas = document.getElementById('chart-niveles'); const ctx = canvas.getContext('2d');
@@ -949,16 +1130,20 @@ function drawBarChart(ctx,w,h,labels,values,color){
 }
 
 /* ================= ASISTENCIA POR GRADO ================= */
-function renderAsistGrado(){
+async function renderAsistGrado(){
   const nivel = document.getElementById('ag-nivel').value;
   const grado = document.getElementById('ag-grado').value;
   const fecha = document.getElementById('ag-fecha').value || todayStr();
   const alumnos = DB.alumnos.filter(a=> (!nivel||a.nivel===nivel) && (!grado||a.grado===grado));
   const el = document.getElementById('asist-grado-table');
   if(alumnos.length===0){ el.innerHTML = emptyState('','Sin alumnos','Selecciona un nivel y grado con alumnos registrados.'); return; }
+  el.innerHTML = `<p class="small-note">Cargando...</p>`;
+  // Solo consulta la fecha elegida (liviano, sin importar cuántos años de historial tenga el colegio)
+  const asistenciasDelDia = fecha===todayStr() ? DB.asistenciasHoy :
+    (await sb.from('asistencias').select('*').eq('colegio_id',DB.colegioId).eq('fecha',fecha)).data || [];
   el.innerHTML = `<table><thead><tr><th>Alumno</th><th>Código</th><th>Estado</th><th>Hora</th></tr></thead><tbody>
     ${alumnos.map(a=>{
-      const asis = DB.asistencias.find(x=>x.alumno_id===a.id && x.fecha===fecha);
+      const asis = asistenciasDelDia.find(x=>x.alumno_id===a.id);
       return `<tr><td>${esc(a.nombre)}</td><td class="mono">${esc(a.codigo)}</td>
         <td>${asis?'<span class="badge badge-activo">Presente</span>':'<span class="badge badge-inactivo">Ausente</span>'}</td><td>${asis?asis.hora:'—'}</td></tr>`;
     }).join('')}</tbody></table>`;
@@ -972,12 +1157,17 @@ function renderAsistAlumnoList(){
     <b>${esc(a.nombre)}</b><div class="small-note">${esc(a.grado)} · ${esc(a.nivel)}</div></div>`).join('') || emptyState('','Sin alumnos','Ajusta tu búsqueda.');
 }
 function selectAsistAlumno(id){ selectedAsistAlumno = DB.alumnos.find(a=>a.id===id); renderAsistAlumnoHistory(); }
-function renderAsistAlumnoHistory(){
+async function renderAsistAlumnoHistory(){
   if(!selectedAsistAlumno) return;
   document.getElementById('aa-title').textContent = selectedAsistAlumno.nombre;
-  const hist = DB.asistencias.filter(x=>x.alumno_id===selectedAsistAlumno.id).sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  document.getElementById('aa-history').innerHTML = hist.length? `<table><thead><tr><th>Fecha</th><th>Hora</th></tr></thead><tbody>
-    ${hist.map(h=>`<tr><td>${h.fecha}</td><td>${h.hora}</td></tr>`).join('')}</tbody></table>` : `<p class="small-note">Sin registros de asistencia todavía.</p>`;
+  document.getElementById('aa-history').innerHTML = `<p class="small-note">Cargando historial...</p>`;
+  // Trae solo los últimos 100 registros de este alumno (no el historial completo del colegio)
+  const { data:hist } = await sb.from('asistencias').select('*').eq('alumno_id',selectedAsistAlumno.id)
+    .order('fecha',{ascending:false}).limit(100);
+  const rows = hist||[];
+  const nota = rows.length===100 ? '<p class="small-note">Mostrando los últimos 100 registros.</p>' : '';
+  document.getElementById('aa-history').innerHTML = rows.length? `<table><thead><tr><th>Fecha</th><th>Hora</th></tr></thead><tbody>
+    ${rows.map(h=>`<tr><td>${h.fecha}</td><td>${h.hora}</td></tr>`).join('')}</tbody></table>${nota}` : `<p class="small-note">Sin registros de asistencia todavía.</p>`;
 }
 
 /* ================= CARNET ================= */
