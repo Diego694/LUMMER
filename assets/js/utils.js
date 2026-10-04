@@ -206,3 +206,20 @@ export async function downloadFile(filename, content, type = "text/csv;charset=u
 
 export const uid = () =>
   (globalThis.crypto?.randomUUID ? crypto.randomUUID() : "id-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+
+/** Recorta al centro en cuadrado y reduce a `lado`×`lado` JPEG (~30 KB): fotos de perfil ligeras. */
+export async function archivoACuadrado(file, lado = 400) {
+  if (!/^image\//.test(file.type)) throw new Error("El archivo debe ser una imagen.");
+  const dibujar = (fuente, w, h) => {
+    const m = Math.min(w, h), c = document.createElement("canvas");
+    c.width = c.height = lado;
+    c.getContext("2d").drawImage(fuente, (w - m) / 2, (h - m) / 2, m, m, 0, 0, lado, lado);
+    return new Promise((res) => c.toBlob(res, "image/jpeg", 0.85));
+  };
+  if (globalThis.createImageBitmap) {
+    const bm = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const b = await dibujar(bm, bm.width, bm.height); bm.close?.(); return b;
+  }
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
+  return dibujar(img, img.naturalWidth, img.naturalHeight);
+}

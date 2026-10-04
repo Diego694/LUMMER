@@ -122,7 +122,7 @@ export function formModal({ title, fields, submitLabel = "Guardar", onSubmit }) 
     } else if (f.type === "pills") {
       control = `<div class="pill-select" role="radiogroup" data-pills="${f.name}">${f.options.map((o) => `<button type="button" role="radio" aria-checked="${o.value === v}" class="pill ${o.value === v ? "active" : ""}" data-val="${esc(o.value)}">${esc(o.label)}</button>`).join("")}</div><input type="hidden" name="${f.name}" value="${esc(v)}">`;
     } else {
-      control = `<input id="${id}" name="${f.name}" type="${f.type === "date" ? "date" : "text"}" value="${esc(v)}" ${f.max ? `max="${esc(f.max)}"` : ""} placeholder="${esc(f.placeholder || "")}" ${f.required ? "required" : ""} autocomplete="off">`;
+      control = `<input id="${id}" name="${f.name}" type="${f.type === "date" ? "date" : f.type === "password" ? "password" : "text"}" value="${esc(v)}" ${f.max ? `max="${esc(f.max)}"` : ""} placeholder="${esc(f.placeholder || "")}" ${f.required ? "required" : ""} autocomplete="${f.type === "password" ? "new-password" : "off"}">`;
     }
     return `<div class="field ${f.half ? "half" : ""}"><label for="${id}">${esc(f.label)}${f.required ? ' <span class="req">*</span>' : ""}</label>${control}</div>`;
   };

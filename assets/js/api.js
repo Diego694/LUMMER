@@ -32,7 +32,7 @@ class DemoBackend {
     return { id: "demo-user", email: DEMO_USER.email };
   }
   async signOut() { localStorage.removeItem(this.SESSION); }
-  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: "Administrador demo", carrera: null, colegio: this.db.colegio.nombre }; }
+  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: this.db.perfil_nombre || "Administrador demo", carrera: null, foto_path: this.db.foto_perfil ? "local" : null, colegio: this.db.colegio.nombre }; }
   async userId() { return "demo-user"; }
   /** Hora "del servidor". En demo se puede simular un reloj de teléfono desfasado con localStorage ra-sim-desfase-ms. */
   async horaServidor() { return Date.now() + (Number(localStorage.getItem("ra-sim-desfase-ms")) || 0); }
@@ -142,7 +142,7 @@ class SupabaseBackend {
   async getProfile(user) {
     const { data, error } = await this.sb.from("perfiles").select("*, colegios(nombre)").eq("id", user.id).single();
     if (error || !data) throw err("No se encontró un perfil de instituto para esta cuenta.", "profile");
-    return { colegio_id: data.colegio_id, rol: data.rol, nombre: data.nombre, carrera: data.carrera ?? null, colegio: data.colegios?.nombre ?? "" };
+    return { colegio_id: data.colegio_id, rol: data.rol, nombre: data.nombre, carrera: data.carrera ?? null, foto_path: data.foto_path ?? null, colegio: data.colegios?.nombre ?? "" };
   }
 
   // Portal de estudiantes. Todo es opcional: si la migración 002 aún no se aplicó, estas funciones devuelven null y la app sigue igual.
@@ -253,7 +253,7 @@ class LocalBackend extends DemoBackend {
   async init() { return { id: "local-user", email: "local@este-equipo" }; }
   async signIn() { return { id: "local-user", email: "local@este-equipo" }; }
   async signOut() { /* sin cuentas: nada que cerrar */ }
-  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: "Administrador (local)", carrera: null, colegio: this.db.colegio.nombre }; }
+  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: this.db.perfil_nombre || "Administrador (local)", carrera: null, foto_path: this.db.foto_perfil ? "local" : null, colegio: this.db.colegio.nombre }; }
   async userId() { return "local-user"; }
 }
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.7.0 — 2026-10-04
+
+### Añadido
+- **Crear usuarios del personal desde el panel** (correo + contraseña + rol), cambiar su contraseña y eliminarlos. Lo hace la Edge Function `gestionar-personal`, que valida que quien llama sea administrador y solo toca cuentas de su instituto.
+- **Mi perfil**: cada persona del personal sube su **foto** (se muestra en el menú y en la lista de personal), edita su nombre y cambia su contraseña. Bucket privado `fotos-personal` (migración 006).
+- Funciona igual en la web, el programa de PC (modo online) y la app Android.
+
 ## 2.6.0 — 2026-10-04
 
 ### Añadido

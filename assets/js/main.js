@@ -10,6 +10,7 @@ import { enviarPendientes, iniciarLogErrores } from "./errlog.js";
 import { iniciarSelectorModo } from "./modo.js";
 import { activarAvisos, desactivarAvisos } from "./notificaciones.js";
 import { personalPage } from "./pages/personal.js";
+import { perfilPage, pintarAvatar } from "./pages/perfil.js";
 import { esErrorRed, esc, fmtDate, initials, todayStr } from "./utils.js";
 import { dashboardPage } from "./pages/dashboard.js";
 import { registroAlumnoPage, registroMasivoPage, registroQrPage } from "./pages/registro.js";
@@ -23,7 +24,7 @@ import { diagnosticoPage, erroresPage, respaldoPage } from "./pages/sistema.js";
 import { alumnosPage, comunicadosPage, docentesPage, gradosPage, nivelesPage } from "./pages/mantenimiento.js";
 
 const PAGES = [
-  dashboardPage,
+  dashboardPage, perfilPage,
   registroQrPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, avisosPage,
   carnetPage, codigoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, justificacionesPage, comunicadosPage,
@@ -101,7 +102,7 @@ async function entrar(user, guardado = null) {
   $("#user-role").textContent = `${ETIQUETA_ROL[rolActual()]}${perfil.carrera ? " de " + perfil.carrera : ""}${perfil.colegio ? " · " + perfil.colegio : ""}`;
   enviarPendientes();
   activarAvisos(api);
-  $("#user-avatar").textContent = initials(perfil.nombre || perfil.rol);
+  pintarAvatar();
   $("#topbar-date").textContent = fmtDate(todayStr(), { weekday: "short", day: "2-digit", month: "short" });
   $("#mode-badge").hidden = api.mode !== "demo" && api.mode !== "local";
   $("#mode-badge").textContent = api.mode === "local" ? "Modo local" : "Modo demo";

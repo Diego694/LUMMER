@@ -13,12 +13,18 @@
 
 La interfaz oculta lo que no corresponde, pero **la seguridad real está en la base de datos** (políticas RLS): aunque alguien manipule la web, la base rechaza lo no permitido.
 
-## Cómo dar acceso a un docente
-1. En Supabase → **Authentication → Users → Add user**: crea la cuenta (correo y contraseña) y entrégasela al docente. *(Por seguridad, las cuentas con contraseña las crea una persona del instituto, no la aplicación.)*
-2. En la aplicación, como administrador: **Gestión → Personal y accesos → Dar acceso**. Escribe ese correo y elige el rol (Coordinador pide además la carrera).
-3. El docente inicia sesión con su correo y contraseña. Para quitarle el acceso: botón de la papelera en la misma pantalla (la cuenta no se borra).
+## Crear la cuenta de un docente (desde el panel)
+1. Como administrador: **Gestión → Personal y accesos → Crear usuario**.
+2. Escribe su **nombre, correo y contraseña** (mínimo 8 caracteres) y elige el rol (Coordinador pide además la carrera).
+3. Entrégale esos datos. Entra con ese correo y contraseña desde la **web**, el **programa de PC** o la **app Android**.
+4. Después puede cambiar su contraseña y **subir su foto** en **Mi perfil** (clic en su avatar, abajo a la izquierda).
 
-Requisito: tener aplicada la migración `supabase/migrations/005_personal_avisos.sql`.
+Desde la misma pantalla el administrador puede **cambiar la contraseña** de un docente (si la olvidó) o **quitarle el acceso** (se elimina su cuenta). «Dar acceso a cuenta existente» sirve para cuentas ya creadas en Supabase.
+
+### Cómo funciona por dentro (y por qué es seguro)
+Crear una cuenta con contraseña exige la clave de servicio de Supabase, que **nunca** puede estar en el navegador. Por eso la hace una *Edge Function* (`supabase/functions/gestionar-personal`) que corre en Supabase: comprueba que quien llama sea **administrador** y solo actúa sobre cuentas **de su mismo instituto**. Si no estuviera publicada, la pantalla lo avisa.
+
+Requisitos (una sola vez): migraciones `005` y `006` aplicadas y la función `gestionar-personal` publicada (Supabase → Edge Functions; con la opción *Verify JWT* desactivada, porque la propia función valida la sesión).
 
 ## Notificaciones de comunicados en el teléfono
 Cuando un docente o administrador publica un **comunicado** (desde la web o el programa de PC conectado en modo *online*), las apps Android (docente y estudiante) lo muestran como **notificación**, aunque la app esté cerrada.

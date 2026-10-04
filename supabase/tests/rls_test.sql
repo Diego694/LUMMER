@@ -148,4 +148,21 @@ do $$ declare tok text; tokb text; begin
   perform t.root();
 end $$;
 
+-- ===== 13. Foto de perfil del personal =====
+do $$ begin
+  perform t.act('00000000-0000-0000-0000-0000000000d1');
+  perform public.actualizar_mi_perfil('Docente Nuevo Nombre', '00000000-0000-0000-0000-0000000000d1/foto-1.jpg');
+  perform t.falla($q$select public.actualizar_mi_perfil(null, '00000000-0000-0000-0000-0000000000a1/foto-x.jpg')$q$, 'no se puede apuntar a la carpeta de otra persona');
+  perform t.eq(t.dml($q$insert into storage.objects (bucket_id, name) values ('fotos-personal','00000000-0000-0000-0000-0000000000d1/foto-1.jpg')$q$)::text, '1', 'el docente sube a SU carpeta');
+  perform t.falla($q$insert into storage.objects (bucket_id, name) values ('fotos-personal','00000000-0000-0000-0000-0000000000a1/foto.jpg')$q$, 'el docente no sube a la carpeta de otro');
+  perform t.root();
+  perform t.eq((select nombre || '|' || foto_path from perfiles where id = '00000000-0000-0000-0000-0000000000d1'), 'Docente Nuevo Nombre|00000000-0000-0000-0000-0000000000d1/foto-1.jpg', 'nombre y foto guardados');
+  insert into storage.objects (bucket_id, name) values ('fotos-personal', '00000000-0000-0000-0000-0000000000d1/foto-1.jpg'), ('fotos-personal', '00000000-0000-0000-0000-0000000000a2/foto.jpg');
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform t.eq((t.n($q$select 1 from storage.objects where name like '%0000000000d1/%'$q$) > 0)::text, 'true', 'el admin ve la foto de su personal');
+  perform t.eq(t.n($q$select 1 from storage.objects where name like '%0000000000a2/%'$q$)::text, '0', 'el admin NO ve la foto de otro instituto');
+  perform t.eq(t.dml($q$update perfiles set rol = 'Administrador'$q$)::text, '0', 'perfiles no se escribe directamente (nadie se auto-asciende)');
+  perform t.root();
+end $$;
+
 select 'TODAS LAS PRUEBAS DE SEGURIDAD PASARON' as resultado;

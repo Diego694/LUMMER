@@ -54,7 +54,7 @@ def main():
         subprocess.run([bin_ / f"createdb{exe}", "-h", "127.0.0.1", "-p", PUERTO, "-U", "postgres", "prueba"], check=True, capture_output=True)
         orden = [AQUI / "stub_supabase.sql", AQUI / "baseline_produccion.sql", RAIZ / "migrations" / "002_estudiantes.sql",
                  Path(os.environ.get("RA_MIGRACION_004", RAIZ / "migrations" / "004_operacion.sql")),
-                 RAIZ / "migrations" / "005_personal_avisos.sql"]  # RA_MIGRACION_004 permite probar mutaciones
+                 RAIZ / "migrations" / "005_personal_avisos.sql", RAIZ / "migrations" / "006_perfil_personal.sql"]  # RA_MIGRACION_004 permite probar mutaciones
         for f in orden:
             r = psql(f, db="prueba")
             print(("✔ " if r.returncode == 0 else "✘ ") + f.name)

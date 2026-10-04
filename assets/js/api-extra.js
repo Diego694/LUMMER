@@ -94,6 +94,53 @@ export const extrasSupabase = {
     const { error } = await this.sb.rpc("personal_asignar", { p_email: email, p_rol: rol, p_carrera: carrera || null, p_nombre: nombre || null });
     if (error) throw err(error.message, error.code);
   },
+  /** Llama a la Edge Function «gestionar-personal» (crear cuenta, cambiar contraseña, eliminar). */
+  async _personalFn(cuerpo) {
+    const { data, error } = await this.sb.functions.invoke("gestionar-personal", { body: cuerpo });
+    if (error) {
+      let msg = error.message;
+      try { const j = await error.context?.json?.(); if (j?.error) msg = j.error; } catch { /* sin cuerpo */ }
+      if (/Failed to send|NetworkError|fetch/i.test(msg)) msg = "La función de usuarios no está disponible. Revisa que «gestionar-personal» esté publicada en Supabase (docs/ROLES.md).";
+      throw err(msg, error.context?.status);
+    }
+    if (data?.error) throw err(data.error);
+    return data;
+  },
+  personalCrear({ nombre, email, password, rol, carrera }) { return this._personalFn({ accion: "crear", nombre, email, password, rol, carrera }); },
+  personalPassword(id, password) { return this._personalFn({ accion: "password", id, password }); },
+  async personalEliminar(id) {
+    try { return await this._personalFn({ accion: "eliminar", id }); }
+    catch (e) {
+      if (!/no está disponible/.test(e.message)) throw e;
+      return this.personalQuitar(id);   // sin la función publicada: al menos se le quita el acceso (la cuenta queda sin rol)
+    }
+  },
+  async actualizarMiPerfil(nombre) {
+    const { error } = await this.sb.rpc("actualizar_mi_perfil", { p_nombre: nombre, p_path: null });
+    if (error) throw err(error.message, error.code);
+  },
+  async subirFotoPerfil(userId, blob) {
+    const ruta = `${userId}/foto-${Date.now()}.jpg`;
+    const b = this.sb.storage.from("fotos-personal");
+    const { error } = await b.upload(ruta, blob, { contentType: "image/jpeg", upsert: true });
+    if (error) throw err(error.message, error.code);
+    const r = await this.sb.rpc("actualizar_mi_perfil", { p_nombre: null, p_path: ruta });
+    if (r.error) throw err(r.error.message, r.error.code);
+    const { data } = await b.list(userId);
+    const viejas = (data || []).map((f) => `${userId}/${f.name}`).filter((p) => p !== ruta);
+    if (viejas.length) await b.remove(viejas);          // deja solo la foto vigente (mejor esfuerzo)
+    return ruta;
+  },
+  async fotoPersonalUrl(path) {
+    if (!path) return null;
+    this._fotosP ??= new Map();
+    const c = this._fotosP.get(path);
+    if (c && c.hasta > Date.now()) return c.url;
+    const { data, error } = await this.sb.storage.from("fotos-personal").createSignedUrl(path, 3600);
+    if (error || !data?.signedUrl) return null;
+    this._fotosP.set(path, { url: data.signedUrl, hasta: Date.now() + 50 * 60 * 1000 });
+    return data.signedUrl;
+  },
   async personalQuitar(id) {
     const { error } = await this.sb.rpc("personal_quitar", { p_id: id });
     if (error) throw err(error.message, error.code);
@@ -169,6 +216,17 @@ export const extrasDemo = {
     this.db.personal = this.db.personal.filter((x) => x.id !== id); this.persist();
   },
   async tokenAvisos() { return null; },
+  async personalCrear({ nombre, email, rol, carrera }) {
+    await this.personalAsignar(email, rol, carrera, nombre);   // en demo/local no hay cuentas reales: solo la lista
+  },
+  async personalPassword() { /* en demo/local no hay cuentas */ },
+  async personalEliminar(id) { return this.personalQuitar(id); },
+  async actualizarMiPerfil(nombre) { this.db.perfil_nombre = String(nombre || "").trim().slice(0, 80) || this.db.perfil_nombre; this.persist(); },
+  async subirFotoPerfil(_uid, blob) {
+    const dataUrl = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
+    this.db.foto_perfil = dataUrl; this.persist(); return "local";
+  },
+  async fotoPersonalUrl(path) { return path ? this.db.foto_perfil || null : null; },
   async solicitarRecuperacion() { throw err("En modo demo no se envían correos."); },
   async cambiarPassword() { throw err("En modo demo no hay recuperación de contraseña."); },
   alRecuperar() { /* sin eventos en demo */ },
