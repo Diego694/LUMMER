@@ -3,8 +3,8 @@
 // (datos locales en el navegador). Para producción reemplázalos con los de tu proyecto Supabase.
 // La anon key es pública por diseño: la seguridad real la dan las políticas RLS (supabase/schema.sql).
 export const CONFIG = {
-  SUPABASE_URL: "https://TU-PROYECTO.supabase.co",
-  SUPABASE_ANON_KEY: "TU-ANON-KEY-AQUI",
+  SUPABASE_URL: "https://wotumvamyglfquahdnet.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_V0wt4JdNVXHc20_0tJWBHA_D47gcmbf",
 
   APP_NAME: "Sistema de Registro Académico",
   // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
