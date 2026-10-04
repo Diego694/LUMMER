@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Asistencia Escolar</string>
+    <!-- app_name se define por flavor en app/build.gradle (docente / estudiante) -->
 </resources>

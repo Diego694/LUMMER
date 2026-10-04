@@ -13,6 +13,14 @@ Resultados de la verificación realizada sobre esta versión (4 de octubre de 20
 
 ## Resultados
 
+### Versión 2.2.0 (portal del estudiante) — añadido
+- **43/43 tests** en `tests/tests.html` (22 unitarios, 8 adaptador, 13 PWA/puente/portal): se suman la censura de apellidos y el adaptador del portal (parámetros de las funciones SQL, ruta `<uid>/foto-*.jpg`, borrado de fotos anteriores, URL firmada cacheada, mensajes de error, código duplicado).
+- **Recorrido completo en modo demo** (estudiante → docente): validaciones del registro (contraseñas distintas, código inválido, falta de consentimiento), QR único generado, foto subida y comprimida, QR **sin aprobar → alerta "pendiente" y no registra**, revisión con foto y aprobación, y escaneo posterior → **alerta con foto y `Lucía María Qu**** Fl****`**, asistencia registrada y descarga del carnet por el puente Android simulado.
+- Ambas apps cargan bajo la **CSP de producción sin violaciones** (ajustada para permitir imágenes de `*.supabase.co`).
+- Las **dos APK compilan** (`app.registroacademico` y `app.registroacademico.estudiante`), firmadas y con la URL correcta embebida.
+
+**No verificado en 2.2.0:** la migración SQL contra la base real (ver estado en el resumen de la entrega), la cámara/selfie en un teléfono, la subida real al bucket de Storage y las políticas de `storage.objects`, y el APK del estudiante en un dispositivo.
+
 ### Versión 2.1.0 (PWA + APK) — añadido
 - **35/35 tests** en `tests/tests.html`: a los 27 anteriores se suman 6 del **service worker** (se ejecuta su código real contra un entorno simulado: red primero y revalidación `no-cache`, copia offline, fallback de navegación a `index.html`, cache-primero para CDN, y que **no** intercepta Supabase, otros orígenes ni peticiones no-GET) y 2 del **puente Android** simulado (el archivo llega a `saveFile` en base64 y sin puente usa `<a download>`).
 - En la app real con `AndroidBridge` simulado: descarga de CSV, PNG y PDF individual (29 KB) y masivo (65 carnets, 1,8 MB) → `saveFile`; flujo **NFC nativo** (`nfcState` → botón → `onNativeNfc` → asistencia registrada).

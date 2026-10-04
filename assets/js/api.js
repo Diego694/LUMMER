@@ -32,7 +32,14 @@ class DemoBackend {
   async getProfile() { return { colegio_id: this.db.colegio.id, rol: "admin", nombre: "Administrador demo", colegio: this.db.colegio.nombre }; }
   async userId() { return "demo-user"; }
 
+  // El portal de estudiantes (otra página, mismo navegador) escribe en el mismo localStorage: se relee antes de cargar.
+  reload() { try { const d = JSON.parse(localStorage.getItem(this.KEY)); if (d) this.db = d; } catch { /* se conserva la copia en memoria */ } }
+  async getCodigoRegistro() { this.reload(); return this.db.colegio.codigo_registro || null; }
+  async setCodigoRegistro(_cid, codigo) { this.db.colegio.codigo_registro = codigo; this.persist(); }
+  async fotoUrl(alumno) { this.reload(); return this.db.alumnos.find((a) => a.id === alumno.id)?.foto_data || null; }
+
   async loadAll() {
+    this.reload();
     const { alumnos, niveles, grados, comunicados, docentes } = this.db;
     const sort = (a, k) => [...a].sort((x, y) => String(x[k]).localeCompare(String(y[k]), "es", { numeric: true }));
     return {
@@ -104,6 +111,27 @@ class SupabaseBackend {
     const { data, error } = await this.sb.from("perfiles").select("*, colegios(nombre)").eq("id", user.id).single();
     if (error || !data) throw err("No se encontró un perfil de colegio para esta cuenta.", "profile");
     return { colegio_id: data.colegio_id, rol: data.rol, nombre: data.nombre, colegio: data.colegios?.nombre ?? "" };
+  }
+
+  // Portal de estudiantes. Todo es opcional: si la migración 002 aún no se aplicó, estas funciones devuelven null y la app sigue igual.
+  async getCodigoRegistro(cid) {
+    const { data, error } = await this.sb.from("colegios").select("codigo_registro").eq("id", cid).maybeSingle();
+    return error ? null : data?.codigo_registro ?? null;
+  }
+  async setCodigoRegistro(cid, codigo) {
+    const { error } = await this.sb.from("colegios").update({ codigo_registro: codigo }).eq("id", cid);
+    if (error) throw err(error.code === "23505" ? "Ese código ya está en uso, genera otro." : error.message, error.code === "23505" ? "duplicate" : error.code);
+  }
+  /** URL firmada (1 h) de la foto del alumno; el bucket es privado. Cacheada por ruta. */
+  async fotoUrl(alumno) {
+    if (!alumno?.foto_path) return null;
+    this._fotos ??= new Map();
+    const c = this._fotos.get(alumno.foto_path);
+    if (c && c.hasta > Date.now()) return c.url;
+    const { data, error } = await this.sb.storage.from("fotos-alumnos").createSignedUrl(alumno.foto_path, 3600);
+    if (error || !data?.signedUrl) return null;
+    this._fotos.set(alumno.foto_path, { url: data.signedUrl, hasta: Date.now() + 50 * 60 * 1000 });
+    return data.signedUrl;
   }
 
   /** Lee todas las filas paginando de a 1000 (límite por defecto de PostgREST). */

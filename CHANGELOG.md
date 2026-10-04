@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.2.0 — 2026-10-04
+
+### Nuevo
+- **Portal del estudiante** (`estudiante/` + APK **Mi Carnet Escolar**): cuenta, registro con código del colegio, foto (cámara o galería, recortada a 480 px) y carnet descargable con QR único.
+- **Alerta de asistencia con foto** para el docente, con apellidos parcialmente censurados (`censurarNombre`).
+- Aprobación de estudiantes (revisar foto y datos) y generación del **código de registro** del colegio.
+- Migración `002_estudiantes.sql`: columnas, funciones `SECURITY DEFINER`, bucket privado `fotos-alumnos` y políticas.
+- Dos APK desde una misma base nativa (flavors `docente` y `estudiante`).
+- Modo demo forzable con `?demo=1` (datos locales compartidos entre ambas apps).
+
+### Seguridad
+- Los estudiantes no reciben fila en `perfiles`; solo leen su propio registro y usan funciones acotadas.
+- La CSP permite imágenes de `*.supabase.co` (fotos firmadas).
+
 ## 2.1.0 — 2026-10-04
 
 ### Nuevo

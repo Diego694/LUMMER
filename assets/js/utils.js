@@ -57,6 +57,26 @@ export function debounce(fn, ms = 200) {
 }
 export const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
 
+const enmascarar = (w) => (w.length <= 2 ? w[0] + "*" : w.slice(0, 2) + "*".repeat(Math.min(w.length - 2, 6)));
+
+/**
+ * Nombre para mostrar con privacidad: nombres completos y apellidos parcialmente censurados
+ * ("Lucía Quispe Flores" → "Lucía Qu**** Fl****"). Usa nombres/apellidos si existen; si no, deduce:
+ * con 3+ palabras los dos últimos son apellidos; con 2, el último.
+ */
+export function censurarNombre(alumno) {
+  let nombres = (alumno?.nombres || "").trim();
+  let apellidos = (alumno?.apellidos || "").trim();
+  if (!nombres || !apellidos) {
+    const t = (alumno?.nombre || "").trim().split(/\s+/).filter(Boolean);
+    if (t.length >= 3) { nombres = t.slice(0, -2).join(" "); apellidos = t.slice(-2).join(" "); }
+    else if (t.length === 2) { nombres = t[0]; apellidos = t[1]; }
+    else { nombres = t[0] || ""; apellidos = ""; }
+  }
+  const ap = apellidos.split(/\s+/).filter(Boolean).map(enmascarar).join(" ");
+  return [nombres, ap].filter(Boolean).join(" ");
+}
+
 /** Normaliza texto para búsqueda sin tildes ni mayúsculas. */
 export function norm(s) {
   return (s ?? "").toString().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

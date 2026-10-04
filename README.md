@@ -35,6 +35,10 @@ Abre <http://127.0.0.1:8080>. Mientras `assets/js/config.js` tenga los placehold
 4. Edita `assets/js/config.js` con tu `SUPABASE_URL` y `SUPABASE_ANON_KEY` (Settings → API). La *anon key* es pública por diseño; **nunca** pongas la `service_role`.
 5. Sirve el sitio (Docker o GitHub Pages) — ver [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 
+## Portal del estudiante
+
+Segunda app (web + APK **Mi Carnet Escolar**): el estudiante se registra con el código del colegio, sube su foto y obtiene su **carnet con QR único**. Al escanearlo, el docente ve una **alerta con la foto y los apellidos parcialmente censurados**. El colegio aprueba cada registro. Guía y reglas de privacidad en [docs/ESTUDIANTES.md](docs/ESTUDIANTES.md).
+
 ## App Android (APK) y PWA
 
 La misma web funciona en el navegador, como **PWA instalable** y como **APK**. El APK es un envoltorio nativo mínimo que abre tu web publicada, así que **cada cambio que publiques —incluida la conexión a la base de datos— llega solo, sin reinstalar el APK**. Añade lo que un WebView no trae: permiso de cámara, descargas a *Descargas*, selector de archivos y lectura NFC nativa. Detalle, compilación y firma en [docs/ANDROID.md](docs/ANDROID.md).
@@ -53,8 +57,10 @@ assets/js/
   demo-data.js              Generador de datos demo
   pages/                    dashboard · registro · consultas · carnet · mantenimiento
 sw.js · manifest.webmanifest  PWA: arranque sin conexión, actualización "red primero"
-android/                    Envoltorio nativo (WebView) que genera el APK
+estudiante/                 Portal del estudiante (registro, foto, carnet QR)
+android/                    Envoltorio nativo (WebView): 2 APK (docente y estudiante)
 supabase/schema.sql         Esquema PostgreSQL + políticas RLS
+supabase/migrations/        002_estudiantes.sql (portal del estudiante: columnas, funciones, fotos)
 tests/                      Tests: lógica, adaptador Supabase, service worker y puente Android (tests/tests.html)
 scripts/                    serve.py (servidor con CSP) · check.py · make_icons.py · make_keystore.py
 Dockerfile · nginx.conf · security-headers.conf · docker-compose.yml
@@ -81,7 +87,7 @@ docker compose up --build        # http://localhost:8080
 
 ## Documentación
 
-- [Arquitectura](docs/ARQUITECTURA.md) · [Despliegue](docs/DESPLIEGUE.md) · [App Android](docs/ANDROID.md) · [Guía de uso](docs/GUIA-DE-USO.md) · [Pruebas y auditoría](docs/PRUEBAS.md) · [Changelog](CHANGELOG.md)
+- [Arquitectura](docs/ARQUITECTURA.md) · [Despliegue](docs/DESPLIEGUE.md) · [App Android](docs/ANDROID.md) · [Portal del estudiante](docs/ESTUDIANTES.md) · [Guía de uso](docs/GUIA-DE-USO.md) · [Pruebas y auditoría](docs/PRUEBAS.md) · [Changelog](CHANGELOG.md)
 
 ## Licencia
 

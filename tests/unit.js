@@ -1,5 +1,5 @@
 // Tests unitarios sin dependencias. Se ejecutan abriendo tests/tests.html (o con scripts/check.py en CI).
-import { addDays, dateStr, esc, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
+import { addDays, censurarNombre, dateStr, esc, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
 import { bajaAsistencia, esTardanza, normalizarFilasImport, porGrado, resumenAlumno, resumenDia, serieDiaria } from "../assets/js/stats.js";
 
 const results = [];
@@ -30,6 +30,20 @@ test("initials", () => same([initials("ana maría pérez"), initials("")], ["AM"
 test("toCSV escapa comas, comillas y saltos; incluye BOM", () => {
   const csv = toCSV([{ a: 'x,"y"', b: "l1\nl2" }], [{ label: "A", key: "a" }, { label: "B", key: "b" }]);
   assert(csv.startsWith("﻿")); same(csv.slice(1), 'A,B\r\n"x,""y""","l1\nl2"');
+});
+
+test("censurarNombre: usa nombres/apellidos y enmascara solo los apellidos", () => {
+  same(censurarNombre({ nombres: "Lucía María", apellidos: "Quispe Flores" }), "Lucía María Qu**** Fl****");
+});
+test("censurarNombre: deduce apellidos de un nombre completo (3+ palabras, 2 y 1)", () => {
+  same(censurarNombre({ nombre: "Juan Carlos Pérez Ríos" }), "Juan Carlos Pé*** Rí**");
+  same(censurarNombre({ nombre: "Ana Torres" }), "Ana To****");
+  same(censurarNombre({ nombre: "Madonna" }), "Madonna");
+});
+test("censurarNombre: apellidos cortos y vacío no fallan", () => {
+  same(censurarNombre({ nombres: "Li", apellidos: "Wu Xi" }), "Li W* X*");
+  same(censurarNombre({}), "");
+  assert(!censurarNombre({ nombres: "Eva", apellidos: "Castillo" }).includes("Castillo"));
 });
 
 /* stats */

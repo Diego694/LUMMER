@@ -9,7 +9,7 @@ export function esTardanza(hora, limite) {
 
 /** Resumen del día: presentes, tardanzas, ausentes y % sobre alumnos activos. */
 export function resumenDia(alumnos, asistencias, limite) {
-  const activos = alumnos.filter((a) => a.estado === "ACTIVO");
+  const activos = alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false);
   const ids = new Set(activos.map((a) => a.id));
   const delDia = asistencias.filter((x) => ids.has(x.alumno_id));
   const presentes = delDia.length;
@@ -37,7 +37,7 @@ export function serieDiaria(dias, asistencias, totalActivos, limite) {
 export function porGrado(alumnos, asistencias) {
   const presentes = new Set(asistencias.map((a) => a.alumno_id));
   const map = new Map();
-  alumnos.filter((a) => a.estado === "ACTIVO").forEach((a) => {
+  alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false).forEach((a) => {
     const key = `${a.nivel} · ${a.grado}`;
     const g = map.get(key) || { key, nivel: a.nivel, grado: a.grado, total: 0, presentes: 0 };
     g.total++;
@@ -50,7 +50,7 @@ export function porGrado(alumnos, asistencias) {
 }
 
 export function porNivel(alumnos, niveles) {
-  return niveles.map((n) => ({ nivel: n, total: alumnos.filter((a) => a.nivel === n && a.estado === "ACTIVO").length }));
+  return niveles.map((n) => ({ nivel: n, total: alumnos.filter((a) => a.nivel === n && a.estado === "ACTIVO" && a.aprobado !== false).length }));
 }
 
 /**
@@ -63,7 +63,7 @@ export function bajaAsistencia(alumnos, asistencias, umbral, limiteResultados = 
   const conteo = new Map();
   asistencias.forEach((a) => conteo.set(a.alumno_id, (conteo.get(a.alumno_id) || 0) + 1));
   return alumnos
-    .filter((a) => a.estado === "ACTIVO")
+    .filter((a) => a.estado === "ACTIVO" && a.aprobado !== false)
     .map((a) => {
       const presentes = conteo.get(a.id) || 0;
       return { alumno: a, presentes, dias: diasClase.size, pct: pct(presentes, diasClase.size) };

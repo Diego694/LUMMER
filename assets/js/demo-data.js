@@ -21,7 +21,7 @@ export function buildDemoDB() {
   const pick = (a) => a[Math.floor(r() * a.length)];
   const colegioId = "demo-colegio";
   const db = {
-    colegio: { id: colegioId, nombre: "I.E. Demo San Martín" },
+    colegio: { id: colegioId, nombre: "I.E. Demo San Martín", codigo_registro: "DEMO2026" },
     niveles: ["Inicial", "Primaria", "Secundaria"].map((nombre) => ({ id: uid(), colegio_id: colegioId, nombre })),
     grados: GRADOS_DEMO.map(([nivel, nombre]) => ({ id: uid(), colegio_id: colegioId, nivel, nombre })),
     alumnos: [], asistencias: [], docentes: [], comunicados: [],

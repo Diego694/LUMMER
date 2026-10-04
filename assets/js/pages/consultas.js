@@ -39,7 +39,7 @@ export const asistGradoPage = {
       if (!el.isConnected) return; // el usuario ya cambió de página
       const por = new Map(dia.map((x) => [x.alumno_id, x]));
       ag.filas = alumnos.map((a) => ({ a, reg: por.get(a.id) }));
-      const activos = ag.filas.filter((f) => f.a.estado === "ACTIVO");
+      const activos = ag.filas.filter((f) => f.a.estado === "ACTIVO" && f.a.aprobado !== false);
       const pres = activos.filter((f) => f.reg).length;
       const tardes = activos.filter((f) => f.reg && esTardanza(f.reg.hora, CONFIG.HORA_LIMITE)).length;
       root.querySelector("#ag-kpis").innerHTML =
@@ -49,7 +49,7 @@ export const asistGradoPage = {
       el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Código</th><th>Grado</th><th>Estado</th><th>Hora</th></tr></thead><tbody>
         ${ag.filas.map(({ a, reg }) => `<tr><td><div class="person"><span class="avatar">${esc(initials(a.nombre))}</span><span>${esc(a.nombre)}</span></div></td>
           <td class="mono">${esc(a.codigo)}</td><td>${esc(a.grado)}</td>
-          <td>${a.estado !== "ACTIVO" ? badge("Inactivo", "neutral") : !reg ? badge("Ausente", "red") : esTardanza(reg.hora, CONFIG.HORA_LIMITE) ? badge("Tardanza", "amber") : badge("Presente", "green")}</td>
+          <td>${a.aprobado === false ? badge("Pendiente", "amber") : a.estado !== "ACTIVO" ? badge("Inactivo", "neutral") : !reg ? badge("Ausente", "red") : esTardanza(reg.hora, CONFIG.HORA_LIMITE) ? badge("Tardanza", "amber") : badge("Presente", "green")}</td>
           <td class="mono">${reg ? esc(reg.hora.slice(0, 5)) : "—"}</td></tr>`).join("")}</tbody></table></div>`;
     }
   },

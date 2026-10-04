@@ -52,7 +52,7 @@ function pintar() {
   const { dias, filas, hoy, actualizado } = cache;
   const L = CONFIG.HORA_LIMITE;
   const r = resumenDia(DB.alumnos, hoy, L);
-  const activosIds = new Set(DB.alumnos.filter((a) => a.estado === "ACTIVO").map((a) => a.id));
+  const activosIds = new Set(DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false).map((a) => a.id));
   const serie = serieDiaria(dias, filas.filter((f) => activosIds.has(f.alumno_id)), r.activos, L);
   const previos = serie.filter((s) => s.fecha !== todayStr() && s.presentes > 0);
   const promedio = previos.length ? Math.round(previos.reduce((t, s) => t + s.pct, 0) / previos.length) : 0;

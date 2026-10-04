@@ -4,11 +4,13 @@ import { CONFIG } from "../config.js";
 import { DB, alumnoPorCodigo, asegurarHoy, opcionesGrado, opcionesNivel, refreshHoy } from "../state.js";
 import { badge, emptyState, icon, pageHead, registerActions, toast } from "../ui.js";
 import { esTardanza } from "../stats.js";
-import { debounce, esc, initials, norm, nowHHMM, todayStr } from "../utils.js";
+import { mostrarAlertaAsistencia } from "../alerta.js";
+import { censurarNombre, debounce, esc, initials, norm, nowHHMM, todayStr } from "../utils.js";
 
-/** Registra la asistencia de hoy. Devuelve 'ok' | 'dup' | 'inactivo'. Muestra errores reales (no los traga). */
+/** Registra la asistencia de hoy. Devuelve 'ok' | 'dup' | 'inactivo' | 'pendiente'. Muestra errores reales (no los traga). */
 export async function registrarHoy(alumno) {
   if (alumno.estado !== "ACTIVO") return "inactivo";
+  if (alumno.aprobado === false) return "pendiente"; // auto‑registrado: el colegio aún no aprobó su QR
   await asegurarHoy();
   if (DB.hoy.some((x) => x.alumno_id === alumno.id)) return "dup";
   const hora = nowHHMM();
@@ -75,13 +77,15 @@ async function procesarCodigo(codigo, avisarSiNoExiste) {
   try { res = await registrarHoy(a); } catch (e) { toast("Error al registrar: " + e.message, "error"); return null; }
   const box = document.getElementById("scan-result");
   const hora = res?.hora;
-  const entrada = { alumno: a, estado: res === "dup" ? "dup" : res === "inactivo" ? "inactivo" : "ok", hora: hora || DB.hoy.find((x) => x.alumno_id === a.id)?.hora || "" };
+  const estado = res === "dup" ? "dup" : res === "inactivo" ? "inactivo" : res === "pendiente" ? "pendiente" : "ok";
+  const entrada = { alumno: a, estado, hora: hora || DB.hoy.find((x) => x.alumno_id === a.id)?.hora || "" };
   scanLog.unshift(entrada); scanLog = scanLog.slice(0, 12);
   if (box) {
-    const tipo = { ok: ["ok", "Asistencia registrada"], dup: ["warn", "Ya estaba registrado hoy"], inactivo: ["err", "Alumno inactivo — no se registra"] }[entrada.estado];
+    const tipo = { ok: ["ok", "Asistencia registrada"], dup: ["warn", "Ya estaba registrado hoy"], pendiente: ["warn", "Registro pendiente de aprobación"], inactivo: ["err", "Alumno inactivo — no se registra"] }[estado];
     box.hidden = false; box.className = `scan-result scan-${tipo[0]}`;
-    box.innerHTML = `<span class="avatar">${esc(initials(a.nombre))}</span><div><strong>${esc(a.nombre)}</strong><small>${esc(a.nivel)} · ${esc(a.grado)}${entrada.hora ? " · " + esc(entrada.hora) : ""}</small><em>${tipo[1]}${entrada.estado === "ok" && esTardanza(entrada.hora, CONFIG.HORA_LIMITE) ? " (tardanza)" : ""}</em></div>`;
+    box.innerHTML = `<span class="avatar">${esc(initials(a.nombre))}</span><div><strong>${esc(censurarNombre(a))}</strong><small>${esc(a.nivel)} · ${esc(a.grado)}${entrada.hora ? " · " + esc(entrada.hora) : ""}</small><em>${tipo[1]}${estado === "ok" && esTardanza(entrada.hora, CONFIG.HORA_LIMITE) ? " (tardanza)" : ""}</em></div>`;
   }
+  mostrarAlertaAsistencia(a, { tipo: estado, hora: entrada.hora });
   pintarLog();
   return a;
 }
@@ -90,8 +94,8 @@ function pintarLog() {
   const el = document.getElementById("scan-log");
   if (!el) return;
   document.getElementById("scan-count").textContent = scanLog.length ? `${scanLog.filter((s) => s.estado === "ok").length} nuevos` : "";
-  el.innerHTML = scanLog.length ? `<ul class="log-list">${scanLog.map((s) => `<li><div class="person"><span class="avatar">${esc(initials(s.alumno.nombre))}</span><div><strong>${esc(s.alumno.nombre)}</strong><small>${esc(s.alumno.grado)}</small></div></div>
-    <div class="log-right"><span class="mono">${esc(s.hora)}</span>${s.estado === "ok" ? badge("Registrado", "green") : s.estado === "dup" ? badge("Duplicado", "amber") : badge("Inactivo", "neutral")}</div></li>`).join("")}</ul>`
+  el.innerHTML = scanLog.length ? `<ul class="log-list">${scanLog.map((s) => `<li><div class="person"><span class="avatar">${esc(initials(s.alumno.nombre))}</span><div><strong>${esc(censurarNombre(s.alumno))}</strong><small>${esc(s.alumno.grado)}</small></div></div>
+    <div class="log-right"><span class="mono">${esc(s.hora)}</span>${s.estado === "ok" ? badge("Registrado", "green") : s.estado === "dup" ? badge("Duplicado", "amber") : s.estado === "pendiente" ? badge("Pendiente", "amber") : badge("Inactivo", "neutral")}</div></li>`).join("")}</ul>`
     : emptyState("Sin registros todavía", "Cada ingreso escaneado aparecerá aquí.", "qr");
 }
 
@@ -206,7 +210,7 @@ export const registroAlumnoPage = {
     function pintar() {
       const q = norm(ra.q);
       const ya = new Set(DB.hoy.map((x) => x.alumno_id));
-      const list = DB.alumnos.filter((a) => a.estado === "ACTIVO" && (!q || norm(`${a.nombre} ${a.codigo}`).includes(q))
+      const list = DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false && (!q || norm(`${a.nombre} ${a.codigo}`).includes(q))
         && (ra.solo === "todos" || (ra.solo === "presentes") === ya.has(a.id)));
       const el = root.querySelector("#ra-list");
       if (!list.length) { el.innerHTML = emptyState("Sin resultados", "Prueba con otro nombre o cambia el filtro.", "search"); return; }
@@ -244,7 +248,7 @@ export const registroMasivoPage = {
     fecha.addEventListener("change", () => { rm.fecha = fecha.value || todayStr(); pintar(); });
     await pintar();
     async function pintar() {
-      const list = DB.alumnos.filter((a) => a.estado === "ACTIVO" && (!rm.nivel || a.nivel === rm.nivel) && (!rm.grado || a.grado === rm.grado));
+      const list = DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false && (!rm.nivel || a.nivel === rm.nivel) && (!rm.grado || a.grado === rm.grado));
       root.querySelector("#rm-count").textContent = `${list.length} alumno(s) activos en este grupo`;
       const el = root.querySelector("#rm-list");
       if (!list.length) { el.innerHTML = emptyState("Sin alumnos", "Elige un nivel y grado con alumnos activos.", "users"); return; }
@@ -270,7 +274,7 @@ registerActions({
     el.disabled = true;
     try {
       const r = await registrarHoy(a);
-      toast(r === "dup" ? "Ya estaba registrado hoy" : `Asistencia registrada: ${a.nombre}`, r === "dup" ? "info" : "success");
+      mostrarAlertaAsistencia(a, { tipo: typeof r === "string" ? r : "ok", hora: r?.hora || DB.hoy.find((x) => x.alumno_id === a.id)?.hora || "" });
     } catch (e) { toast("Error al registrar: " + e.message, "error"); }
     document.getElementById("page-root")._repaint?.();
   },

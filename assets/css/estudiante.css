@@ -1,0 +1,37 @@
+/* Portal del estudiante (móvil primero). Reutiliza los tokens y componentes de styles.css. */
+body.est{min-height:100vh;display:flex;flex-direction:column}
+.est-top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--panel);border-bottom:1px solid var(--line)}
+.est-top .brand strong{display:block;font:700 15px 'Space Grotesk',sans-serif}.est-top .brand small{color:var(--ink-soft);font-size:11.5px}
+.est-main{flex:1;width:100%;max-width:520px;margin:0 auto;padding:20px 16px 40px;outline:none}
+.est-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:22px;margin-bottom:16px}
+.est-card h1,.est-card h2{font-size:21px;margin:0 0 4px}.est-sub{color:var(--ink-soft);margin:0 0 18px;font-size:13.5px}
+.tabs-est{display:flex;gap:4px;background:var(--muted-bg);border-radius:12px;padding:4px;margin-bottom:18px}
+.tabs-est button{flex:1;border:0;background:transparent;color:var(--ink-soft);padding:10px;border-radius:9px;font-weight:600;font-size:14px}
+.tabs-est button.active{background:var(--panel);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.est-form .field{margin-bottom:14px}.est-form .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--ink-soft);margin:6px 0 16px;line-height:1.45}.consent input{margin-top:3px;width:18px;height:18px;accent-color:var(--teal);flex:none}
+.school-ok{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--teal-soft);color:var(--teal);font-weight:600;margin-bottom:16px}
+.steps{display:flex;gap:6px;margin-bottom:18px}.steps span{flex:1;height:5px;border-radius:9px;background:var(--line)}.steps span.on{background:var(--amber)}
+
+/* Carnet del estudiante */
+.carnet-est{border-radius:22px;background:linear-gradient(145deg,#16223D,#22335A 70%,#2D4378);color:#fff;padding:22px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.carnet-est::after{content:"";position:absolute;right:-50px;top:-50px;width:170px;height:170px;border-radius:50%;background:rgba(232,163,61,.17)}
+.carnet-est>*{position:relative;z-index:1}
+.ce-head{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--amber);text-transform:uppercase}
+.ce-id{display:flex;gap:16px;align-items:center;margin:16px 0}
+.ce-foto{width:104px;height:104px;border-radius:50%;flex:none;overflow:hidden;background:rgba(255,255,255,.1);border:3px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font:700 32px 'Space Grotesk',sans-serif;color:var(--amber);position:relative}
+.ce-foto img{width:100%;height:100%;object-fit:cover}
+.ce-name{font:700 21px 'Space Grotesk',sans-serif;line-height:1.15;overflow-wrap:anywhere}.ce-meta{color:#CFD7EA;font-size:13px;margin-top:4px}
+.ce-qr{background:#fff;border-radius:16px;padding:14px;display:flex;justify-content:center;margin-top:6px}
+.ce-code{text-align:center;font:500 12px 'JetBrains Mono',monospace;color:#B8C2DC;margin-top:10px;letter-spacing:.08em}
+.estado-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;margin-top:10px}
+.estado-ok{background:rgba(60,196,166,.2);color:#6FE3C8}.estado-pend{background:rgba(232,163,61,.22);color:#F3C27A}
+.est-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.est-actions .btn{width:100%}
+.aviso{padding:12px 14px;border-radius:12px;background:var(--amber-soft);color:var(--amber-dark);font-size:13px;margin-top:14px;line-height:1.45}
+
+/* Captura de foto */
+.cam-box{position:relative;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;background:#0A101D;margin-bottom:12px}
+.cam-box video,.cam-box canvas,.cam-box img{width:100%;height:100%;object-fit:cover;display:block}
+.cam-box.espejo video{transform:scaleX(-1)}
+.cam-guia{position:absolute;inset:12%;border:2px dashed rgba(255,255,255,.7);border-radius:50%;pointer-events:none}
+.cam-botones{display:flex;gap:8px;flex-wrap:wrap}.cam-botones .btn{flex:1;min-width:120px}

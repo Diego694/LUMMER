@@ -55,24 +55,29 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: gradle assembleRelease --no-daemon -PAPP_URL="$APP_URL" -PAPP_VERSION_CODE="${{ github.run_number }}"
+        run: gradle assembleDocenteRelease assembleEstudianteRelease --no-daemon -PAPP_URL="$APP_URL" -PAPP_VERSION_CODE="${{ github.run_number }}"
 
       - name: Renombrar y verificar
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk asistencia-escolar.apk
-          ls -lh asistencia-escolar.apk
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs asistencia-escolar.apk | head -3
+          cp android/app/build/outputs/apk/docente/release/app-docente-release.apk asistencia-escolar.apk
+          cp android/app/build/outputs/apk/estudiante/release/app-estudiante-release.apk carnet-estudiante.apk
+          ls -lh asistencia-escolar.apk carnet-estudiante.apk
+          for f in asistencia-escolar.apk carnet-estudiante.apk; do
+            "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$f" | head -3
+          done
 
       - uses: actions/upload-artifact@v4
         with:
-          name: asistencia-escolar-apk
-          path: asistencia-escolar.apk
+          name: apks
+          path: |
+            asistencia-escolar.apk
+            carnet-estudiante.apk
 
       - name: Publicar enlace de descarga estable (release apk-latest)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete apk-latest --cleanup-tag --yes || true
-          gh release create apk-latest asistencia-escolar.apk \
+          gh release create apk-latest asistencia-escolar.apk carnet-estudiante.apk \
             --title "APK Android (última versión)" \
-            --notes "Instala este APK en el teléfono. Se conecta a ${APP_URL} y se actualiza solo: no necesitas reinstalar cuando cambia la web. Compilación #${{ github.run_number }} · commit ${GITHUB_SHA::7}."
+            --notes "**asistencia-escolar.apk** → app del docente (registro de asistencia, QR/NFC, dashboard). **carnet-estudiante.apk** → app del estudiante (registro, foto y carnet con QR). Ambas abren ${APP_URL} y se actualizan solas: no hace falta reinstalar cuando cambia la web. Compilación #${{ github.run_number }} · commit ${GITHUB_SHA::7}."
