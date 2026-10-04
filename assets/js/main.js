@@ -8,6 +8,8 @@ import { bindActions, confirmDialog, emptyState, icon, registerActions, setAutor
 import { ETIQUETA_ROL, aplicarPermisos, esAdmin, instalarEstiloPermisos, puede, rolActual } from "./permisos.js";
 import { enviarPendientes, iniciarLogErrores } from "./errlog.js";
 import { iniciarSelectorModo } from "./modo.js";
+import { activarAvisos, desactivarAvisos } from "./notificaciones.js";
+import { personalPage } from "./pages/personal.js";
 import { esErrorRed, esc, fmtDate, initials, todayStr } from "./utils.js";
 import { dashboardPage } from "./pages/dashboard.js";
 import { registroAlumnoPage, registroMasivoPage, registroQrPage } from "./pages/registro.js";
@@ -24,7 +26,7 @@ const PAGES = [
   dashboardPage,
   registroQrPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, avisosPage,
-  carnetPage, codigoPage, alumnosPage, docentesPage, nivelesPage, gradosPage, cursosPage, justificacionesPage, comunicadosPage,
+  carnetPage, codigoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, justificacionesPage, comunicadosPage,
   diagnosticoPage, respaldoPage, erroresPage,
 ];
 const $ = (s) => document.querySelector(s);
@@ -98,6 +100,7 @@ async function entrar(user, guardado = null) {
   buildNav();
   $("#user-role").textContent = `${ETIQUETA_ROL[rolActual()]}${perfil.carrera ? " de " + perfil.carrera : ""}${perfil.colegio ? " · " + perfil.colegio : ""}`;
   enviarPendientes();
+  activarAvisos(api);
   $("#user-avatar").textContent = initials(perfil.nombre || perfil.rol);
   $("#topbar-date").textContent = fmtDate(todayStr(), { weekday: "short", day: "2-digit", month: "short" });
   $("#mode-badge").hidden = api.mode !== "demo" && api.mode !== "local";
@@ -126,6 +129,7 @@ function pintarChip(s) {
 
 async function salir() {
   await actual?.onLeave?.(); actual = null; logged = false;
+  desactivarAvisos();
   borrarPerfil();  // otra persona en este teléfono no debe entrar con el perfil guardado de la anterior (la cola de envíos se conserva)
   await api.signOut();
   $("#app").hidden = true; $("#login-screen").hidden = false;

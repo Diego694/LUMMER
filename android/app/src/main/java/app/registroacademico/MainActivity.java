@@ -53,6 +53,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
 
     private static final int REQ_CAMERA = 1;
     private static final int REQ_FILE = 2;
+    private static final int REQ_NOTIF = 3;
     private static final long RELOAD_AFTER_MS = 15 * 60 * 1000; // al volver tras 15 min en segundo plano, trae la última versión
 
     private WebView web;
@@ -111,6 +112,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
         if (pausedAt != 0 && SystemClock.elapsedRealtime() - pausedAt > RELOAD_AFTER_MS) web.reload();
         pausedAt = 0;
         if (nfcWanted) enableNfc();
+        if (Avisos.activo(this)) new Thread(() -> Avisos.consultar(getApplicationContext())).start();   // al abrir la app, revisa de inmediato
     }
 
     @Override
@@ -269,6 +271,11 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
         fileCallback = null;
     }
 
+    private void pedirPermisoNotificaciones() {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIF);
+    }
+
     /* ------------------------------------ NFC ------------------------------------ */
 
     private void enableNfc() {
@@ -325,6 +332,20 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
             if (nfc == null) return "none";
             return nfc.isEnabled() ? "on" : "off";
         }
+
+        /** La web entrega servidor, clave pública y token de avisos tras iniciar sesión: activa las notificaciones de comunicados. */
+        @JavascriptInterface
+        public boolean configurarAvisos(String url, String key, String token) {
+            boolean ok = Avisos.configurar(getApplicationContext(), url, key, token);
+            if (ok) runOnUiThread(() -> {
+                pedirPermisoNotificaciones();
+                new Thread(() -> Avisos.consultar(getApplicationContext())).start();   // marca el punto de partida
+            });
+            return ok;
+        }
+
+        @JavascriptInterface
+        public void detenerAvisos() { Avisos.detener(getApplicationContext()); }
 
         @JavascriptInterface
         public void startNfc() { nfcWanted = true; runOnUiThread(MainActivity.this::enableNfc); }

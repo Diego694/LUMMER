@@ -16,7 +16,7 @@ export const esAdmin = () => rolActual() === "admin";
 /** Acciones (data-action) que solo puede hacer el administrador. */
 export const ACCIONES_ADMIN = [
   "nivel-new", "nivel-del", "grado-new", "grado-del", "ciclos-new", "al-new", "al-edit", "al-del", "al-import", "al-revisar",
-  "do-new", "do-edit", "do-del", "co-new", "co-del", "cd-generar", "cd-regenerar", "cd-copiar", "cd-copiar-msg", "curso-new", "curso-edit", "curso-del",
+  "do-new", "do-edit", "do-del", "co-del", "cd-generar", "cd-regenerar", "pers-new", "pers-edit", "pers-del", "curso-new", "curso-edit", "curso-del",
   "just-del", "err-borrar", "respaldo-json", "respaldo-csv-alumnos", "respaldo-csv-asistencias",
 ];
 const SET = new Set(ACCIONES_ADMIN);
@@ -27,7 +27,7 @@ export function instalarEstiloPermisos() {
   if (document.getElementById("estilo-permisos")) return;
   const st = document.createElement("style");
   st.id = "estilo-permisos";
-  st.textContent = ACCIONES_ADMIN.map((a) => `body.rol-limitado [data-action="${a}"]`).join(",") + "{display:none!important}";
+  st.textContent = ACCIONES_ADMIN.map((a) => `body.rol-limitado [data-action="${a}"]`).join(",") + ",body.rol-limitado .solo-admin{display:none!important}";
   document.head.appendChild(st);
 }
 export function aplicarPermisos() {

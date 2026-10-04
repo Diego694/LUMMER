@@ -7,6 +7,7 @@
 - [App Android](ANDROID.md) · [Portal del estudiante](ESTUDIANTES.md)
 
 ## Puesta en marcha y operación
+- [Roles y accesos · notificaciones](ROLES.md)
 - [Despliegue](DESPLIEGUE.md) · [Entornos y dominio propio](ENTORNOS.md)
 - [Operación: respaldos y pausa del plan gratuito](OPERACION.md)
 - [Prueba piloto](PILOTO.md)

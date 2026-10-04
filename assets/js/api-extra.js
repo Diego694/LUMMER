@@ -85,6 +85,23 @@ export const extrasSupabase = {
     const rutas = (data || []).map((f) => `${carpeta}/${f.name}`);
     if (rutas.length) await this.sb.storage.from("fotos-alumnos").remove(rutas);
   },
+  async personalListar() {
+    const { data, error } = await this.sb.rpc("personal_listar");
+    if (error) throw err(error.message, error.code);
+    return data || [];
+  },
+  async personalAsignar(email, rol, carrera, nombre) {
+    const { error } = await this.sb.rpc("personal_asignar", { p_email: email, p_rol: rol, p_carrera: carrera || null, p_nombre: nombre || null });
+    if (error) throw err(error.message, error.code);
+  },
+  async personalQuitar(id) {
+    const { error } = await this.sb.rpc("personal_quitar", { p_id: id });
+    if (error) throw err(error.message, error.code);
+  },
+  async tokenAvisos() {
+    const { data, error } = await this.sb.rpc("token_avisos");
+    return error ? null : data;   // sin la migración 005 simplemente no hay avisos
+  },
   async solicitarRecuperacion(email, redirectTo) {
     const { error } = await this.sb.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     if (error) throw err(/rate limit/i.test(error.message) ? "Se enviaron demasiados correos. Espera unos minutos e inténtalo de nuevo." : error.message, error.code);
@@ -132,6 +149,26 @@ export const extrasDemo = {
     return Object.fromEntries(Object.entries(map).map(([t, k]) => [t, JSON.parse(JSON.stringify(this.db[k] || []))]));
   },
   async eliminarFotoAlumno() { /* en demo la foto vive dentro del propio registro */ },
+  async personalListar() {
+    this.db.personal = this.db.personal || [{ id: "demo-user", email: "demo@instituto.pe", nombre: "Administrador", rol: "Administrador", carrera: null }];
+    return JSON.parse(JSON.stringify(this.db.personal));
+  },
+  async personalAsignar(email, rol, carrera, nombre) {
+    await this.personalListar();
+    if (!/^\S+@\S+\.\S+$/.test(String(email).trim())) throw err("No existe una cuenta con ese correo. Créala primero en Supabase → Authentication → Users.");
+    if (rol === "Coordinador" && !carrera) throw err("El coordinador necesita una carrera existente");
+    const e = String(email).trim().toLowerCase();
+    const p = this.db.personal.find((x) => x.email === e);
+    if (p) Object.assign(p, { rol, carrera: rol === "Coordinador" ? carrera : null, nombre: nombre || p.nombre });
+    else this.db.personal.push({ id: uid(), email: e, nombre: nombre || null, rol, carrera: rol === "Coordinador" ? carrera : null });
+    this.persist();
+  },
+  async personalQuitar(id) {
+    await this.personalListar();
+    if (id === "demo-user") throw err("No puedes quitarte el acceso a ti mismo");
+    this.db.personal = this.db.personal.filter((x) => x.id !== id); this.persist();
+  },
+  async tokenAvisos() { return null; },
   async solicitarRecuperacion() { throw err("En modo demo no se envían correos."); },
   async cambiarPassword() { throw err("En modo demo no hay recuperación de contraseña."); },
   alRecuperar() { /* sin eventos en demo */ },

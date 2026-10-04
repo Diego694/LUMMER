@@ -74,6 +74,7 @@ class DemoEstudiante {
     return { id: u.id, email: e };
   }
   async signOut() { localStorage.removeItem(this.SESSION); }
+  async tokenAvisos() { return null; }
 
   async infoColegio(codigo) {
     const db = this.load();
@@ -179,6 +180,7 @@ class SupabaseEstudiante {
     return r;
   }
   miRegistro() { return this.#rpc("mi_registro", {}); }
+  async tokenAvisos() { try { return await this.#rpc("token_avisos", {}); } catch { return null; } }
   async subirFoto(user, blob) {
     const path = `${user.id}/foto-${Date.now()}.jpg`;
     const { error } = await this.sb.storage.from("fotos-alumnos").upload(path, blob, { contentType: "image/jpeg", upsert: true });

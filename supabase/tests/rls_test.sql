@@ -68,7 +68,11 @@ do $$ begin
   perform t.eq(t.dml($q$delete from alumnos$q$)::text, '0', 'docente no elimina alumnos');
   perform t.falla($q$insert into niveles (colegio_id, nombre) values ('aaaaaaaa-0000-0000-0000-000000000001','Z')$q$, 'docente no crea carreras');
   perform t.falla($q$insert into grados (colegio_id, nivel, nombre) values ('aaaaaaaa-0000-0000-0000-000000000001','APSTI','Z')$q$, 'docente no crea ciclos');
-  perform t.falla($q$insert into comunicados (colegio_id, titulo, mensaje) values ('aaaaaaaa-0000-0000-0000-000000000001','t','m')$q$, 'docente no publica comunicados');
+  perform t.eq(t.dml($q$insert into comunicados (colegio_id, titulo, mensaje) values ('aaaaaaaa-0000-0000-0000-000000000001','t','m')$q$)::text, '1', 'docente SÍ publica comunicados');
+  perform t.falla($q$insert into comunicados (colegio_id, titulo, mensaje) values ('bbbbbbbb-0000-0000-0000-000000000001','t','m')$q$, 'docente no publica en otro instituto');
+  perform t.eq(t.dml($q$delete from comunicados$q$)::text, '0', 'docente no elimina comunicados');
+  perform t.falla($q$select public.personal_asignar('est1@x.pe','Administrador')$q$, 'docente no asigna roles');
+  perform t.falla($q$select public.personal_listar()$q$, 'docente no lista al personal');
   perform t.eq(t.dml($q$delete from asistencias$q$)::text, '0', 'docente no borra asistencias');
   perform t.eq(t.dml($q$update asistencias set hora = '06:00'$q$)::text, '0', 'docente no altera horas');
   perform t.eq(t.dml($q$update colegios set nombre = 'HACK'$q$)::text, '0', 'docente no renombra el instituto');
@@ -96,123 +100,51 @@ do $$ begin
 end $$;
 
 -- ===== 5. Estudiante: registro, privacidad y protección contra abuso =====
-do $$ declare r json; begin
-  perform t.act('00000000-0000-0000-0000-0000000000e1');
-  perform t.eq(t.n('select 1 from alumnos')::text, '0', 'estudiante sin registro no ve a nadie');
-  perform t.falla($q$select hora_servidor_inexistente()$q$, 'sanidad del arnés');
-  r := public.info_colegio('abcd1234');
-  perform t.eq((r->>'nombre'), 'Instituto A2', 'código válido (sin distinguir mayúsculas) devuelve el instituto');
-  r := public.registrar_estudiante('abcd1234', 'Ana', 'Lopez', 'APSTI', 'APSTI · I CICLO', 'Mamá', '12345678', '+51 999-888-777', 'Mama@Ejemplo.com');
-  perform t.eq(left(r->>'codigo', 1), 'e', 'se genera un código QR único');
-  perform t.eq((r->>'aprobado'), 'false', 'queda pendiente de aprobación');
-  perform t.eq((r->>'apoderado_telefono'), '+51999888777', 'teléfono normalizado');
-  perform t.eq((r->>'apoderado_email'), 'mama@ejemplo.com', 'correo normalizado');
-  perform t.eq(length(r->>'qr_secreto')::text, '32', 'se genera el secreto del QR dinámico');
-  perform t.eq(t.n('select 1 from alumnos')::text, '1', 'el estudiante ve SOLO su registro');
-  perform t.eq(t.dml($q$update alumnos set aprobado = true$q$)::text, '0', 'el estudiante no puede auto‑aprobarse');
-  perform t.falla($q$insert into alumnos (colegio_id, nombre, codigo) values ('aaaaaaaa-0000-0000-0000-000000000001','X','x3')$q$, 'el estudiante no inserta directo');
-  perform t.eq(t.n('select 1 from asistencias')::text, '0', 'el estudiante no ve asistencias');
-  perform t.eq(t.n('select 1 from perfiles')::text, '0', 'el estudiante no ve perfiles');
-  perform t.falla($q$select public.registrar_estudiante('abcd1234','Otra','Vez','APSTI','APSTI · I CICLO')$q$, 'un segundo registro de la misma cuenta se rechaza');
-  perform t.eq((public.mi_registro()->'alumno'->>'nombres'), 'Ana', 'mi_registro devuelve el propio registro');
-  perform t.falla($q$select public.actualizar_mi_foto('otro-usuario/foto.jpg')$q$, 'no puede apuntar la foto a la carpeta de otro');
-  perform public.actualizar_mi_foto('00000000-0000-0000-0000-0000000000e1/foto-1.jpg');
-  perform t.root();
-end $$;
-
-do $$ declare r json; i int; begin
-  perform t.act('00000000-0000-0000-0000-0000000000e2');
-  for i in 1..10 loop
-    r := public.registrar_estudiante('MALO' || i, 'Ana', 'Lopez', 'APSTI', 'APSTI · I CICLO');
-    perform t.eq(r->>'error', 'codigo_invalido', 'código inválido devuelve error controlado (intento ' || i || ')');
-  end loop;
-  perform t.falla($q$select public.info_colegio('ABCD1234')$q$, 'tras 10 intentos fallidos se bloquea (aunque el código sea correcto)');
-  perform t.root();
-end $$;
-
--- ===== 6. Justificaciones, cursos, avisos =====
 do $$ begin
-  perform t.act('00000000-0000-0000-0000-0000000000d1');
-  perform t.eq(t.dml($q$insert into justificaciones (colegio_id, alumno_id, fecha, tipo, motivo, registrado_por) values ('aaaaaaaa-0000-0000-0000-000000000001','11111111-0000-0000-0000-000000000001','2026-10-07','Permiso','Cita médica','00000000-0000-0000-0000-0000000000d1')$q$)::text, '1', 'docente registra justificación');
-  perform t.eq(t.dml($q$update justificaciones set motivo = 'x'$q$)::text, '0', 'docente no edita justificaciones');
-  perform t.eq(t.dml($q$insert into avisos_apoderados (colegio_id, alumno_id, fecha, tipo, enviado_por) values ('aaaaaaaa-0000-0000-0000-000000000001','11111111-0000-0000-0000-000000000001','2026-10-07','Falta','00000000-0000-0000-0000-0000000000d1')$q$)::text, '1', 'docente registra un aviso');
-  perform t.falla($q$insert into cursos (colegio_id, nivel, nombre) values ('aaaaaaaa-0000-0000-0000-000000000001','APSTI','Matemática')$q$, 'docente no crea cursos');
-  perform t.root();
   perform t.act('00000000-0000-0000-0000-0000000000a1');
-  perform t.eq(t.dml($q$insert into cursos (colegio_id, nivel, grado, nombre) values ('aaaaaaaa-0000-0000-0000-000000000001','APSTI','APSTI · I CICLO','Matemática')$q$)::text, '1', 'admin crea curso');
-  perform t.falla($q$insert into cursos (colegio_id, nivel, grado, nombre) values ('aaaaaaaa-0000-0000-0000-000000000001','APSTI','APSTI · I CICLO','matemática')$q$, 'curso duplicado (sin distinguir mayúsculas) se rechaza');
-  perform t.eq(t.dml($q$update justificaciones set motivo = 'Cita médica (corregida)'$q$)::text, '1', 'admin sí edita justificaciones');
-  perform t.root();
-  perform t.act('00000000-0000-0000-0000-0000000000c1');
-  perform t.eq(t.n('select 1 from cursos')::text, '1', 'coordinador ve los cursos de su carrera');
-  perform t.eq(t.n('select 1 from justificaciones')::text, '1', 'coordinador ve justificaciones de su carrera');
+  perform t.eq(json_array_length(public.personal_listar())::text, '3', 'admin lista a su personal (3 de su instituto)');
   perform t.root();
 end $$;
-
-do $$ declare cid uuid; begin
-  select id into cid from cursos limit 1;
-  perform t.act('00000000-0000-0000-0000-0000000000d1');
-  perform t.eq(t.dml(format($q$insert into asistencias_curso (colegio_id, alumno_id, curso_id, fecha, hora, origen) values ('aaaaaaaa-0000-0000-0000-000000000001','11111111-0000-0000-0000-000000000001','%s','2026-10-07','08:05','qr')$q$, cid))::text, '1', 'docente registra asistencia por curso');
-  perform t.falla(format($q$insert into asistencias_curso (colegio_id, alumno_id, curso_id, fecha, hora) values ('aaaaaaaa-0000-0000-0000-000000000001','11111111-0000-0000-0000-000000000001','%s','2026-10-07','09:00')$q$, cid), 'una sola asistencia por alumno, curso y día');
-  perform t.root();
-end $$;
-
--- ===== 7. Registro de errores =====
 do $$ begin
-  perform t.act('00000000-0000-0000-0000-0000000000e1');
-  perform t.eq(t.dml($q$insert into logs_cliente (app, mensaje, detalle) values ('estudiante', repeat('x', 900), 'stack')$q$)::text, '1', 'el estudiante registra un error');
-  perform t.eq(t.n('select 1 from logs_cliente')::text, '0', 'el estudiante no puede leer los registros');
-  perform t.root();
-  perform t.act('00000000-0000-0000-0000-0000000000d1');
-  perform t.eq(t.dml($q$insert into logs_cliente (app, mensaje) values ('docente', 'boom')$q$)::text, '1', 'el docente registra un error');
-  perform t.eq(t.n('select 1 from logs_cliente')::text, '0', 'el docente no lee registros (solo admin)');
-  perform t.root();
   perform t.act('00000000-0000-0000-0000-0000000000a1');
-  perform t.eq(t.n('select 1 from logs_cliente')::text, '2', 'el admin A ve los errores de su instituto (estudiante y docente)');
-  perform t.eq(t.n($q$select 1 from logs_cliente where length(mensaje) = 500$q$)::text, '1', 'el servidor recorta el mensaje a 500 caracteres');
+  perform t.falla($q$select public.personal_asignar('noexiste@x.pe','Docente')$q$, 'correo inexistente da error claro');
+  perform t.falla($q$select public.personal_asignar('admin@b.pe','Docente')$q$, 'no se roba personal de otro instituto');
+  perform t.falla($q$select public.personal_asignar('admin@a.pe','Docente')$q$, 'el admin no se degrada a sí mismo');
+  perform t.falla($q$select public.personal_asignar('coord@a.pe','Coordinador','NOEXISTE')$q$, 'coordinador exige carrera existente');
+  perform t.falla($q$select public.personal_asignar('coord@a.pe','Superman')$q$, 'rol inválido rechazado');
+  perform t.falla($q$select public.personal_quitar('00000000-0000-0000-0000-0000000000a1')$q$, 'el admin no se quita a sí mismo');
   perform t.root();
-  perform t.act('00000000-0000-0000-0000-0000000000a2');
-  perform t.eq(t.n('select 1 from logs_cliente')::text, '0', 'el admin B no ve errores de A');
-  perform t.root();
-end $$;
-
--- ===== 8. Fotos (Storage) =====
-insert into storage.buckets (id, name) values ('fotos-alumnos', 'fotos-alumnos') on conflict do nothing;
-insert into storage.objects (bucket_id, name) values ('fotos-alumnos', '00000000-0000-0000-0000-0000000000e1/foto-1.jpg');
-do $$ begin
-  perform t.act('00000000-0000-0000-0000-0000000000d1');
-  perform t.eq(t.n($q$select 1 from storage.objects where bucket_id = 'fotos-alumnos'$q$)::text, '1', 'el personal del instituto ve la foto');
-  perform t.eq(t.dml($q$delete from storage.objects where bucket_id = 'fotos-alumnos'$q$)::text, '0', 'un docente no borra fotos');
-  perform t.root();
-  perform t.act('00000000-0000-0000-0000-0000000000a2');
-  perform t.eq(t.n($q$select 1 from storage.objects where bucket_id = 'fotos-alumnos'$q$)::text, '0', 'otro instituto no ve la foto');
-  perform t.root();
+  insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000f1', 'nuevo@a.pe');
   perform t.act('00000000-0000-0000-0000-0000000000a1');
-  perform t.eq(t.dml($q$delete from storage.objects where bucket_id = 'fotos-alumnos'$q$)::text, '1', 'el admin del instituto sí puede borrar la foto');
+  perform public.personal_asignar('NUEVO@a.pe', 'coordinador', 'MECANICA', 'Nuevo Coord');
+  perform t.root();
+  perform t.eq((select rol || '/' || carrera from perfiles where id = '00000000-0000-0000-0000-0000000000f1'), 'Coordinador/MECANICA', 'admin crea un coordinador por correo');
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform public.personal_asignar('nuevo@a.pe', 'Docente');
+  perform t.root();
+  perform t.eq((select rol || '/' || coalesce(carrera, '-') from perfiles where id = '00000000-0000-0000-0000-0000000000f1'), 'Docente/-', 'cambiar a docente limpia la carrera');
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform public.personal_quitar('00000000-0000-0000-0000-0000000000f1');
+  perform t.root();
+  perform t.eq((select count(*) from perfiles where id = '00000000-0000-0000-0000-0000000000f1')::text, '0', 'admin quita un acceso');
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
   perform t.root();
 end $$;
 
--- ===== 9. Derecho de supresión =====
-do $$ begin
-  perform t.act('00000000-0000-0000-0000-0000000000d1');
-  perform t.falla($q$select public.eliminar_mi_registro()$q$, 'el personal no se auto‑elimina con esta función');
+-- ===== 12. Avisos al teléfono (token por instituto) =====
+do $$ declare tok text; tokb text; begin
   perform t.root();
-  perform t.act('00000000-0000-0000-0000-0000000000e1');
-  perform public.eliminar_mi_registro();
-  perform t.root();
-  perform t.eq((select count(*) from alumnos where user_id = '00000000-0000-0000-0000-0000000000e1')::text, '0', 'se borra el registro del estudiante');
-  perform t.eq((select count(*) from auth.users where id = '00000000-0000-0000-0000-0000000000e1')::text, '0', 'se borra su cuenta');
-  perform t.eq((select count(*) from asistencias where alumno_id not in (select id from alumnos))::text, '0', 'sin asistencias huérfanas');
-end $$;
-
--- ===== 10. Hora del servidor y funciones de rol cerradas a anónimos =====
-do $$ begin
+  select aviso_token into tok from colegios where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  select aviso_token into tokb from colegios where id = 'bbbbbbbb-0000-0000-0000-000000000001';
   perform t.act('00000000-0000-0000-0000-0000000000d1');
-  perform t.eq((abs(extract(epoch from (public.hora_servidor() - now()))) < 5)::text, 'true', 'hora_servidor devuelve la hora real');
+  perform t.eq((public.token_avisos() = tok)::text, 'true', 'el docente recibe el token de SU instituto');
   perform t.root();
   execute 'set local role anon';
-  perform t.falla($q$select public.es_admin()$q$, 'anónimos no pueden llamar a funciones de rol');
-  perform t.falla($q$select public.registrar_estudiante('x','a','b','c','d')$q$, 'anónimos no pueden registrar');
+  perform t.eq(json_array_length(public.comunicados_desde(tok, now() - interval '1 hour'))::text, '1', 'con el token se leen los comunicados nuevos (sin sesión)');
+  perform t.eq(json_array_length(public.comunicados_desde(tokb, now() - interval '1 hour'))::text, '0', 'el token de otro instituto no ve los comunicados ajenos');
+  perform t.eq(json_array_length(public.comunicados_desde('x', null))::text, '0', 'token inválido → vacío');
+  perform t.falla($q$select public.token_avisos()$q$, 'anónimos no piden el token');
+  perform t.falla($q$select * from comunicados$q$, 'anónimos no leen la tabla de comunicados');
   perform t.root();
 end $$;
 

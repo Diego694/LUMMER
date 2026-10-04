@@ -4,6 +4,7 @@ import { api } from "./api.js";
 import { bindActions, confirmDialog, icon, openModal, registerActions, toast } from "../ui.js";
 import { ahora, cicloCorto, compararCiclos, downloadFile, esc, etiquetaCiclo, initials, sincronizarReloj } from "../utils.js";
 import { enviarPendientes, iniciarLogErrores } from "../errlog.js";
+import { activarAvisos, desactivarAvisos } from "../notificaciones.js";
 import { VENTANA_MS, generarQR, segundosRestantes } from "../qr-seguro.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -342,7 +343,7 @@ async function carnetCanvas(a, colegio) {
 
 registerActions({
   theme: () => setTheme(tema === "dark" ? "light" : "dark"),
-  logout: async () => { await api.signOut(); user = null; registro = null; $("#est-logout").hidden = true; $("#est-instituto").textContent = "Portal del estudiante"; vistaAuth("login"); },
+  logout: async () => { desactivarAvisos(); await api.signOut(); user = null; registro = null; $("#est-logout").hidden = true; $("#est-instituto").textContent = "Portal del estudiante"; vistaAuth("login"); },
   foto: async (btn) => {
     const blob = await pedirFoto();
     if (!blob) return;
@@ -378,7 +379,7 @@ async function entrar() {
   $("#est-logout").hidden = false;
   sincronizarRelojEstudiante(); enviarPendientes();
   registro = await api.miRegistro(user);
-  if (registro) await vistaCarnet(); else vistaRegistro();
+  if (registro) { await vistaCarnet(); activarAvisos(api); } else vistaRegistro();
 }
 
 async function boot() {

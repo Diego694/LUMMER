@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.6.0 — 2026-10-04
+
+### Añadido
+- **Personal y accesos** (administrador): asigna Administrador, Docente o Coordinador a cuentas existentes y quita accesos, sin SQL (migración 005).
+- **Docentes y coordinadores pueden publicar comunicados** y ver/compartir el código de registro; eliminar o regenerar sigue siendo del administrador.
+- **Notificaciones de comunicados en Android** (docente y estudiante), sin Firebase: consulta en segundo plano con un token de avisos por instituto.
+- Documento `docs/ROLES.md`.
+
 ## 2.5.0 — 2026-10-04
 
 ### Añadido

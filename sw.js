@@ -9,7 +9,7 @@ const SHELL = [
   "assets/js/theme-init.js", "assets/js/main.js", "assets/js/config.js", "assets/js/api.js", "assets/js/demo-data.js",
   "assets/js/state.js", "assets/js/stats.js", "assets/js/ui.js", "assets/js/utils.js",
   "assets/js/pages/dashboard.js", "assets/js/pages/registro.js", "assets/js/pages/consultas.js",
-  "assets/js/pages/carnet.js", "assets/js/pages/mantenimiento.js", "assets/js/alerta.js", "assets/js/pages/codigo.js", "assets/js/cola.js", "assets/js/sync.js", "assets/js/permisos.js", "assets/js/errlog.js", "assets/js/api-extra.js", "assets/js/qr-seguro.js", "assets/js/modo.js", "assets/js/compat.js", "privacidad.html", "entorno.html",
+  "assets/js/pages/carnet.js", "assets/js/pages/mantenimiento.js", "assets/js/alerta.js", "assets/js/pages/codigo.js", "assets/js/cola.js", "assets/js/sync.js", "assets/js/permisos.js", "assets/js/errlog.js", "assets/js/api-extra.js", "assets/js/qr-seguro.js", "assets/js/modo.js", "assets/js/notificaciones.js", "assets/js/pages/personal.js", "assets/js/compat.js", "privacidad.html", "entorno.html",
   "assets/js/pages/avisos.js", "assets/js/pages/reportes.js", "assets/js/pages/cursos.js", "assets/js/pages/sistema.js",
   // Portal del estudiante
   "estudiante/", "estudiante/manifest.webmanifest", "assets/css/estudiante.css",

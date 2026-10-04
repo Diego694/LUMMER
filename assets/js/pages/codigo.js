@@ -3,6 +3,7 @@
 import { api } from "../api.js";
 import { CONFIG } from "../config.js";
 import { DB } from "../state.js";
+import { esAdmin } from "../permisos.js";
 import { confirmDialog, icon, pageHead, registerActions, toast } from "../ui.js";
 import { esc } from "../utils.js";
 
@@ -68,12 +69,12 @@ function pintar(root) {
        </div>
        <hr>
        <div class="btn-row"><button class="btn btn-outline btn-sm" data-action="cd-regenerar">${icon("flip", 14)} Regenerar</button></div>
-       <details class="cd-propio"><summary>Usar un código propio</summary>
+       <details class="cd-propio solo-admin"><summary>Usar un código propio</summary>
          <form id="cd-form" class="inline-form" style="margin-top:10px"><label class="sr-only" for="cd-input">Código propio</label>
            <input class="input" id="cd-input" placeholder="Ej: INSTITUTO2026 (6 a 20 letras o números)" maxlength="20" autocomplete="off" autocapitalize="characters">
            <button class="btn btn-outline" type="submit">Guardar</button></form></details>
        <p class="muted" style="margin-top:14px">Si lo regeneras o lo cambias, el código anterior deja de funcionar (los estudiantes ya registrados no se ven afectados).</p>`
-    : `<div class="empty-state" style="padding:20px 10px"><div class="empty-ic">${icon("qr", 26)}</div><h3>Aún no tienes código</h3><p>Genera uno para que los estudiantes puedan registrarse.</p></div>
+    : `<div class="empty-state" style="padding:20px 10px"><div class="empty-ic">${icon("qr", 26)}</div><h3>Aún no tienes código</h3><p>${esAdmin() ? "Genera uno para que los estudiantes puedan registrarse." : "Pídele al administrador que genere el código de registro."}</p></div>
        <button class="btn btn-primary btn-block" data-action="cd-generar">${icon("plus", 16)} Generar código ahora</button>
        <p class="err-msg" id="cd-err" role="alert" hidden></p>`;
   const f = el.querySelector("#cd-form");
