@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.8.2 — 2026-10-05
+
+### Añadido
+- **Quiosco: botón «Pantalla completa / Modo normal»** en la barra superior. Alterna sin salir del quiosco (el PIN sigue siendo necesario para salir). Se oculta en navegadores sin pantalla completa (iPhone/Safari).
+
 ## 2.8.1 — 2026-10-05
 
 ### Cambiado

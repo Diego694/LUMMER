@@ -20,6 +20,7 @@ La salida se muestra en el historial del alumno, en el reporte y en el portal de
 
 ## Seguridad y robustez
 - **Solo se sale con el PIN.** Quien lo olvide puede salir con la contraseña de la cuenta con la que se inició sesión.
+- Botón **⛶ Pantalla completa / ⤡ Modo normal** arriba a la derecha (junto al candado): alterna sin salir del quiosco.
 - Sin menús ni navegación; la pantalla **no se apaga** (la app Android lo impide y la web usa Wake Lock).
 - **Funciona sin internet**: cada registro queda en la cola del equipo y se envía solo al volver la conexión (sin duplicar).
 - Si el aparato se **reinicia o se cierra la app**, el quiosco **vuelve a abrirse solo** al iniciar sesión.

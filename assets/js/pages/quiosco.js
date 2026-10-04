@@ -177,6 +177,25 @@ const alVolver = () => { if (activo && document.visibilityState === "visible") {
 const bloquearHash = () => { if (activo && location.hash !== "#/quiosco") location.hash = "#/quiosco"; };
 const sinMenu = (e) => { if (activo) e.preventDefault(); };
 
+/* ------------------------------ Pantalla completa ↔ modo normal ------------------------------ */
+// El quiosco sigue activo en ambos casos (con su PIN): solo cambia si el navegador muestra o no su barra.
+const enPantallaCompleta = () => !!document.fullscreenElement;
+async function alternarPantallaCompleta() {
+  try {
+    if (enPantallaCompleta()) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch { toast("Este navegador no permite pantalla completa.", "error"); }
+  pintarBotonPantalla();
+}
+function pintarBotonPantalla() {
+  const b = document.getElementById("q-pantalla");
+  if (!b) return;
+  const completa = enPantallaCompleta();
+  b.textContent = completa ? "⤡ Modo normal" : "⛶ Pantalla completa";
+  b.setAttribute("aria-label", completa ? "Salir de pantalla completa (modo normal)" : "Poner en pantalla completa");
+  b.title = b.getAttribute("aria-label");
+}
+
 /* ------------------------------ Construcción ------------------------------ */
 function pintarReloj() {
   const r = document.getElementById("q-reloj"), f = document.getElementById("q-fecha");
@@ -193,7 +212,7 @@ export async function abrirQuiosco(config) {
   ov.id = "quiosco"; ov.className = "quiosco"; ov.setAttribute("role", "application"); ov.setAttribute("aria-label", "Modo quiosco");
   ov.innerHTML = `<header class="q-top"><div class="q-marca"><span class="brand-mark">RA</span><div><strong>${esc(DB.perfil?.colegio || "Registro Académico")}</strong><small id="q-modo">${ajustes.modo === "salida" ? "SALIDA" : ajustes.modo === "entrada" ? "INGRESO" : "INGRESO Y SALIDA"}</small></div></div>
       <div class="q-hora"><div id="q-reloj" class="q-reloj"></div><div id="q-fecha" class="q-fecha"></div></div>
-      <button class="q-salir" id="q-salir" aria-label="Salir del modo quiosco">🔒</button></header>
+      <div class="q-botones"><button class="q-btn" id="q-pantalla" type="button"></button><button class="q-btn q-salir" id="q-salir" type="button" aria-label="Salir del modo quiosco" title="Salir del modo quiosco">🔒</button></div></header>
     ${noLect ? `<div class="q-aviso">Hoy es ${esc(noLect.tipo.toLowerCase())}: ${esc(noLect.nombre)}. Los registros se guardan igual.</div>` : ""}
     <main class="q-main"><section class="q-camara"><video id="q-video" playsinline muted></video><div class="q-marco" aria-hidden="true"></div><p id="q-video-msg" class="q-video-msg"></p></section>
       <section id="q-resultado" class="q-resultado q-espera"></section></main>
@@ -211,7 +230,13 @@ export async function abrirQuiosco(config) {
   addEventListener("contextmenu", sinMenu);
   document.addEventListener("visibilitychange", alVolver);
   ov.querySelector("#q-salir").addEventListener("click", pedirSalida);
+  const bp = ov.querySelector("#q-pantalla");
+  if (!document.documentElement.requestFullscreen) bp.hidden = true;   // p. ej. iPhone/Safari: no existe pantalla completa para páginas
+  bp.addEventListener("click", alternarPantallaCompleta);
+  document.addEventListener("fullscreenchange", pintarBotonPantalla);
+  pintarBotonPantalla();
   try { await document.documentElement.requestFullscreen?.(); } catch { /* sin pantalla completa */ }
+  pintarBotonPantalla();
   mantenerPantalla(true);
   iniciarNfc();
   iniciarCamara();
@@ -223,6 +248,7 @@ function cerrarQuiosco() {
   clearInterval(timerReloj); clearInterval(timerRefresco); clearTimeout(timerFin); quitarEstado?.();
   removeEventListener("hashchange", bloquearHash); removeEventListener("keydown", teclado, true); removeEventListener("contextmenu", sinMenu);
   document.removeEventListener("visibilitychange", alVolver);
+  document.removeEventListener("fullscreenchange", pintarBotonPantalla);
   document.getElementById("quiosco")?.remove();
   document.body.classList.remove("quiosco-activo");
   try { if (document.fullscreenElement) document.exitFullscreen(); } catch { /* ok */ }
