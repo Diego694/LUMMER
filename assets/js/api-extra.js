@@ -21,6 +21,28 @@ export const TABLAS_RESPALDO = ["alumnos", "niveles", "grados", "docentes", "com
 
 /* ------------------------------ Supabase ------------------------------ */
 export const extrasSupabase = {
+  /** Periodos, calendario y horarios (migración 007). Sin la migración devuelve listas vacías y la app sigue igual. */
+  async ajustesLista(cid) {
+    const leer = async (t, col) => {
+      try { return await paginar(() => this.sb.from(t).select("*").eq("colegio_id", cid).order(col)); }
+      catch (e) { if (/does not exist|relation|schema cache/i.test(e.message)) return []; throw e; }
+    };
+    const [periodos, calendario, horarios] = await Promise.all([leer("periodos", "inicio"), leer("calendario", "fecha"), leer("horarios", "nivel")]);
+    return { periodos, calendario, horarios };
+  },
+  async registrarSalidas(rows) {
+    const { data, error } = await this.sb.rpc("registrar_salidas", { p_rows: rows.map((r) => ({ alumno_id: r.alumno_id, fecha: r.fecha, hora: r.hora })) });
+    if (error) throw err(error.message, error.code);
+    return data;   // { ok, dup, sin_entrada }
+  },
+  async auditoriaLista(cid, { limite = 200, tabla = "", accion = "" } = {}) {
+    let q = this.sb.from("auditoria").select("*").eq("colegio_id", cid).order("creado_en", { ascending: false }).limit(limite);
+    if (tabla) q = q.eq("tabla", tabla);
+    if (accion) q = q.eq("accion", accion);
+    const { data, error } = await q;
+    if (error) throw err(error.message, error.code);
+    return data || [];
+  },
   async cursosLista(cid) {
     try { return await paginar(() => this.sb.from("cursos").select("*").eq("colegio_id", cid).order("nombre")); }
     catch (e) { if (/does not exist|relation|schema cache/i.test(e.message)) return []; throw e; }  // antes de aplicar la migración 004
@@ -196,6 +218,19 @@ export const extrasDemo = {
     return Object.fromEntries(Object.entries(map).map(([t, k]) => [t, JSON.parse(JSON.stringify(this.db[k] || []))]));
   },
   async eliminarFotoAlumno() { /* en demo la foto vive dentro del propio registro */ },
+  async ajustesLista() { return { periodos: [...(this.db.periodos || [])], calendario: [...(this.db.calendario || [])], horarios: [...(this.db.horarios || [])] }; },
+  async registrarSalidas(rows) {
+    let ok = 0, dup = 0, sin = 0;
+    rows.forEach((r) => {
+      const a = this.db.asistencias.find((x) => x.alumno_id === r.alumno_id && x.fecha === r.fecha);
+      if (!a) sin++; else if (a.hora_salida) dup++; else { a.hora_salida = String(r.hora).slice(0, 5); ok++; }
+    });
+    this.persist();
+    return { ok, dup, sin_entrada: sin };
+  },
+  async auditoriaLista(_cid, { limite = 200, tabla = "", accion = "" } = {}) {
+    return (this.db.auditoria || []).filter((x) => (!tabla || x.tabla === tabla) && (!accion || x.accion === accion)).slice(0, limite);
+  },
   async personalListar() {
     this.db.personal = this.db.personal || [{ id: "demo-user", email: "demo@instituto.pe", nombre: "Administrador", rol: "Administrador", carrera: null }];
     return JSON.parse(JSON.stringify(this.db.personal));

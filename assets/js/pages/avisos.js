@@ -48,7 +48,7 @@ async function pintar(root) {
   DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false && (!f.nivel || a.nivel === f.nivel) && (!f.grado || a.grado === f.grado)).forEach((a) => {
     const r = porAlumno.get(a.id);
     if (!r && !justificados.has(a.id) && f.tipo !== "tardanza") filas.push({ a, tipo: "Falta", hora: "" });
-    else if (r && esTardanza(r.hora, CONFIG.HORA_LIMITE) && f.tipo !== "falta") filas.push({ a, tipo: "Tardanza", hora: String(r.hora).slice(0, 5) });
+    else if (r && esTardanza(r.hora, CONFIG.HORA_LIMITE, a.nivel) && f.tipo !== "falta") filas.push({ a, tipo: "Tardanza", hora: String(r.hora).slice(0, 5) });
   });
   filas.sort((x, y) => x.tipo.localeCompare(y.tipo) || x.a.nombre.localeCompare(y.a.nombre, "es"));
   box.innerHTML = filas.length ? `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Ciclo</th><th>Situación</th><th>Apoderado</th><th></th></tr></thead><tbody>

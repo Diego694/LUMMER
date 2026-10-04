@@ -24,7 +24,7 @@ export const CONFIG = {
   // Enlace de descarga del APK "Mi Carnet Institucional" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.
   APK_ESTUDIANTE_URL: "https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/download/apk-latest/carnet-estudiante.apk",
   // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
-  APP_VERSION: "2.7.0",
+  APP_VERSION: "2.8.0",
   // QR del carnet: "off" = QR estático (el código del alumno) · "opcional" = el estudiante muestra un QR firmado que cambia
   // cada 30 s y el docente acepta ambos · "obligatorio" = la cámara solo acepta QR dinámicos (NFC y código manual siguen valiendo).
   QR_MODO: "off",
@@ -35,7 +35,13 @@ export const CONFIG = {
   PLANTILLA_FALTA: "Estimado(a) apoderado(a): le informamos que {alumno} ({ciclo}) no registró su asistencia hoy {fecha} en {instituto}. Si se trata de una ausencia justificada, por favor comuníquelo a la institución. Gracias.",
   PLANTILLA_TARDANZA: "Estimado(a) apoderado(a): le informamos que {alumno} ({ciclo}) llegó con tardanza hoy {fecha} a las {hora} a {instituto}. Gracias por su apoyo.",
   // Hora límite de ingreso (HH:MM, 24 h). Registros posteriores se marcan como "tardanza".
-  HORA_LIMITE: "08:00",
+  // Un alumno que vuelve a pasar el carnet antes de estos minutos NO registra salida (se toma como repetido). Quiosco.
+  MIN_PERMANENCIA_MIN: 45,
+  // Inasistencias (%) que hacen perder el curso (institutos del Perú: 30 %). Alertas de inasistencia.
+  LIMITE_FALTAS_PCT: 30,
+  PLANTILLA_RIESGO: "Estimado(a) apoderado(a): {alumno} ({ciclo}) acumula {faltas} inasistencias ({porcentaje} %). El límite es {limite} %: al superarlo se pierde el derecho a evaluación. Por favor comuníquese con {instituto}.",
+  HORA_LIMITE_BASE: "08:00",   // límite si el instituto no define horarios (Calendario y horarios)
+  HORA_LIMITE: "08:00",       // se recalcula al cargar los datos con el horario general
   // Umbral (%) bajo el cual un alumno aparece en "Requieren atención" del dashboard.
   UMBRAL_ASISTENCIA: 85,
   ALUMNOS_POR_PAGINA: 20,

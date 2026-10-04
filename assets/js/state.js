@@ -1,11 +1,15 @@
 // Estado global en memoria de la sesión actual.
 import { api } from "./api.js";
-import { asistenciasPendientesDe, guardarSnapshot, leerSnapshot } from "./cola.js";
+import { asistenciasPendientesDe, guardarSnapshot, leerSnapshot, salidasPendientesDe } from "./cola.js";
+import { CONFIG } from "./config.js";
+import { mapaNoLectivos, tablaLimites } from "./calendario.js";
+import { configurarLimites } from "./stats.js";
 import { cicloCorto, compararCiclos, esErrorRed, todayStr } from "./utils.js";
 
 export const DB = {
   cid: null, rol: null, perfil: null, userId: null,
   alumnos: [], niveles: [], nivelesRaw: [], grados: [], comunicados: [], docentes: [], cursos: [],
+  periodos: [], calendario: [], horarios: [], noLectivos: new Map(),
   hoy: [], hoyFecha: null,
   sinConexion: false,   // true cuando los datos vienen de la copia local (sin red)
 };
@@ -18,6 +22,13 @@ function aplicar(d) {
   DB.comunicados = d.comunicados;
   DB.docentes = d.docentes;
   DB.cursos = d.cursos || [];
+  const aj = d.ajustes || {};
+  DB.periodos = aj.periodos || []; DB.calendario = aj.calendario || []; DB.horarios = aj.horarios || [];
+  DB.noLectivos = mapaNoLectivos(DB.calendario);
+  // La hora límite de puntualidad sale del horario general; cada carrera puede tener el suyo (ver stats.esTardanza).
+  const lim = tablaLimites(DB.horarios, CONFIG.HORA_LIMITE_BASE);
+  configurarLimites(lim);
+  CONFIG.HORA_LIMITE = lim.general;
 }
 
 /** Carga los datos del instituto. Sin red usa la última copia local para poder seguir registrando asistencia. */
@@ -26,7 +37,7 @@ export async function loadAll() {
     const d = await api.loadAll(DB.cid);
     aplicar(d);
     DB.sinConexion = false;
-    guardarSnapshot(DB.cid, { alumnos: d.alumnos, niveles: d.niveles, grados: d.grados, comunicados: d.comunicados, docentes: d.docentes, cursos: d.cursos || [] });
+    guardarSnapshot(DB.cid, { alumnos: d.alumnos, niveles: d.niveles, grados: d.grados, comunicados: d.comunicados, docentes: d.docentes, cursos: d.cursos || [], ajustes: d.ajustes || {} });
   } catch (e) {
     if (!esErrorRed(e)) throw e;
     const s = leerSnapshot(DB.cid);
@@ -49,7 +60,8 @@ export async function refreshHoy() {
   }
   const ya = new Set(servidor.map((x) => x.alumno_id));
   const pendientes = asistenciasPendientesDe(fecha).filter((r) => !ya.has(r.alumno_id)).map((r) => ({ ...r, _pendiente: true }));
-  DB.hoy = [...servidor, ...pendientes];
+  const salidas = new Map(salidasPendientesDe(fecha).map((r) => [r.alumno_id, r.hora]));
+  DB.hoy = [...servidor, ...pendientes].map((x) => (salidas.has(x.alumno_id) && !x.hora_salida ? { ...x, hora_salida: salidas.get(x.alumno_id), _salidaPendiente: true } : x));
   DB.hoyFecha = fecha;
 }
 

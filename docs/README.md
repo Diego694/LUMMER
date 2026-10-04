@@ -8,6 +8,8 @@
 
 ## Puesta en marcha y operación
 - [Roles y accesos · notificaciones](ROLES.md)
+- [Modo quiosco](QUIOSCO.md)
+- [Gestión académica: periodos, calendario, alertas, reportes, apoderados](GESTION-ACADEMICA.md)
 - [Despliegue](DESPLIEGUE.md) · [Entornos y dominio propio](ENTORNOS.md)
 - [Operación: respaldos y pausa del plan gratuito](OPERACION.md)
 - [Prueba piloto](PILOTO.md)

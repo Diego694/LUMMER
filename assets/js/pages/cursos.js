@@ -121,7 +121,7 @@ async function pintar(root) {
     const pres = filasAc.filter((x) => x.reg).length;
     box.innerHTML = filasAc.length ? `<div class="card-head pad"><span class="muted">${pres} de ${filasAc.length} presentes</span></div><div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Ciclo</th><th>Estado</th><th>Hora</th></tr></thead><tbody>
       ${filasAc.map(({ a, reg }) => `<tr><td><div class="person"><span class="avatar">${esc(initials(a.nombre))}</span><span>${esc(a.nombre)}</span></div></td><td>${esc(cicloCorto(a.grado, a.nivel))}</td>
-        <td>${!reg ? badge("Ausente", "red") : esTardanza(reg.hora, CONFIG.HORA_LIMITE) ? badge("Tardanza", "amber") : badge("Presente", "green")}</td><td class="mono">${reg ? esc(String(reg.hora).slice(0, 5)) : "—"}</td></tr>`).join("")}</tbody></table></div>`
+        <td>${!reg ? badge("Ausente", "red") : esTardanza(reg.hora, CONFIG.HORA_LIMITE, a.nivel) ? badge("Tardanza", "amber") : badge("Presente", "green")}</td><td class="mono">${reg ? esc(String(reg.hora).slice(0, 5)) : "—"}</td></tr>`).join("")}</tbody></table></div>`
       : emptyState("Sin alumnos", "No hay alumnos activos que pertenezcan a este curso.", "users");
   } catch (e) { box.innerHTML = emptyState("No se pudo cargar", e.message, "alert"); }
 }
@@ -141,6 +141,6 @@ registerActions({
     if (!curso || !filasAc.length) { toast("No hay datos para exportar"); return; }
     await downloadFile(`asistencia_${curso.nombre.replace(/\s+/g, "-")}_${ac.fecha}.csv`, toCSV(filasAc, [
       { label: "Fecha", value: () => ac.fecha }, { label: "Curso", value: () => curso.nombre }, { label: "Código", value: (x) => x.a.codigo }, { label: "Alumno", value: (x) => x.a.nombre },
-      { label: "Estado", value: (x) => (!x.reg ? "Ausente" : esTardanza(x.reg.hora, CONFIG.HORA_LIMITE) ? "Tardanza" : "Presente") }, { label: "Hora", value: (x) => (x.reg ? String(x.reg.hora).slice(0, 5) : "") }]));
+      { label: "Estado", value: (x) => (!x.reg ? "Ausente" : esTardanza(x.reg.hora, CONFIG.HORA_LIMITE, x.a.nivel) ? "Tardanza" : "Presente") }, { label: "Hora", value: (x) => (x.reg ? String(x.reg.hora).slice(0, 5) : "") }]));
   },
 });

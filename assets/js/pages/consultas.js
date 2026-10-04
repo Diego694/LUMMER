@@ -41,7 +41,7 @@ export const asistGradoPage = {
       ag.filas = alumnos.map((a) => ({ a, reg: por.get(a.id) }));
       const activos = ag.filas.filter((f) => f.a.estado === "ACTIVO" && f.a.aprobado !== false);
       const pres = activos.filter((f) => f.reg).length;
-      const tardes = activos.filter((f) => f.reg && esTardanza(f.reg.hora, CONFIG.HORA_LIMITE)).length;
+      const tardes = activos.filter((f) => f.reg && esTardanza(f.reg.hora, CONFIG.HORA_LIMITE, f.a.nivel)).length;
       root.querySelector("#ag-kpis").innerHTML =
         kpi({ label: "Presentes", value: pres, hint: `${tardes} con tardanza`, ic: "userCheck", tone: "teal" }) +
         kpi({ label: "Ausentes", value: activos.length - pres, ic: "userX", tone: "red" }) +
@@ -49,7 +49,7 @@ export const asistGradoPage = {
       el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Código</th><th>Ciclo</th><th>Estado</th><th>Hora</th></tr></thead><tbody>
         ${ag.filas.map(({ a, reg }) => `<tr><td><div class="person"><span class="avatar">${esc(initials(a.nombre))}</span><span>${esc(a.nombre)}</span></div></td>
           <td class="mono">${esc(a.codigo)}</td><td>${esc(a.grado)}</td>
-          <td>${a.aprobado === false ? badge("Pendiente", "amber") : a.estado !== "ACTIVO" ? badge("Inactivo", "neutral") : !reg ? badge("Ausente", "red") : esTardanza(reg.hora, CONFIG.HORA_LIMITE) ? badge("Tardanza", "amber") : badge("Presente", "green")}</td>
+          <td>${a.aprobado === false ? badge("Pendiente", "amber") : a.estado !== "ACTIVO" ? badge("Inactivo", "neutral") : !reg ? badge("Ausente", "red") : esTardanza(reg.hora, CONFIG.HORA_LIMITE, a.nivel) ? badge("Tardanza", "amber") : badge("Presente", "green")}</td>
           <td class="mono">${reg ? esc(reg.hora.slice(0, 5)) : "—"}</td></tr>`).join("")}</tbody></table></div>`;
     }
   },
@@ -86,13 +86,13 @@ export const asistAlumnoPage = {
         const hist = (await api.asistenciasAlumno(a.id, 200)).filter((h) => h.fecha >= dias[0]);
         const diasClase = new Set((await api.asistenciasRango(DB.cid, dias[0], todayStr())).map((x) => x.fecha)).size;
         if (!el.isConnected || aa.sel !== a) return; // página cambiada o se eligió otro alumno
-        const r = resumenAlumno(hist, diasClase, CONFIG.HORA_LIMITE);
+        const r = resumenAlumno(hist, diasClase, CONFIG.HORA_LIMITE, a.nivel);
         root._hist = { a, hist };
         el.innerHTML = `
           <header class="card-head"><div class="person lg"><span class="avatar avatar-lg">${esc(initials(a.nombre))}</span><div><h3>${esc(a.nombre)}</h3><small class="muted mono">${esc(a.codigo)} · ${esc(etiquetaCiclo(a.nivel, a.grado))}</small></div></div>
           <button class="btn btn-outline btn-sm" data-action="aa-export">${icon("download", 14)} CSV</button></header>
           <div class="mini-kpis"><div><b>${r.pct}%</b><span>Asistencia</span></div><div><b>${r.presentes}</b><span>Presentes</span></div><div><b>${r.tardes}</b><span>Tardanzas</span></div><div><b>${r.ausentes}</b><span>Ausencias</span></div></div>
-          ${hist.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Estado</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${esc(fmtDate(h.fecha, { weekday: "short", day: "2-digit", month: "short", year: "numeric" }))}</td><td class="mono">${esc(h.hora.slice(0, 5))}</td><td>${esTardanza(h.hora, CONFIG.HORA_LIMITE) ? badge("Tardanza", "amber") : badge("Puntual", "green")}</td></tr>`).join("")}</tbody></table></div>`
+          ${hist.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Ingreso</th><th>Estado</th><th>Salida</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${esc(fmtDate(h.fecha, { weekday: "short", day: "2-digit", month: "short", year: "numeric" }))}</td><td class="mono">${esc(h.hora.slice(0, 5))}</td><td>${esTardanza(h.hora, CONFIG.HORA_LIMITE, a.nivel) ? badge("Tardanza", "amber") : badge("Puntual", "green")}</td><td class="mono">${h.hora_salida ? esc(h.hora_salida) : "—"}</td></tr>`).join("")}</tbody></table></div>`
             : emptyState("Sin registros", "Este alumno no tiene asistencias en el periodo.", "calendar")}`;
       } catch (e) { el.innerHTML = emptyState("No se pudo cargar", e.message, "alert"); }
     }
@@ -104,14 +104,14 @@ registerActions({
   "aa-pick": (el) => { aa.sel = alumnoPorId(el.dataset.id); document.getElementById("page-root")._repaint(); },
   "aa-export": () => {
     const h = document.getElementById("page-root")._hist; if (!h) return;
-    downloadFile(`historial_${h.a.codigo}.csv`, toCSV(h.hist, [{ label: "Fecha", key: "fecha" }, { label: "Hora", value: (r) => r.hora.slice(0, 5) }, { label: "Estado", value: (r) => (esTardanza(r.hora, CONFIG.HORA_LIMITE) ? "Tardanza" : "Puntual") }]));
+    downloadFile(`historial_${h.a.codigo}.csv`, toCSV(h.hist, [{ label: "Fecha", key: "fecha" }, { label: "Hora", value: (r) => r.hora.slice(0, 5) }, { label: "Estado", value: (r) => (esTardanza(r.hora, CONFIG.HORA_LIMITE, h.a.nivel) ? "Tardanza" : "Puntual") }, { label: "Salida", value: (r) => r.hora_salida || "" }]));
   },
   "ag-export": () => {
     if (!ag.filas.length) { toast("No hay datos para exportar"); return; }
     downloadFile(`asistencia_${ag.fecha}.csv`, toCSV(ag.filas, [
       { label: "Fecha", value: () => ag.fecha }, { label: "Código", value: (f) => f.a.codigo }, { label: "Alumno", value: (f) => f.a.nombre },
       { label: "Carrera", value: (f) => f.a.nivel }, { label: "Ciclo", value: (f) => f.a.grado },
-      { label: "Estado", value: (f) => (f.a.estado !== "ACTIVO" ? "Inactivo" : !f.reg ? "Ausente" : esTardanza(f.reg.hora, CONFIG.HORA_LIMITE) ? "Tardanza" : "Presente") },
+      { label: "Estado", value: (f) => (f.a.estado !== "ACTIVO" ? "Inactivo" : !f.reg ? "Ausente" : esTardanza(f.reg.hora, CONFIG.HORA_LIMITE, f.a.nivel) ? "Tardanza" : "Presente") },
       { label: "Hora", value: (f) => f.reg?.hora.slice(0, 5) ?? "" },
     ]));
     toast("Archivo exportado", "success");

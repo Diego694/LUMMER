@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Consulta la asistencia de tu hijo o hija con el código que te entregó el instituto.">
+<meta name="theme-color" content="#16223D">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex">
+<title>Portal de apoderados</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316223D'/%3E%3Cpath d='M8 17l5 5 11-12' stroke='%23E8A33D' stroke-width='3.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script src="../assets/js/theme-init.js"></script>
+<script src="../assets/js/compat.js"></script>
+<link rel="stylesheet" href="../assets/css/styles.css">
+<link rel="stylesheet" href="../assets/css/estudiante.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module" src="../assets/js/apoderado/main.js"></script>
+</head>
+<body class="est">
+<noscript><p style="padding:24px">Esta aplicación requiere JavaScript.</p></noscript>
+<header class="est-top">
+  <div class="brand"><div class="brand-mark">RA</div><div><strong>Portal de apoderados</strong><small id="ap-instituto">Asistencia de tu hijo o hija</small></div></div>
+  <div class="top-right"><button class="icon-only bordered" data-action="theme" aria-label="Cambiar tema"></button></div>
+</header>
+<main id="ap-root" class="est-main" tabindex="-1"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

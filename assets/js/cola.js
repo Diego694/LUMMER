@@ -36,6 +36,10 @@ export const cola = {
   vaciarRechazados() { guardar(leer().filter((x) => !x.rechazado)); },
 };
 
+/** Salidas del día aún no enviadas (para mostrarlas aunque no haya red). */
+export const salidasPendientesDe = (fecha) =>
+  leer().filter((x) => x.tipo === "salida" && !x.rechazado && x.row.fecha === fecha).map((x) => x.row);
+
 /** Asistencias del día aún no enviadas (para que "ya registrado hoy" funcione también sin red). */
 export const asistenciasPendientesDe = (fecha) =>
   leer().filter((x) => x.tipo === "asistencia" && !x.rechazado && x.row.fecha === fecha).map((x) => x.row);

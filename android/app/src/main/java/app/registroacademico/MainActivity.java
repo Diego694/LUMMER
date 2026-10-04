@@ -344,6 +344,15 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
             return ok;
         }
 
+        /** Quiosco: evita que la pantalla se apague mientras el modo quiosco está activo. */
+        @JavascriptInterface
+        public void mantenerPantalla(boolean on) {
+            runOnUiThread(() -> {
+                if (on) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            });
+        }
+
         @JavascriptInterface
         public void detenerAvisos() { Avisos.detener(getApplicationContext()); }
 

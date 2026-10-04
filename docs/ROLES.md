@@ -9,6 +9,9 @@
 | Justificaciones y avisos a apoderados | ✔ | ✔ | ✔ |
 | Ver y compartir el código de registro | ✔ (y generarlo) | ✔ | ✔ |
 | Publicar comunicados | ✔ (y eliminarlos) | ✔ | ✔ |
+| Modo quiosco, alertas de inasistencia, registrar salidas | ✔ | ✔ | ✔ |
+| Calendario, horarios, periodos y cambio de ciclo | ✔ | — | — |
+| Historial de cambios, datos del modo local | ✔ | — | — |
 | Respaldo, errores, corregir o borrar asistencias | ✔ | — | — |
 
 La interfaz oculta lo que no corresponde, pero **la seguridad real está en la base de datos** (políticas RLS): aunque alguien manipule la web, la base rechaza lo no permitido.

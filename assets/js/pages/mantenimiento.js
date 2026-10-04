@@ -3,7 +3,7 @@ import { api } from "../api.js";
 import { CONFIG } from "../config.js";
 import { DB, alumnoPorId, loadAll, opcionesGrado, opcionesNivel } from "../state.js";
 import { badge, confirmDialog, emptyState, formModal, icon, openModal, pageHead, registerActions, toast } from "../ui.js";
-import { normalizarFilasImport } from "../stats.js";
+import { enlaceWhatsApp, normalizarFilasImport } from "../stats.js";
 import { CICLOS, debounce, downloadFile, esc, etiquetaCiclo, fmtDate, initials, nombreCiclo, norm, parsearCiclo, todayStr } from "../utils.js";
 
 const root = () => document.getElementById("page-root");
@@ -180,6 +180,7 @@ export const alumnosPage = {
           <td>${a.aprobado === false ? badge("Pendiente", "amber") : badge(a.estado === "ACTIVO" ? "Activo" : "Inactivo", a.estado === "ACTIVO" ? "green" : "neutral")}</td>
           <td class="t-right nowrap">
             ${a.aprobado === false ? `<button class="btn btn-teal btn-sm" data-action="al-revisar" data-id="${a.id}">${icon("userCheck", 14)} Revisar</button>` : ""}
+            <button class="icon-only" title="Código de apoderado" aria-label="Código de apoderado de ${esc(a.nombre)}" data-action="al-apod" data-id="${a.id}">${icon("users", 16)}</button>
             <button class="icon-only" title="Editar" aria-label="Editar ${esc(a.nombre)}" data-action="al-edit" data-id="${a.id}">${icon("edit", 16)}</button>
             <button class="icon-only" title="Carnet" aria-label="Carnet de ${esc(a.nombre)}" data-action="al-carnet" data-id="${a.id}">${icon("idCard", 16)}</button>
             <button class="icon-only" title="Historial" aria-label="Historial de ${esc(a.nombre)}" data-action="al-hist" data-id="${a.id}">${icon("history", 16)}</button>
@@ -360,6 +361,18 @@ registerActions({
     eliminar("grados", g.id, `¿Eliminar el ciclo <b>${esc(g.nombre)}</b>?`, "Ciclo eliminado");
   },
   "al-new": () => alumnoForm(),
+  "al-apod": (el) => {
+    const a = alumnoPorId(el.dataset.id);
+    const cod = a.codigo_apoderado || "";
+    const bonito = cod.replace(/(.{4})(?=.)/g, "$1-");
+    const enlace = new URL("apoderado/?c=" + cod, new URL(".", location.href)).href;
+    const texto = `Código para consultar la asistencia de ${a.nombre}: ${bonito}\n${enlace}`;
+    const wa = a.apoderado_telefono ? enlaceWhatsApp(a.apoderado_telefono, texto) : `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    const m = openModal({ title: "Código de apoderado", body: cod ? `<p>${esc(a.nombre)}</p><div class="codigo-box codigo-grande"><code>${esc(bonito)}</code></div>
+      <p class="muted">El apoderado entra a la página de apoderados y escribe este código para ver la asistencia (solo lectura).</p>` : `<p class="muted">Este alumno aún no tiene código de apoderado (aplica la migración 007).</p>`,
+      footer: cod ? `<button class="btn btn-outline" data-close2>Cerrar</button><a class="btn btn-teal" target="_blank" rel="noopener" href="${esc(wa)}">Enviar por WhatsApp</a>` : `<button class="btn btn-outline" data-close2>Cerrar</button>` });
+    m.el.querySelector("[data-close2]")?.addEventListener("click", m.close);
+  },
   "al-edit": (el) => alumnoForm(alumnoPorId(el.dataset.id)),
   "al-del": (el) => { const a = alumnoPorId(el.dataset.id); eliminar("alumnos", a.id, `¿Eliminar a <b>${esc(a.nombre)}</b>? También se borrará su historial de asistencia. Esta acción no se puede deshacer.`, "Alumno eliminado"); },
   "al-carnet": (el) => (location.hash = `#/carnet?id=${el.dataset.id}`),

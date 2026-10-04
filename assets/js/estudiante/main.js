@@ -227,6 +227,9 @@ async function vistaCarnet(recienCreado = false) {
       <button class="btn btn-primary" data-action="foto">${icon("camera", 16)} ${a.foto_path ? "Cambiar foto" : "Agregar foto"}</button>
       <button class="btn btn-outline" data-action="descargar">${icon("download", 16)} Descargar carnet</button>
     </div>
+    ${a.codigo_apoderado ? `<section class="est-card ap-codigo"><strong>Código para tu apoderado</strong><div class="codigo-box"><code id="ap-code">${esc(a.codigo_apoderado.replace(/(.{4})(?=.)/g, "$1-"))}</code></div>
+      <p class="muted" style="margin:6px 0 10px">Con este código tu apoderado puede ver tu asistencia, sin cuenta.</p>
+      <div class="est-actions"><button class="btn btn-outline" data-action="ap-copiar">Copiar código</button><a class="btn btn-teal" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent("Código para ver mi asistencia: " + a.codigo_apoderado.replace(/(.{4})(?=.)/g, "$1-") + "\n" + new URL("../apoderado/?c=" + a.codigo_apoderado, location.href).href)}">Enviar por WhatsApp</a></div></section>` : ""}
     <p class="muted" style="text-align:center;margin-top:18px">Muestra este QR al docente al ingresar a clases. No lo compartas con otras personas.</p>
     <p class="est-legal muted"><a href="${PRIVACIDAD}" target="_blank" rel="noopener">Política de privacidad</a> · <button type="button" class="link-btn link-peligro" data-action="eliminar-cuenta">Eliminar mi cuenta y mis datos</button></p>`;
   const qr = new QRCode($("#ce-qr"), { text: a.codigo, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
@@ -343,6 +346,7 @@ async function carnetCanvas(a, colegio) {
 
 registerActions({
   theme: () => setTheme(tema === "dark" ? "light" : "dark"),
+  "ap-copiar": async () => { try { await navigator.clipboard.writeText(registro.alumno.codigo_apoderado); toast("Código copiado", "success"); } catch { toast("No se pudo copiar", "error"); } },
   logout: async () => { desactivarAvisos(); await api.signOut(); user = null; registro = null; $("#est-logout").hidden = true; $("#est-instituto").textContent = "Portal del estudiante"; vistaAuth("login"); },
   foto: async (btn) => {
     const blob = await pedirFoto();

@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-2.7.0-E8A33D">
+  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-2.8.0-E8A33D">
   <img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-16223D">
 </p>
 
@@ -23,7 +23,7 @@
 
 |  |  |
 |---|---|
-| **Registro ágil** | Carnet con QR (que cambia cada 30 s), NFC o código manual. Alerta con foto y apellidos protegidos. |
+| **Registro ágil** | Carnet con QR (que cambia cada 30 s), NFC o código manual, y **modo quiosco** para la puerta. Alerta con foto y apellidos protegidos. |
 | **Siempre disponible** | Si se cae internet, registra igual y sincroniza después. La PC puede trabajar con su propia base local. |
 | **Visión clara** | Dashboard, reportes mensuales, justificaciones y avisos a apoderados. |
 | **Seguro y privado** | Roles por carrera, datos protegidos en la base y derecho del estudiante a eliminar su cuenta. |

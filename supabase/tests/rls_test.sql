@@ -165,4 +165,88 @@ do $$ begin
   perform t.root();
 end $$;
 
+-- ===== 14. Calendario, horarios, periodos (solo el administrador escribe) =====
+do $$ begin
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform t.eq(t.dml($q$insert into calendario (colegio_id, fecha, tipo, nombre) values ('aaaaaaaa-0000-0000-0000-000000000001','2026-10-08','Feriado','Combate de Angamos')$q$)::text, '1', 'admin crea un feriado');
+  perform t.eq(t.dml($q$insert into horarios (colegio_id, nivel, hora_ingreso, tolerancia_min) values ('aaaaaaaa-0000-0000-0000-000000000001','APSTI','07:30',10)$q$)::text, '1', 'admin define horario por carrera');
+  perform t.eq(t.dml($q$insert into periodos (colegio_id, nombre, inicio) values ('aaaaaaaa-0000-0000-0000-000000000001','2026-II','2026-08-03')$q$)::text, '1', 'admin crea un periodo');
+  perform t.root();
+  perform t.act('00000000-0000-0000-0000-0000000000d1');
+  perform t.eq(t.n('select 1 from calendario')::text, '1', 'el docente lee el calendario');
+  perform t.falla($q$insert into calendario (colegio_id, fecha, nombre) values ('aaaaaaaa-0000-0000-0000-000000000001','2026-12-25','X')$q$, 'el docente no edita el calendario');
+  perform t.falla($q$insert into horarios (colegio_id, nivel, hora_ingreso) values ('aaaaaaaa-0000-0000-0000-000000000001','MECANICA','09:00')$q$, 'el docente no cambia horarios');
+  perform t.falla($q$insert into periodos (colegio_id, nombre, inicio) values ('aaaaaaaa-0000-0000-0000-000000000001','2027-I','2027-03-01')$q$, 'el docente no crea periodos');
+  perform t.eq(public.limite_ingreso('aaaaaaaa-0000-0000-0000-000000000001', 'APSTI'), '07:40', 'límite = ingreso + tolerancia (07:30 + 10 min)');
+  perform t.eq(coalesce(public.limite_ingreso('aaaaaaaa-0000-0000-0000-000000000001', 'MECANICA'), 'null'), 'null', 'sin horario → null (la app usa 08:00)');
+  perform t.root();
+end $$;
+
+-- ===== 15. Salidas (quiosco) =====
+do $$ declare r json; begin
+  perform t.act('00000000-0000-0000-0000-0000000000d1');
+  r := public.registrar_salidas('[{"alumno_id":"11111111-0000-0000-0000-000000000001","fecha":"2026-10-05","hora":"13:05"}]'::jsonb);
+  perform t.eq(r->>'ok', '1', 'el docente registra una salida');
+  r := public.registrar_salidas('[{"alumno_id":"11111111-0000-0000-0000-000000000001","fecha":"2026-10-05","hora":"13:30"}]'::jsonb);
+  perform t.eq(r->>'dup', '1', 'una segunda salida no sobrescribe la primera');
+  r := public.registrar_salidas('[{"alumno_id":"11111111-0000-0000-0000-000000000001","fecha":"2026-10-20","hora":"13:30"}]'::jsonb);
+  perform t.eq(r->>'sin_entrada', '1', 'salida sin ingreso ese día se rechaza');
+  r := public.registrar_salidas('[{"alumno_id":"11111111-0000-0000-0000-000000000003","fecha":"2026-10-05","hora":"13:30"}]'::jsonb);
+  perform t.eq(r->>'ok', '0', 'no se registra la salida de un alumno de otro instituto');
+  perform t.root();
+  perform t.eq((select hora_salida from asistencias where alumno_id = '11111111-0000-0000-0000-000000000001' and fecha = '2026-10-05'), '13:05', 'la salida quedó guardada');
+  perform t.act('00000000-0000-0000-0000-0000000000c1');
+  r := public.registrar_salidas('[{"alumno_id":"11111111-0000-0000-0000-000000000002","fecha":"2026-10-05","hora":"13:30"}]'::jsonb);
+  perform t.eq(r->>'ok', '0', 'el coordinador no registra salidas de otra carrera');
+  perform t.root();
+  perform t.act('00000000-0000-0000-0000-0000000000d1');
+  perform t.eq(t.dml($q$update asistencias set hora_salida = '23:59'$q$)::text, '0', 'el docente sigue sin poder editar asistencias directamente');
+  perform t.root();
+  execute 'set local role anon';
+  perform t.falla($q$select public.registrar_salidas('[]'::jsonb)$q$, 'anónimos no registran salidas');
+  perform t.root();
+end $$;
+
+-- ===== 16. Historial de cambios =====
+do $$ begin
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  update alumnos set nombre = 'Nombre Nuevo', grado = 'APSTI · II CICLO' where id = '11111111-0000-0000-0000-000000000002';
+  update asistencias set hora = '07:45' where alumno_id = '11111111-0000-0000-0000-000000000002' and fecha = '2026-10-05';
+  perform t.root();
+  perform t.eq((select usuario from auditoria where tabla = 'alumnos' and accion = 'UPDATE' and registro_id = '11111111-0000-0000-0000-000000000002'), 'admin@a.pe', 'se anota QUIÉN hizo el cambio');
+  perform t.eq((select detalle->'grado'->>'a' from auditoria where tabla = 'alumnos' and accion = 'UPDATE' and registro_id = '11111111-0000-0000-0000-000000000002'), 'APSTI · II CICLO', 'se anota el valor nuevo de lo no personal');
+  perform t.eq((select detalle->'nombre'::text from auditoria where tabla = 'alumnos' and accion = 'UPDATE' and registro_id = '11111111-0000-0000-0000-000000000002')::text, '"(dato personal modificado)"', 'los datos personales no se copian al historial');
+  perform t.eq((select count(*) from auditoria where tabla = 'asistencias' and accion = 'UPDATE')::text, '1', 'se registra la corrección de una asistencia');
+  perform t.act('00000000-0000-0000-0000-0000000000d1');
+  perform t.eq(t.n('select 1 from auditoria')::text, '0', 'el docente no ve el historial');
+  perform t.root();
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform t.eq((t.n('select 1 from auditoria') > 0)::text, 'true', 'el administrador ve el historial de su instituto');
+  perform t.falla($q$insert into auditoria (accion, tabla) values ('INSERT','x')$q$, 'nadie escribe en el historial directamente');
+  perform t.falla($q$delete from auditoria$q$, 'nadie borra el historial');
+  perform t.root();
+  perform t.act('00000000-0000-0000-0000-0000000000a2');
+  perform t.eq(t.n($q$select 1 from auditoria where colegio_id = 'aaaaaaaa-0000-0000-0000-000000000001'$q$)::text, '0', 'el admin de otro instituto no ve el historial de este');
+  perform t.root();
+  delete from alumnos where id = '11111111-0000-0000-0000-000000000002';
+  perform t.eq((select count(*) from auditoria where registro_id = '11111111-0000-0000-0000-000000000002' and detalle ? 'nombre')::text, '0', 'al eliminar un alumno se purgan sus datos personales del historial');
+  perform t.eq((select detalle->>'codigo' from auditoria where tabla = 'alumnos' and accion = 'DELETE' and registro_id = '11111111-0000-0000-0000-000000000002'), 'a2', 'queda constancia de la eliminación sin datos personales');
+end $$;
+
+-- ===== 17. Consulta para apoderados =====
+do $$ declare cod text; r json; i int; begin
+  select codigo_apoderado into cod from alumnos where id = '11111111-0000-0000-0000-000000000001';
+  perform t.eq(length(cod)::text, '12', 'cada alumno tiene un código de apoderado de 12 caracteres');
+  execute 'set local role anon';
+  r := public.consulta_apoderado(cod);
+  perform t.eq(r->'alumno'->>'carrera', 'APSTI', 'el apoderado ve la carrera de su hijo con el código');
+  perform t.eq((r->'resumen' is not null)::text, 'true', 'incluye el resumen de asistencia');
+  perform t.eq((public.consulta_apoderado(lower(substr(cod,1,4) || '-' || substr(cod,5,4) || '-' || substr(cod,9,4))) is not null)::text, 'true', 'acepta minúsculas y guiones');
+  perform t.eq((public.consulta_apoderado('ZZZZZZZZZZZZ') is null)::text, 'true', 'un código inexistente devuelve vacío');
+  perform t.falla($q$select * from alumnos$q$, 'anónimos no leen alumnos directamente');
+  for i in 1..25 loop begin perform public.consulta_apoderado('NOEXISTE0000'); exception when others then null; end; end loop;
+  perform t.falla($q$select public.consulta_apoderado('NOEXISTE0000')$q$, 'tras demasiados intentos fallidos se bloquea');
+  perform t.root();
+end $$;
+
 select 'TODAS LAS PRUEBAS DE SEGURIDAD PASARON' as resultado;

@@ -12,6 +12,9 @@ const TIPOS = {
   pendiente: { clase: "warn", titulo: "Registro pendiente de aprobación", ic: "alert" },
   no_pertenece: { clase: "err", titulo: "No pertenece a este curso", ic: "alert" },
   qr_invalido: { clase: "err", titulo: "QR no válido", ic: "alert" },
+  salida: { clase: "ok", titulo: "Salida registrada", ic: "check" },
+  sin_entrada: { clase: "err", titulo: "Sin ingreso hoy", ic: "alert" },
+  dup_salida: { clase: "warn", titulo: "Ya tenía salida", ic: "info" },
   inactivo: { clase: "err", titulo: "Alumno inactivo — no se registra", ic: "alert" },
 };
 let timer = null;
@@ -30,8 +33,8 @@ export async function mostrarAlertaAsistencia(alumno, { tipo = "ok", hora = "", 
     el.addEventListener("click", () => el.classList.remove("show"));
     document.body.appendChild(el);
   }
-  const registrada = tipo === "ok" || tipo === "offline";
-  const tarde = registrada && esTardanza(hora, CONFIG.HORA_LIMITE);
+  const registrada = tipo === "ok" || tipo === "offline";   // (la salida no es puntualidad)
+  const tarde = registrada && esTardanza(hora, CONFIG.HORA_LIMITE, alumno.nivel);
   el.className = `asistencia-alert show alert-${t.clase}`;
   el.innerHTML = `
     <div class="alert-photo" id="alert-photo"><span>${esc(initials(alumno.nombre))}</span></div>

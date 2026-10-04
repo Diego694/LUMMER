@@ -37,7 +37,7 @@ async function generar(root) {
   box.innerHTML = skeleton(5);
   const alumnos = DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false && a.nivel === rp.nivel && (!rp.grado || a.grado === rp.grado))
     .sort((a, b) => a.grado.localeCompare(b.grado, "es", { numeric: true }) || a.nombre.localeCompare(b.nombre, "es"));
-  const dias = diasHabilesDelMes(rp.mes, todayStr());
+  const dias = diasHabilesDelMes(rp.mes, todayStr(), DB.noLectivos);   // sin feriados ni días sin clases
   if (!alumnos.length || !dias.length) { kp.innerHTML = ""; box.innerHTML = emptyState("Sin datos", alumnos.length ? "El mes elegido aún no tiene días hábiles." : "No hay alumnos activos en esa carrera/ciclo.", "users"); return; }
   try {
     const [asis, just] = await Promise.all([api.asistenciasRango(DB.cid, dias[0], dias.at(-1)), api.justificacionesRango(DB.cid, dias[0], dias.at(-1)).catch(() => [])]);
@@ -60,9 +60,15 @@ function pdfReporte() {
   const m = rp.m;
   const doc = new window.jspdf.jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const W = 842, M = 28, filaH = 17, porPagina = 24, nombreW = 150, dW = Math.min(22, (W - 2 * M - nombreW - 150) / m.dias.length);
+  const per = DB.periodos.find((p) => p.activo);
+  const noLect = [...DB.noLectivos.values()].filter((c) => c.fecha.startsWith(rp.mes)).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const cab = () => {
-    doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.text(`Reporte de asistencia — ${DB.perfil?.colegio || ""}`, M, 34);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(`${rp.titulo}   ·   Asistencia del grupo: ${m.resumen.pct}%   ·   P presente  T tardanza  J justificado  F falta`, M, 50);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.text(`NÓMINA DE ASISTENCIA — ${(DB.perfil?.colegio || "").toUpperCase()}`, M, 32);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    doc.text(`${rp.titulo}${per ? "   ·   Periodo " + per.nombre : ""}   ·   Asistencia del grupo: ${m.resumen.pct}%`, M, 48);
+    doc.setFontSize(8.5); doc.setTextColor(90);
+    doc.text(`P presente  ·  T tardanza  ·  J justificado  ·  F falta${noLect.length ? "   ·   Sin clases: " + noLect.map((c) => `${Number(c.fecha.slice(8))} (${c.nombre})`).join(", ").slice(0, 150) : ""}`, M, 61);
+    doc.setTextColor(0);
   };
   const encabezado = (y) => {
     doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.text("Alumno", M, y);
@@ -72,10 +78,10 @@ function pdfReporte() {
   };
   let y = 0, n = 0, pagina = 0;
   m.filas.forEach((r) => {
-    if (n % porPagina === 0) { if (pagina) doc.addPage(); pagina++; cab(); y = 76; encabezado(y); y += 8; }
+    if (n % porPagina === 0) { if (pagina) doc.addPage(); pagina++; cab(); y = 84; encabezado(y); y += 8; }
     y += filaH; n++;
     doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    doc.text(r.alumno.nombre.slice(0, 34), M, y);
+    doc.text(`${n}. ${r.alumno.nombre}`.slice(0, 36), M, y);
     m.dias.forEach((d, i) => {
       const c = r.celdas[d];
       if (c === "F") { doc.setTextColor(190, 40, 30); doc.setFont("helvetica", "bold"); } else if (c === "T") doc.setTextColor(180, 110, 10); else if (c === "J") doc.setTextColor(40, 90, 170); else doc.setTextColor(30, 120, 90);
@@ -83,6 +89,17 @@ function pdfReporte() {
     });
     [r.p, r.t, r.j, r.f, r.pct + "%"].forEach((v, i) => doc.text(String(v), M + nombreW + m.dias.length * dW + 18 + i * 28, y, { align: "center" }));
   });
+  // Firmas (formato de nómina): docente responsable, coordinación y dirección
+  if (y > 470) { doc.addPage(); y = 60; }
+  y += 54;
+  doc.setFontSize(9);
+  ["Docente responsable", "Coordinación académica", "Dirección"].forEach((t, i) => {
+    const x = M + i * 270;
+    doc.line(x, y, x + 200, y); doc.text(t, x + 100, y + 12, { align: "center" });
+  });
+  doc.setFontSize(7.5); doc.setTextColor(120);
+  doc.text(`Generado el ${new Date().toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "long", year: "numeric" })} · Registro Académico`, M, 575);
+  doc.setTextColor(0);
   return doc;
 }
 

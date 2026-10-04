@@ -69,14 +69,14 @@ export function lastWeekdays(n, hasta = todayStr()) {
 }
 /** Hora actual HH:MM según el reloj confiable y la zona del instituto. */
 /** Días hábiles (lun-vie) de un mes "YYYY-MM", sin pasar de `hasta` (YYYY-MM-DD). */
-export function diasHabilesDelMes(mes, hasta = todayStr()) {
+export function diasHabilesDelMes(mes, hasta = todayStr(), noLectivos = new Map()) {
   const [y, m] = mes.split("-").map(Number);
   const ultimo = new Date(y, m, 0).getDate();
   const out = [];
   for (let d = 1; d <= ultimo; d++) {
     const f = `${mes}-${String(d).padStart(2, "0")}`;
     if (f > hasta) break;
-    if (!isWeekend(f)) out.push(f);
+    if (!isWeekend(f) && !noLectivos.has(f)) out.push(f);
   }
   return out;
 }

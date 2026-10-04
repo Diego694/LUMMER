@@ -4,8 +4,8 @@ import { cola } from "../cola.js";
 import { CONFIG } from "../config.js";
 import { DB, alumnoPorCodigo, asegurarHoy, opcionesGrado, opcionesNivel, refreshHoy } from "../state.js";
 import { badge, emptyState, icon, pageHead, registerActions, toast } from "../ui.js";
-import { esTardanza } from "../stats.js";
-import { emitir, guardarAsistencias, red } from "../sync.js";
+import { decidirAccion, esTardanza } from "../stats.js";
+import { emitir, guardarAsistencias, red, registrarEnvio } from "../sync.js";
 import { verificarQR } from "../qr-seguro.js";
 import { mostrarAlertaAsistencia } from "../alerta.js";
 import { cargarCursoHoy, cursosActivos, etiquetaCurso, registrarEnCurso } from "./cursos.js";
@@ -40,11 +40,52 @@ export async function registrarHoy(alumno, origen = "manual") {
   return { hora };
 }
 
+registrarEnvio("salida", (rows) => api.registrarSalidas(rows));
+
+/**
+ * Registra la SALIDA de hoy (solo si ya hay ingreso y solo una vez). Sin red, queda en la cola y se envía sola.
+ * Devuelve 'inactivo' | 'pendiente' | 'sin_entrada' | 'dup_salida' | { hora, salida:true, offline? }.
+ */
+export async function registrarSalida(alumno, origen = "manual") {
+  if (alumno.estado !== "ACTIVO") return "inactivo";
+  if (alumno.aprobado === false) return "pendiente";
+  await asegurarHoy();
+  const reg = DB.hoy.find((x) => x.alumno_id === alumno.id);
+  if (!reg) return "sin_entrada";
+  if (reg.hora_salida) return "dup_salida";
+  const hora = nowHHMM(), fecha = todayStr();
+  const row = { alumno_id: alumno.id, fecha, hora, origen };
+  const aCola = () => {
+    cola.agregar({ tipo: "salida", row, clave: `s|${alumno.id}|${fecha}` });
+    reg.hora_salida = hora; reg._salidaPendiente = true;
+    emitir();
+    return { hora, salida: true, offline: true };
+  };
+  if (!red.online()) return aCola();
+  try {
+    const r = await api.registrarSalidas([row]);
+    if (r?.dup) { await refreshHoy(); return "dup_salida"; }
+    if (r?.sin_entrada) return "sin_entrada";
+  } catch (e) {
+    if (esErrorRed(e)) return aCola();
+    throw e;
+  }
+  await refreshHoy();
+  return { hora, salida: true };
+}
+
+/** Qué corresponde hacer con un alumno que se presenta en la puerta: ingreso, salida o nada (ver stats.decidirAccion). */
+export async function accionParaAlumno(alumno) {
+  await asegurarHoy();
+  return decidirAccion(DB.hoy.find((x) => x.alumno_id === alumno.id), nowHHMM(), CONFIG.MIN_PERMANENCIA_MIN);
+}
+
 const options = (list, sel) => list.map((o) => `<option value="${esc(o.value)}" ${o.value === sel ? "selected" : ""}>${esc(o.label)}</option>`).join("");
 
 /* ============================ QR / NFC ============================ */
 let stream = null, raf = null, facing = "environment", nfcCtl = null, scanLog = [];
 let modoCurso = null;   // null = asistencia diaria; si no, el curso donde se pasa lista
+let modoSalida = false; // false = ingreso; true = salida
 
 export const registroQrPage = {
   id: "registro-qr", title: "Registro por QR", icon: "qr", group: "Registro",
@@ -59,6 +100,7 @@ export const registroQrPage = {
             <button class="btn btn-outline" data-action="scan-stop">Detener</button>
             <button class="btn btn-outline" id="flip-camera-btn" data-action="scan-flip" hidden>${icon("flip", 16)} Voltear</button>
           </div>
+          <div class="field" style="margin:14px 0 0"><label for="modo-tipo">Estoy registrando</label><select id="modo-tipo"><option value="ingreso" ${modoSalida ? "" : "selected"}>Ingreso</option><option value="salida" ${modoSalida ? "selected" : ""}>Salida</option></select></div>
           ${cursosActivos().length ? `<div class="field" style="margin:14px 0 0"><label for="modo-registro">Registrar en</label><select id="modo-registro"><option value="">Asistencia diaria</option>${cursosActivos().map((c) => `<option value="${c.id}" ${modoCurso?.id === c.id ? "selected" : ""}>${esc(etiquetaCurso(c))}</option>`).join("")}</select></div>` : ""}
           <div id="scan-result" class="scan-result" role="status" aria-live="polite" hidden></div>
           <hr>
@@ -82,6 +124,7 @@ export const registroQrPage = {
       if (!code) return;
       if (await procesarCodigo(code, true)) inp.value = "";
     });
+    root.querySelector("#modo-tipo").addEventListener("change", (e) => { modoSalida = e.target.value === "salida"; toast(modoSalida ? "Registrando SALIDAS" : "Registrando INGRESOS", "info"); });
     root.querySelector("#modo-registro")?.addEventListener("change", async (e) => {
       modoCurso = DB.cursos.find((c) => c.id === e.target.value) || null;
       if (modoCurso) { try { await cargarCursoHoy(modoCurso); } catch { /* se cargará al primer registro */ } toast(`Pasando lista en: ${modoCurso.nombre}`, "info"); }
@@ -99,32 +142,43 @@ const MOTIVO_QR = {
   desconocido: "QR no reconocido.",
 };
 
-async function procesarCodigo(texto, avisarSiNoExiste, origen = "manual") {
+/**
+ * Del texto leído (QR, NFC o código) al alumno, validando el QR dinámico según CONFIG.QR_MODO.
+ * Devuelve { alumno } o { rechazo: { motivo, mensaje, alumno? } }.
+ */
+export async function resolverAlumno(texto, origen = "manual") {
   let codigo = texto;
   if (origen === "qr") {
-    // QR dinámico (CONFIG.QR_MODO): el QR firmado se valida; un código plano solo se acepta si el modo no es "obligatorio".
     const v = await verificarQR(texto, alumnoPorCodigo, ahora().getTime());
     if (v.estatico) {
-      if (CONFIG.QR_MODO === "obligatorio" && alumnoPorCodigo(texto)) { toast("QR estático no permitido: el estudiante debe abrir su carnet en la app (se puede usar NFC o código manual).", "error"); return null; }
-    } else if (!v.ok) {
-      if (v.alumno) mostrarAlertaAsistencia(v.alumno, { tipo: "qr_invalido", detalle: MOTIVO_QR[v.motivo].split(".")[0] });
-      else if (avisarSiNoExiste) toast(MOTIVO_QR[v.motivo], "error");
-      return null;
-    } else codigo = v.alumno.codigo;
+      if (CONFIG.QR_MODO === "obligatorio" && alumnoPorCodigo(texto)) return { rechazo: { motivo: "estatico", mensaje: "QR estático no permitido: el estudiante debe abrir su carnet en la app (se puede usar NFC o código manual)." } };
+    } else if (!v.ok) return { rechazo: { motivo: v.motivo, mensaje: MOTIVO_QR[v.motivo], alumno: v.alumno || null } };
+    else codigo = v.alumno.codigo;
   }
   const a = alumnoPorCodigo(codigo);
-  if (!a) { if (avisarSiNoExiste) toast(`Código no encontrado: ${codigo}`, "error"); return null; }
+  if (!a) return { rechazo: { motivo: "desconocido", mensaje: `Código no encontrado: ${codigo}` } };
+  return { alumno: a };
+}
+
+async function procesarCodigo(texto, avisarSiNoExiste, origen = "manual") {
+  const r = await resolverAlumno(texto, origen);
+  if (r.rechazo) {
+    if (r.rechazo.alumno) mostrarAlertaAsistencia(r.rechazo.alumno, { tipo: "qr_invalido", detalle: r.rechazo.mensaje.split(".")[0] });
+    else if (avisarSiNoExiste || r.rechazo.motivo === "estatico") toast(r.rechazo.mensaje, "error");
+    return null;
+  }
+  const a = r.alumno;
   let res;
-  try { res = modoCurso ? await registrarEnCurso(a, modoCurso, origen) : await registrarHoy(a, origen); } catch (e) { toast("Error al registrar: " + e.message, "error"); return null; }
+  try { res = modoSalida ? await registrarSalida(a, origen) : modoCurso ? await registrarEnCurso(a, modoCurso, origen) : await registrarHoy(a, origen); } catch (e) { toast("Error al registrar: " + e.message, "error"); return null; }
   const box = document.getElementById("scan-result");
   const hora = res?.hora;
-  const estado = typeof res === "string" ? res : res?.offline ? "offline" : "ok";
+  const estado = typeof res === "string" ? res : res?.offline ? "offline" : res?.salida ? "salida" : "ok";
   const entrada = { alumno: a, estado, hora: hora || DB.hoy.find((x) => x.alumno_id === a.id)?.hora || "" };
   scanLog.unshift(entrada); scanLog = scanLog.slice(0, 12);
   if (box) {
-    const tipo = { ok: ["ok", modoCurso ? `Asistencia registrada en ${modoCurso.nombre}` : "Asistencia registrada"], no_pertenece: ["err", "No pertenece a este curso"], offline: ["warn", "Guardado sin conexión: se enviará solo"], dup: ["warn", "Ya estaba registrado hoy"], pendiente: ["warn", "Registro pendiente de aprobación"], inactivo: ["err", "Alumno inactivo — no se registra"] }[estado];
+    const tipo = { salida: ["ok", "Salida registrada"], sin_entrada: ["err", "Sin ingreso hoy: no se puede registrar salida"], dup_salida: ["warn", "Ya tenía salida registrada"], ok: ["ok", modoCurso ? `Asistencia registrada en ${modoCurso.nombre}` : "Asistencia registrada"], no_pertenece: ["err", "No pertenece a este curso"], offline: ["warn", "Guardado sin conexión: se enviará solo"], dup: ["warn", "Ya estaba registrado hoy"], pendiente: ["warn", "Registro pendiente de aprobación"], inactivo: ["err", "Alumno inactivo — no se registra"] }[estado];
     box.hidden = false; box.className = `scan-result scan-${tipo[0]}`;
-    box.innerHTML = `<span class="avatar">${esc(initials(a.nombre))}</span><div><strong>${esc(censurarNombre(a))}</strong><small>${esc(etiquetaCiclo(a.nivel, a.grado))}${entrada.hora ? " · " + esc(entrada.hora) : ""}</small><em>${tipo[1]}${(estado === "ok" || estado === "offline") && esTardanza(entrada.hora, CONFIG.HORA_LIMITE) ? " (tardanza)" : ""}</em></div>`;
+    box.innerHTML = `<span class="avatar">${esc(initials(a.nombre))}</span><div><strong>${esc(censurarNombre(a))}</strong><small>${esc(etiquetaCiclo(a.nivel, a.grado))}${entrada.hora ? " · " + esc(entrada.hora) : ""}</small><em>${tipo[1]}${(estado === "ok" || estado === "offline") && esTardanza(entrada.hora, CONFIG.HORA_LIMITE, a.nivel) ? " (tardanza)" : ""}</em></div>`;
   }
   mostrarAlertaAsistencia(a, { tipo: estado, hora: entrada.hora, detalle: modoCurso?.nombre || "" });
   pintarLog();
@@ -134,9 +188,9 @@ async function procesarCodigo(texto, avisarSiNoExiste, origen = "manual") {
 function pintarLog() {
   const el = document.getElementById("scan-log");
   if (!el) return;
-  document.getElementById("scan-count").textContent = scanLog.length ? `${scanLog.filter((s) => s.estado === "ok" || s.estado === "offline").length} nuevos` : "";
+  document.getElementById("scan-count").textContent = scanLog.length ? `${scanLog.filter((s) => s.estado === "ok" || s.estado === "offline" || s.estado === "salida").length} nuevos` : "";
   el.innerHTML = scanLog.length ? `<ul class="log-list">${scanLog.map((s) => `<li><div class="person"><span class="avatar">${esc(initials(s.alumno.nombre))}</span><div><strong>${esc(censurarNombre(s.alumno))}</strong><small>${esc(s.alumno.grado)}</small></div></div>
-    <div class="log-right"><span class="mono">${esc(s.hora)}</span>${s.estado === "ok" ? badge("Registrado", "green") : s.estado === "offline" ? badge("Sin enviar", "amber") : s.estado === "dup" ? badge("Duplicado", "amber") : s.estado === "pendiente" ? badge("Pendiente", "amber") : s.estado === "no_pertenece" ? badge("Otro curso", "red") : badge("Inactivo", "neutral")}</div></li>`).join("")}</ul>`
+    <div class="log-right"><span class="mono">${esc(s.hora)}</span>${s.estado === "salida" ? badge("Salida", "navy") : s.estado === "dup_salida" ? badge("Salida repetida", "amber") : s.estado === "sin_entrada" ? badge("Sin ingreso", "red") : s.estado === "ok" ? badge("Registrado", "green") : s.estado === "offline" ? badge("Sin enviar", "amber") : s.estado === "dup" ? badge("Duplicado", "amber") : s.estado === "pendiente" ? badge("Pendiente", "amber") : s.estado === "no_pertenece" ? badge("Otro curso", "red") : badge("Inactivo", "neutral")}</div></li>`).join("")}</ul>`
     : emptyState("Sin registros todavía", "Cada ingreso escaneado aparecerá aquí.", "qr");
 }
 

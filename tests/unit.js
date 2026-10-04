@@ -158,6 +158,93 @@ test("normalizarFilasImport valida, deduplica y avisa", () => {
   same(r.errores.map((e) => e.linea), [3, 4]);
 });
 
+/* calendario, horarios, periodos, riesgo, fusión, quiosco (v2.8) */
+import { diasLectivos, esDiaLectivo, feriadosPeru, limiteDeHorario, mapaNoLectivos, tablaLimites } from "../assets/js/calendario.js";
+import { cambiosPromocion, planPromocion } from "../assets/js/promocion.js";
+import { asistenciasParaOnline, planFusion } from "../assets/js/fusion.js";
+import { calcularRiesgo, faltasRestantes } from "../assets/js/riesgo.js";
+import { configurarLimites, decidirAccion } from "../assets/js/stats.js";
+
+test("feriadosPeru: fijos y Semana Santa 2026 (Pascua 5 abr → jueves 2 y viernes 3)", () => {
+  const f = feriadosPeru(2026);
+  const por = Object.fromEntries(f.map((x) => [x.fecha, x.nombre]));
+  assert(por["2026-07-28"] === "Fiestas Patrias" && por["2026-10-08"] === "Combate de Angamos" && por["2026-12-25"] === "Navidad");
+  assert(por["2026-04-02"] === "Jueves Santo" && por["2026-04-03"] === "Viernes Santo", "Semana Santa mal calculada");
+  assert(f.length === 16 && f.every((x, i) => i === 0 || f[i - 1].fecha <= x.fecha), "debe haber 16 feriados ordenados");
+});
+test("feriadosPeru 2027: Pascua 28 mar → jueves 25 y viernes 26", () => {
+  const por = Object.fromEntries(feriadosPeru(2027).map((x) => [x.fecha, x.nombre]));
+  assert(por["2027-03-25"] === "Jueves Santo" && por["2027-03-26"] === "Viernes Santo");
+});
+test("diasLectivos: sin fines de semana ni feriados; «Evento» sí tiene clases", () => {
+  const nl = mapaNoLectivos([{ fecha: "2026-10-08", tipo: "Feriado", nombre: "Angamos" }, { fecha: "2026-10-09", tipo: "Evento", nombre: "Feria" }]);
+  same(diasLectivos("2026-10-05", "2026-10-12", nl), ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-09", "2026-10-12"]);
+  assert(!esDiaLectivo("2026-10-08", nl) && esDiaLectivo("2026-10-09", nl));
+});
+test("limiteDeHorario: ingreso + tolerancia; la carrera tiene prioridad sobre el general; sin horario → por defecto", () => {
+  const h = [{ nivel: null, hora_ingreso: "08:00", tolerancia_min: 5 }, { nivel: "APSTI", hora_ingreso: "07:30", tolerancia_min: 10 }];
+  same([limiteDeHorario(h, "APSTI"), limiteDeHorario(h, "MECANICA"), limiteDeHorario([], "X", "08:00")], ["07:40", "08:05", "08:00"]);
+  same(tablaLimites(h), { general: "08:05", porNivel: { APSTI: "07:40" } });
+});
+test("esTardanza usa el horario de la carrera cuando existe", () => {
+  configurarLimites({ general: "08:05", porNivel: { APSTI: "07:40" } });
+  assert(esTardanza("07:50", "08:05", "APSTI") && !esTardanza("07:50", "08:05", "MECANICA") && !esTardanza("07:50", "08:05"));
+  configurarLimites(null);
+  assert(esTardanza("08:30", "08:00", "APSTI") && !esTardanza("08:00", "08:00", "APSTI"));
+});
+test("promoción: cada ciclo pasa al siguiente conservando el salón; el VI egresa; ciclos libres no se tocan", () => {
+  const al = [
+    A("1", { nivel: "APSTI", grado: "APSTI · I CICLO · SECCIÓN A" }), A("2", { nivel: "APSTI", grado: "APSTI · VI CICLO" }),
+    A("3", { nivel: "APSTI", grado: "Grupo libre" }), A("4", { nivel: "APSTI", grado: "APSTI · IV CICLO", estado: "INACTIVO" }),
+    A("5", { nivel: "MEC", grado: "MEC · II CICLO" }),
+  ];
+  const p = planPromocion(al, [{ nivel: "APSTI", nombre: "APSTI · II CICLO · SECCIÓN A" }]);
+  same(p.mover.map((m) => [m.alumno.id, m.a]), [["1", "APSTI · II CICLO · SECCIÓN A"], ["5", "MEC · III CICLO"]]);
+  same(p.egresan.map((a) => a.id), ["2"]); same(p.sinCiclo.map((a) => a.id), ["3"]);
+  same(p.gradosNuevos, [{ nivel: "MEC", nombre: "MEC · III CICLO" }]);   // el II de APSTI ya existía; el inactivo no se mueve
+  same(cambiosPromocion(p), [{ id: "1", cambios: { grado: "APSTI · II CICLO · SECCIÓN A" } }, { id: "5", cambios: { grado: "MEC · III CICLO" } }, { id: "2", cambios: { estado: "EGRESADO" } }]);
+  same(planPromocion(al, [], ["MEC"]).mover.map((m) => m.alumno.id), ["5"]);   // solo una carrera
+});
+test("fusión local→online: solo agrega lo que falta y nunca pisa lo existente", () => {
+  const local = { niveles: [{ nombre: "APSTI" }, { nombre: "NUEVA" }], grados: [{ nivel: "APSTI", nombre: "G1" }, { nivel: "NUEVA", nombre: "G2" }],
+    alumnos: [{ id: "l1", codigo: "a1", nombre: "Ya existe" }, { id: "l2", codigo: "a2", nombre: "Nuevo" }],
+    asistencias: [{ alumno_id: "l2", fecha: "2026-10-05", hora: "07:30", hora_salida: "13:00" }, { alumno_id: "zzz", fecha: "2026-10-05", hora: "07:31" }],
+    comunicados: [{ fecha: "2026-10-01", titulo: "Igual" }, { fecha: "2026-10-02", titulo: "Otro" }], cursos: [{ nivel: "APSTI", grado: "", nombre: "Redes" }] };
+  const remoto = { niveles: [{ nombre: "APSTI" }], grados: [{ nivel: "APSTI", nombre: "G1" }], alumnos: [{ id: "r1", codigo: "a1" }], comunicados: [{ fecha: "2026-10-01", titulo: "Igual" }], cursos: [{ nivel: "APSTI", grado: null, nombre: "REDES" }] };
+  const p = planFusion(local, remoto);
+  same(p.resumen, { niveles: 1, grados: 1, alumnos: 1, alumnosExistentes: 1, asistencias: 2, comunicados: 1, cursos: 0 });
+  const r = asistenciasParaOnline(local.asistencias, local.alumnos, [{ id: "r1", codigo: "a1" }, { id: "r2", codigo: "a2" }], "C1", "U1");
+  same(r.filas, [{ colegio_id: "C1", alumno_id: "r2", fecha: "2026-10-05", hora: "07:30", hora_salida: "13:00", registrado_por: "U1", origen: "local" }]);
+  assert(r.sinAlumno === 1);
+});
+test("riesgo: % de faltas sobre días lectivos, justificadas no cuentan, hoy no cuenta, feriados no cuentan", () => {
+  const al = [A("a"), A("b"), A("c"), A("z", { estado: "INACTIVO" })];
+  // lunes 5 a viernes 9 oct (jueves 8 feriado) + lunes 12 = 5 días lectivos; hoy = 12 (no cuenta) → 4 días
+  const nl = mapaNoLectivos([{ fecha: "2026-10-08", tipo: "Feriado", nombre: "Angamos" }]);
+  const asis = [X("a", "2026-10-05"), X("a", "2026-10-06"), X("a", "2026-10-07"), X("a", "2026-10-09"), X("b", "2026-10-05"), X("b", "2026-10-06")];
+  const r = calcularRiesgo({ alumnos: al, asistencias: asis, justificaciones: [{ alumno_id: "c", fecha: "2026-10-05" }], noLectivos: nl, desde: "2026-10-05", hasta: "2026-10-12", hoy: "2026-10-12", limite: 30 });
+  same(r.map((x) => [x.alumno.id, x.faltas, x.justificadas, x.pctFaltas, x.nivel]), [["c", 3, 1, 75, "critico"], ["b", 2, 0, 50, "critico"], ["a", 0, 0, 0, "ok"]]);
+  assert(r.every((x) => x.dias === 4) && !r.some((x) => x.alumno.id === "z"));
+  const r2 = calcularRiesgo({ alumnos: [A("q")], asistencias: [X("q", "2026-10-05"), X("q", "2026-10-06"), X("q", "2026-10-07")], noLectivos: nl, desde: "2026-10-05", hasta: "2026-10-09", limite: 30 });
+  same([r2[0].dias, r2[0].faltas, r2[0].nivel, faltasRestantes(r2[0], 30)], [4, 1, "alerta", 0]);
+  same(calcularRiesgo({ alumnos: al, asistencias: [], desde: "2026-10-10", hasta: "2026-10-11" }), []);
+});
+test("riesgo: nivel «alerta» entre 70 % del límite y el límite", () => {
+  const dias = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-09", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-19"];
+  const asis = dias.slice(0, 7).map((d) => X("a", d));            // 3 faltas de 10 = 30 % → crítico; con 8 asistencias, 2 de 10 = 20 % → alerta (≥21 no) → ok
+  const r = calcularRiesgo({ alumnos: [A("a")], asistencias: asis, desde: "2026-10-05", hasta: "2026-10-19", limite: 30, noLectivos: mapaNoLectivos([{ fecha: "2026-10-08", tipo: "Feriado", nombre: "x" }]) });
+  same([r[0].dias, r[0].faltas, r[0].pctFaltas, r[0].nivel], [10, 3, 30, "critico"]);
+  const asis2 = dias.slice(0, 8).map((d) => X("a", d));
+  const r3 = calcularRiesgo({ alumnos: [A("a")], asistencias: asis2, desde: "2026-10-05", hasta: "2026-10-19", limite: 30, aviso: 20, noLectivos: mapaNoLectivos([{ fecha: "2026-10-08", tipo: "Feriado", nombre: "x" }]) });
+  same([r3[0].pctFaltas, r3[0].nivel], [20, "alerta"]);
+});
+test("quiosco · decidirAccion: ingreso, repetido, salida tras la permanencia mínima, salida repetida", () => {
+  same(decidirAccion(undefined, "07:50", 45), "entrada");
+  same(decidirAccion({ hora: "07:50" }, "08:10", 45), "ya_ingreso");
+  same(decidirAccion({ hora: "07:50" }, "08:35", 45), "salida");
+  same(decidirAccion({ hora: "07:50", hora_salida: "13:00" }, "13:30", 45), "dup_salida");
+});
+
 /* render */
 const fail = results.filter((r) => !r.ok);
 if (typeof document !== "undefined") {

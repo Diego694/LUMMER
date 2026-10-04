@@ -35,7 +35,7 @@ export function buildDemoDB() {
     for (let i = 0; i < cantidad; i++) {
       const ap1 = pick(APELLIDOS), ap2 = pick(APELLIDOS);
       db.alumnos.push({
-        id: uid(), colegio_id: colegioId, codigo: `a${++n}`, qr_secreto: Array.from({ length: 32 }, () => "0123456789abcdef"[Math.floor(r() * 16)]).join(""),
+        id: uid(), colegio_id: colegioId, codigo: `a${++n}`, codigo_apoderado: Array.from({ length: 12 }, () => "0123456789ABCDEF"[Math.floor(r() * 16)]).join(""), qr_secreto: Array.from({ length: 32 }, () => "0123456789abcdef"[Math.floor(r() * 16)]).join(""),
         nombre: `${pick(NOMBRES)} ${ap1} ${ap2}`, nivel, grado,
         apoderado: `${pick(APODERADOS)} ${ap1}`, estado: r() < 0.94 ? "ACTIVO" : "INACTIVO",
       });

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.8.0 — 2026-10-05
+
+### Añadido
+- **Modo quiosco**: tablet fija en la puerta; el estudiante muestra su carnet (QR/NFC/lector USB) y se registra solo. Pantalla completa con PIN, foto y color, sonido y voz, ingreso y salida automáticos, funciona sin internet y se reanuda solo.
+- **Hora de salida** (escáner y quiosco), con cola sin conexión; se ve en historial, reportes y portal de apoderados.
+- **Periodos y cambio de ciclo** (vista previa, egreso del VI ciclo, historial de cierres).
+- **Calendario** (feriados de Perú y días sin clases) y **horarios por carrera** con tolerancia; los feriados no cuentan como falta.
+- **Alertas de inasistencia** con margen de faltas y aviso por WhatsApp.
+- **Nómina mensual oficial** en PDF con firmas y días sin clases.
+- **Historial de cambios** inalterable (disparadores en la base), sin datos personales.
+- **Portal para apoderados** (`/apoderado/`) con código por alumno y límite de intentos.
+- **Datos del modo local → online** desde el programa de PC, sin pisar nada.
+- Migración `007` (aditiva) y pruebas SQL nuevas (calendario, salidas, historial, apoderados); pruebas unitarias del calendario, riesgo, promoción, fusión y quiosco.
+
 ## 2.7.0 — 2026-10-04
 
 ### Añadido

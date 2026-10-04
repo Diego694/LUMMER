@@ -1,10 +1,27 @@
 // Lógica de negocio pura: estadísticas de asistencia e importación CSV. Sin DOM ni red.
 import { etiquetaCiclo, pct } from "./utils.js";
 
-/** ¿El ingreso es tardanza? Compara HH:MM (24 h) contra el límite. */
-export function esTardanza(hora, limite) {
+/** Límites de puntualidad por carrera (se cargan desde la tabla horarios; ver calendario.js → tablaLimites). */
+export const limites = { general: null, porNivel: {} };
+export function configurarLimites(tabla) { limites.general = tabla?.general ?? null; limites.porNivel = tabla?.porNivel || {}; }
+
+/** ¿El ingreso es tardanza? Compara HH:MM (24 h) contra el límite; si se indica la carrera y tiene horario propio, usa ese. */
+export function esTardanza(hora, limite, nivel) {
   if (!hora) return false;
-  return hora.slice(0, 5) > limite;
+  const lim = (nivel && limites.porNivel[nivel]) || limite;
+  return String(hora).slice(0, 5) > lim;
+}
+
+/**
+ * Qué corresponde hacer cuando un alumno se presenta (quiosco): 'entrada' si hoy no ingresó; 'salida' si ya ingresó,
+ * aún no salió y pasó la permanencia mínima; 'ya_ingreso' si vuelve a pasar muy pronto (evita registrar una salida por error);
+ * 'dup_salida' si ya tenía salida. `reg` es la asistencia de hoy del alumno (o undefined).
+ */
+export function decidirAccion(reg, ahoraHHMM, minPermanencia = 45) {
+  if (!reg) return "entrada";
+  if (reg.hora_salida) return "dup_salida";
+  const m = (h) => { const [a, b] = String(h).split(":").map(Number); return a * 60 + b; };
+  return m(ahoraHHMM) - m(reg.hora) >= minPermanencia ? "salida" : "ya_ingreso";
 }
 
 /** Resumen del día: presentes, tardanzas, ausentes y % sobre alumnos activos. */
@@ -12,8 +29,9 @@ export function resumenDia(alumnos, asistencias, limite) {
   const activos = alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false);
   const ids = new Set(activos.map((a) => a.id));
   const delDia = asistencias.filter((x) => ids.has(x.alumno_id));
+  const nivelDe = new Map(activos.map((a) => [a.id, a.nivel]));
   const presentes = delDia.length;
-  const tardes = delDia.filter((x) => esTardanza(x.hora, limite)).length;
+  const tardes = delDia.filter((x) => esTardanza(x.hora, limite, nivelDe.get(x.alumno_id))).length;
   return {
     activos: activos.length,
     presentes,
@@ -25,10 +43,10 @@ export function resumenDia(alumnos, asistencias, limite) {
 }
 
 /** Serie diaria para el gráfico de tendencia. */
-export function serieDiaria(dias, asistencias, totalActivos, limite) {
+export function serieDiaria(dias, asistencias, totalActivos, limite, nivelDe = new Map()) {
   return dias.map((fecha) => {
     const del = asistencias.filter((a) => a.fecha === fecha);
-    const tardes = del.filter((a) => esTardanza(a.hora, limite)).length;
+    const tardes = del.filter((a) => esTardanza(a.hora, limite, nivelDe.get(a.alumno_id))).length;
     return { fecha, presentes: del.length, tardes, pct: pct(del.length, totalActivos) };
   });
 }
@@ -74,9 +92,9 @@ export function bajaAsistencia(alumnos, asistencias, umbral, limiteResultados = 
 }
 
 /** Estadísticas del historial de un alumno sobre los días de clase del periodo. */
-export function resumenAlumno(historial, diasClase, limite) {
+export function resumenAlumno(historial, diasClase, limite, nivel) {
   const presentes = historial.length;
-  const tardes = historial.filter((h) => esTardanza(h.hora, limite)).length;
+  const tardes = historial.filter((h) => esTardanza(h.hora, limite, nivel)).length;
   return { presentes, tardes, ausentes: Math.max(0, diasClase - presentes), pct: pct(presentes, diasClase) };
 }
 
@@ -98,7 +116,7 @@ export function matrizAsistencia(alumnos, asistencias, justificaciones, dias, li
     let p = 0, t = 0, j = 0, f = 0;
     diasClase.forEach((d) => {
       const hora = asis.get(`${alumno.id}|${d}`);
-      if (hora !== undefined) { if (esTardanza(hora, limite)) { celdas[d] = "T"; t++; } else celdas[d] = "P"; p++; }
+      if (hora !== undefined) { if (esTardanza(hora, limite, alumno.nivel)) { celdas[d] = "T"; t++; } else celdas[d] = "P"; p++; }
       else if (just.has(`${alumno.id}|${d}`)) { celdas[d] = "J"; j++; }
       else { celdas[d] = "F"; f++; }
     });

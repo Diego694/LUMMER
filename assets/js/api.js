@@ -7,12 +7,25 @@ import { buildDemoDB } from "./demo-data.js";
 import { extrasDemo, extrasSupabase } from "./api-extra.js";
 import { uid } from "./utils.js";
 
-const TABLAS = ["alumnos", "niveles", "grados", "docentes", "comunicados", "cursos"];
+const TABLAS = ["alumnos", "niveles", "grados", "docentes", "comunicados", "cursos", "periodos", "calendario", "horarios"];
 const err = (message, code) => Object.assign(new Error(message), { code });
 
 /* ----------------------------- DEMO ----------------------------- */
+/** Código de 12 caracteres (como el de la base) con el que el apoderado consulta la asistencia de su hijo. */
+export const codigoApoderado = () => Array.from({ length: 12 }, () => "0123456789ABCDEF"[Math.floor(Math.random() * 16)]).join("");
+
 class DemoBackend {
   mode = "demo";
+  /** Historial de cambios del demo/local (en la base real lo escriben disparadores que nadie puede saltarse). */
+  _auditar(accion, tabla, id, nuevo, previo) {
+    if (tabla === "auditoria") return;
+    const detalle = accion === "UPDATE"
+      ? Object.fromEntries(Object.keys(nuevo || {}).filter((k) => previo && previo[k] !== nuevo[k]).map((k) => [k, { de: previo[k], a: nuevo[k] }]))
+      : (accion === "DELETE" ? { ...(nuevo || {}) } : { ...(nuevo || {}) });
+    if (accion === "UPDATE" && !Object.keys(detalle).length) return;
+    (this.db.auditoria ||= []).unshift({ id: uid(), colegio_id: this.db.colegio.id, usuario: this.mode === "local" ? "local@este-equipo" : DEMO_USER.email, accion, tabla, registro_id: id, detalle, creado_en: new Date().toISOString() });
+    this.db.auditoria = this.db.auditoria.slice(0, 500);
+  }
   KEY = "ra-demo-db-v1";
   SESSION = "ra-demo-session";
 
@@ -20,6 +33,10 @@ class DemoBackend {
     if (this.constructor.KEY) this.KEY = this.constructor.KEY;
     try { this.db = JSON.parse(localStorage.getItem(this.KEY)); } catch { this.db = null; }
     if (!this.db) { this.db = this.nuevaDB(); this.persist(); }
+    // datos guardados por versiones anteriores: completar lo que faltaba
+    let cambio = false;
+    this.db.alumnos.forEach((a) => { if (!a.codigo_apoderado) { a.codigo_apoderado = codigoApoderado(); cambio = true; } });
+    if (cambio) this.persist();
   }
   nuevaDB() { return buildDemoDB(); }
   persist() { try { localStorage.setItem(this.KEY, JSON.stringify(this.db)); } catch { /* cuota llena: se ignora */ } }
@@ -51,6 +68,7 @@ class DemoBackend {
     return {
       alumnos: sort(alumnos, "nombre"), niveles: sort(niveles, "nombre"), grados: sort(grados, "nombre"),
       docentes: sort(docentes, "nombre"), comunicados: [...comunicados].sort((a, b) => b.fecha.localeCompare(a.fecha)), cursos: sort(cursos, "nombre"),
+      ajustes: { periodos: [...(this.db.periodos || [])], calendario: [...(this.db.calendario || [])], horarios: [...(this.db.horarios || [])] },
     };
   }
   async asistenciasRango(_c, desde, hasta) { return this.db.asistencias.filter((a) => a.fecha >= desde && a.fecha <= hasta); }
@@ -75,17 +93,20 @@ class DemoBackend {
 
   async save(tabla, data, id) {
     if (!TABLAS.includes(tabla)) throw err("Tabla inválida");
-    const list = this.db[tabla];
+    const list = (this.db[tabla] ||= []);
+    if (tabla === "calendario" && list.some((x) => x.id !== id && x.fecha === data.fecha)) throw err("Fecha duplicada", "duplicate");
+    if (tabla === "periodos" && list.some((x) => x.id !== id && x.nombre === data.nombre)) throw err("Periodo duplicado", "duplicate");
     if (tabla === "alumnos" && list.some((x) => x.codigo === data.codigo && x.id !== id)) throw err("Código duplicado", "duplicate");
     // misma regla que el índice único de la base: curso único por carrera + ciclo + nombre (sin distinguir mayúsculas)
     if (tabla === "cursos" && list.some((x) => x.id !== id && x.nivel === data.nivel && (x.grado || "") === (data.grado || "") && x.nombre.toLowerCase() === String(data.nombre).toLowerCase())) throw err("Curso duplicado", "duplicate");
-    if (id) Object.assign(list.find((x) => x.id === id), data);
-    else list.push({ id: uid(), colegio_id: this.db.colegio.id, ...data });
+    if (id) { const prev = list.find((x) => x.id === id); this._auditar("UPDATE", tabla, id, data, prev); Object.assign(prev, data); }
+    else { const nuevo = { id: uid(), colegio_id: this.db.colegio.id, ...data }; if (tabla === "alumnos" && !nuevo.codigo_apoderado) nuevo.codigo_apoderado = codigoApoderado(); list.push(nuevo); this._auditar("INSERT", tabla, nuevo.id, data); }
     this.persist();
   }
   async remove(tabla, id) {
     if (!TABLAS.includes(tabla)) throw err("Tabla inválida");
-    this.db[tabla] = this.db[tabla].filter((x) => x.id !== id);
+    this._auditar("DELETE", tabla, id, tabla === "alumnos" ? { codigo: (this.db.alumnos.find((x) => x.id === id) || {}).codigo } : (this.db[tabla] || []).find((x) => x.id === id));
+    this.db[tabla] = (this.db[tabla] || []).filter((x) => x.id !== id);
     if (tabla === "alumnos") this.db.asistencias = this.db.asistencias.filter((a) => a.alumno_id !== id);
     this.persist();
   }
@@ -183,7 +204,8 @@ class SupabaseBackend {
     const [alumnos, niveles, grados, comunicados, docentes, cursos] = await Promise.all([
       q("alumnos", "nombre"), q("niveles", "nombre"), q("grados", "nombre"), q("comunicados", "fecha", false), q("docentes", "nombre"), this.cursosLista(cid),
     ]);
-    return { alumnos, niveles, grados, comunicados, docentes, cursos };
+    const ajustes = await this.ajustesLista(cid);
+    return { alumnos, niveles, grados, comunicados, docentes, cursos, ajustes };
   }
   asistenciasRango(cid, desde, hasta) {
     return this.#todo(() => this.sb.from("asistencias").select("*").eq("colegio_id", cid).gte("fecha", desde).lte("fecha", hasta).order("id"));
@@ -229,7 +251,7 @@ class SupabaseBackend {
 Object.assign(DemoBackend.prototype, extrasDemo);
 Object.assign(SupabaseBackend.prototype, extrasSupabase);
 // Las operaciones nuevas de red del demo también fallan con la red simulada caída
-["cursosLista", "justificacionesRango", "guardarJustificacion", "asistenciasCursoPorFecha", "registrarAsistenciaCurso", "registrarMasivoCurso", "avisosPorFecha", "registrarAviso", "exportarTodo"].forEach((m) => {
+["cursosLista", "ajustesLista", "registrarSalidas", "justificacionesRango", "guardarJustificacion", "asistenciasCursoPorFecha", "registrarAsistenciaCurso", "registrarMasivoCurso", "avisosPorFecha", "registrarAviso", "exportarTodo"].forEach((m) => {
   const original = DemoBackend.prototype[m];
   DemoBackend.prototype[m] = async function (...args) {
     if (globalThis.__simOffline) throw err("Failed to fetch (sin conexión simulada)");

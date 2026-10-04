@@ -11,6 +11,12 @@ import { iniciarSelectorModo } from "./modo.js";
 import { activarAvisos, desactivarAvisos } from "./notificaciones.js";
 import { personalPage } from "./pages/personal.js";
 import { perfilPage, pintarAvatar } from "./pages/perfil.js";
+import { calendarioPage } from "./pages/calendario.js";
+import { periodosPage } from "./pages/periodos.js";
+import { alertasPage } from "./pages/alertas.js";
+import { historialPage } from "./pages/historial.js";
+import { migrarPage } from "./pages/migrar.js";
+import { quioscoPage, reanudarQuiosco } from "./pages/quiosco.js";
 import { esErrorRed, esc, fmtDate, initials, todayStr } from "./utils.js";
 import { dashboardPage } from "./pages/dashboard.js";
 import { registroAlumnoPage, registroMasivoPage, registroQrPage } from "./pages/registro.js";
@@ -25,10 +31,10 @@ import { alumnosPage, comunicadosPage, docentesPage, gradosPage, nivelesPage } f
 
 const PAGES = [
   dashboardPage, perfilPage,
-  registroQrPage, registroAlumnoPage, registroMasivoPage,
-  asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, avisosPage,
-  carnetPage, codigoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, justificacionesPage, comunicadosPage,
-  diagnosticoPage, respaldoPage, erroresPage,
+  registroQrPage, quioscoPage, registroAlumnoPage, registroMasivoPage,
+  asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, alertasPage, avisosPage,
+  carnetPage, codigoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
+  diagnosticoPage, respaldoPage, historialPage, migrarPage, erroresPage,
 ];
 const $ = (s) => document.querySelector(s);
 let actual = null;
@@ -91,7 +97,7 @@ async function entrar(user, guardado = null) {
   let perfil;
   if (guardado) { perfil = guardado.perfil; DB.sesionOffline = true; }
   else { perfil = await api.getProfile(user); guardarPerfil(user, perfil); DB.sesionOffline = false; }
-  DB.cid = perfil.colegio_id; DB.rol = perfil.rol; DB.perfil = perfil; DB.userId = user.id;
+  DB.cid = perfil.colegio_id; DB.rol = perfil.rol; DB.perfil = perfil; DB.userId = user.id; DB.userEmail = user.email || "";
   await Promise.race([sincronizarRelojServidor(), new Promise((r) => setTimeout(r, 3000))]); // hora confiable antes de registrar
   await loadAll();
   logged = true;
@@ -102,6 +108,7 @@ async function entrar(user, guardado = null) {
   $("#user-role").textContent = `${ETIQUETA_ROL[rolActual()]}${perfil.carrera ? " de " + perfil.carrera : ""}${perfil.colegio ? " · " + perfil.colegio : ""}`;
   enviarPendientes();
   activarAvisos(api);
+  reanudarQuiosco();
   pintarAvatar();
   $("#topbar-date").textContent = fmtDate(todayStr(), { weekday: "short", day: "2-digit", month: "short" });
   $("#mode-badge").hidden = api.mode !== "demo" && api.mode !== "local";

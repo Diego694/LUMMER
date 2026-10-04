@@ -1,6 +1,7 @@
 // Pruebas del modo sin conexión: cola local, guardado offline y sincronización (con el backend demo y fallos simulados).
 import { api } from "../assets/js/api.js";
 import { cola, asistenciasPendientesDe } from "../assets/js/cola.js";
+import "../assets/js/pages/registro.js";   // registra el envío de tipo «salida»
 import { alSincronizar, estadoSync, guardarAsistencias, red, sincronizar } from "../assets/js/sync.js";
 
 const out = [];
@@ -93,6 +94,19 @@ await check("Demo sin conexión simulada: las llamadas de red del backend fallan
   let msg = "";
   try { await api.asistenciasPorFecha("c", "2026-10-05"); } catch (e) { msg = e.message; }
   assert(/fetch|conexi/i.test(msg), msg);
+});
+
+await check("Salida sin conexión: se encola y, al volver la red, se guarda en la asistencia del día", async () => {
+  const a = api.db.alumnos[0];
+  api.db.asistencias = api.db.asistencias.filter((x) => !(x.alumno_id === a.id && x.fecha === "2030-01-07"));
+  await api.registrarAsistencia({ colegio_id: "c", alumno_id: a.id, fecha: "2030-01-07", hora: "07:30", registrado_por: "u", origen: "quiosco" });
+  cola.agregar({ tipo: "salida", row: { alumno_id: a.id, fecha: "2030-01-07", hora: "13:10" }, clave: `s|${a.id}|2030-01-07` });
+  cola.agregar({ tipo: "salida", row: { alumno_id: a.id, fecha: "2030-01-07", hora: "13:10" }, clave: `s|${a.id}|2030-01-07` });   // repetida: no se duplica
+  assert(cola.pendientes().length === 1, "la salida repetida no debe encolarse dos veces");
+  const r = await sincronizar();
+  const fila = api.db.asistencias.find((x) => x.alumno_id === a.id && x.fecha === "2030-01-07");
+  api.db.asistencias = api.db.asistencias.filter((x) => x !== fila); api.persist();
+  assert(r.n === 1 && fila.hora_salida === "13:10" && cola.pendientes().length === 0, JSON.stringify({ r, salida: fila.hora_salida }));
 });
 
 const fail = out.filter((r) => !r.ok);
