@@ -16,6 +16,8 @@
 
 La interfaz oculta lo que no corresponde, pero **la seguridad real está en la base de datos** (políticas RLS): aunque alguien manipule la web, la base rechaza lo no permitido.
 
+> **Gestión → Docentes** es solo de consulta: lista a los docentes y coordinadores con cuenta (y cuántos son). No se agregan ahí: se crean en **Personal y accesos**.
+
 ## Crear la cuenta de un docente (desde el panel)
 1. Como administrador: **Gestión → Personal y accesos → Crear usuario**.
 2. Escribe su **nombre, correo y contraseña** (mínimo 8 caracteres) y elige el rol (Coordinador pide además la carrera).

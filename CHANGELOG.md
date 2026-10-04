@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.8.1 — 2026-10-05
+
+### Cambiado
+- **Docentes ahora es solo lectura**: ya no se registran a mano. Muestra los docentes y coordinadores con cuenta (con foto, rol y carrera) y su conteo; al crear un usuario en «Personal y accesos» aparece solo. Los docentes cargados antes sin cuenta se siguen viendo, marcados «Sin cuenta». Migración `008` (directorio sin correos).
+
 ## 2.8.0 — 2026-10-05
 
 ### Añadido

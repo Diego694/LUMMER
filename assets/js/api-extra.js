@@ -167,6 +167,11 @@ export const extrasSupabase = {
     const { error } = await this.sb.rpc("personal_quitar", { p_id: id });
     if (error) throw err(error.message, error.code);
   },
+  /** Directorio de docentes y coordinadores (solo lectura, sin correos). Sin la migración 008 devuelve null. */
+  async personalDirectorio() {
+    const { data, error } = await this.sb.rpc("personal_directorio");
+    return error ? null : data || [];
+  },
   async tokenAvisos() {
     const { data, error } = await this.sb.rpc("token_avisos");
     return error ? null : data;   // sin la migración 005 simplemente no hay avisos
@@ -251,6 +256,7 @@ export const extrasDemo = {
     this.db.personal = this.db.personal.filter((x) => x.id !== id); this.persist();
   },
   async tokenAvisos() { return null; },
+  async personalDirectorio() { return (await this.personalListar()).filter((p) => /^(docente|coordinador)$/i.test(p.rol)).map(({ email, ...resto }) => resto); },
   async personalCrear({ nombre, email, rol, carrera }) {
     await this.personalAsignar(email, rol, carrera, nombre);   // en demo/local no hay cuentas reales: solo la lista
   },

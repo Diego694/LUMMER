@@ -249,4 +249,16 @@ do $$ declare cod text; r json; i int; begin
   perform t.root();
 end $$;
 
+-- ===== 18. Directorio del personal (solo lectura, sin correos) =====
+do $$ declare r json; begin
+  perform t.act('00000000-0000-0000-0000-0000000000d1');
+  r := public.personal_directorio();
+  perform t.eq(json_array_length(r)::text, '2', 'el docente ve a los docentes y coordinadores de SU instituto (no admins ni otros institutos)');
+  perform t.eq(((r->0)::text like '%@%' or (r->1)::text like '%@%')::text, 'false', 'el directorio no expone correos');
+  perform t.root();
+  execute 'set local role anon';
+  perform t.falla($q$select public.personal_directorio()$q$, 'anónimos no ven el directorio');
+  perform t.root();
+end $$;
+
 select 'TODAS LAS PRUEBAS DE SEGURIDAD PASARON' as resultado;

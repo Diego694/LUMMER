@@ -16,7 +16,7 @@ export const esAdmin = () => rolActual() === "admin";
 /** Acciones (data-action) que solo puede hacer el administrador. */
 export const ACCIONES_ADMIN = [
   "nivel-new", "nivel-del", "grado-new", "grado-del", "ciclos-new", "al-new", "al-edit", "al-del", "al-import", "al-revisar",
-  "do-new", "do-edit", "do-del", "co-del", "cd-generar", "cd-regenerar", "pers-crear", "pers-existente", "pers-pass", "pers-edit", "pers-del", "curso-new", "curso-edit", "curso-del",
+  "co-del", "cd-generar", "cd-regenerar", "pers-crear", "pers-existente", "pers-pass", "pers-edit", "pers-del", "curso-new", "curso-edit", "curso-del",
   "just-del", "err-borrar", "respaldo-json", "respaldo-csv-alumnos", "respaldo-csv-asistencias",
 ];
 const SET = new Set(ACCIONES_ADMIN);

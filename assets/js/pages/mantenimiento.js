@@ -2,7 +2,7 @@
 import { api } from "../api.js";
 import { CONFIG } from "../config.js";
 import { DB, alumnoPorId, loadAll, opcionesGrado, opcionesNivel } from "../state.js";
-import { badge, confirmDialog, emptyState, formModal, icon, openModal, pageHead, registerActions, toast } from "../ui.js";
+import { badge, confirmDialog, emptyState, formModal, icon, openModal, pageHead, registerActions, skeleton, toast } from "../ui.js";
 import { enlaceWhatsApp, normalizarFilasImport } from "../stats.js";
 import { CICLOS, debounce, downloadFile, esc, etiquetaCiclo, fmtDate, initials, nombreCiclo, norm, parsearCiclo, todayStr } from "../utils.js";
 
@@ -282,40 +282,37 @@ function importarCSV() {
   });
 }
 
-/* ============================ Docentes ============================ */
+/* ============================ Docentes (solo lectura) ============================ */
+// El personal se crea en «Personal y accesos»; aquí solo se consulta quién es docente o coordinador.
 let dq = "";
 export const docentesPage = {
   id: "docentes", title: "Docentes", icon: "briefcase", group: "Gestión",
-  render(el) {
-    el.innerHTML = `${pageHead("Docentes", "Personal docente y administrativo.", `<button class="btn btn-primary" data-action="do-new">${icon("plus", 16)} Agregar</button>`)}
-      <div class="toolbar"><div class="search"><span class="search-ic">${icon("search", 16)}</span><input class="input" id="do-q" placeholder="Buscar por nombre, rol o profesión…" value="${esc(dq)}" aria-label="Buscar"></div></div><div class="card flush" id="tbl"></div>`;
-    el.querySelector("#do-q").addEventListener("input", debounce((e) => { dq = e.target.value; el._repaint(); }, 150));
+  async render(el) {
+    el.innerHTML = `${pageHead("Docentes", "Docentes y coordinadores con acceso al sistema. Solo lectura: las cuentas se crean en «Personal y accesos».")}
+      <div class="toolbar"><div class="search"><span class="search-ic">${icon("search", 16)}</span><input class="input" id="do-q" placeholder="Buscar por nombre, rol o carrera…" value="${esc(dq)}" aria-label="Buscar"></div><span class="muted" id="do-total"></span></div><div class="card flush" id="tbl">${skeleton(4)}</div>`;
+    let lista = [];
+    try { lista = (await api.personalDirectorio()) || []; } catch { lista = []; }
+    // Docentes cargados antes a mano (sin cuenta): se siguen mostrando, solo para consulta.
+    const sinCuenta = DB.docentes.filter((d) => d.estado === "ACTIVO").map((d) => ({ id: d.id, nombre: d.nombre, rol: d.rol || "Docente", carrera: d.profesion || "", sinCuenta: true }));
+    const todos = [...lista, ...sinCuenta];
     el._repaint = () => {
       const q = norm(dq);
-      const l = DB.docentes.filter((d) => !q || norm([d.nombre, d.rol, d.profesion].join(" ")).includes(q));
-      el.querySelector("#tbl").innerHTML = l.length ? `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Profesión</th><th>Estado</th><th></th></tr></thead><tbody>
-        ${l.map((d) => `<tr><td><div class="person"><span class="avatar">${esc(initials(d.nombre))}</span><span>${esc(d.nombre)}</span></div></td><td>${esc(d.rol)}</td><td>${d.profesion ? esc(d.profesion) : '<span class="muted">—</span>'}</td>
-          <td>${badge(d.estado === "ACTIVO" ? "Activo" : "Inactivo", d.estado === "ACTIVO" ? "green" : "neutral")}</td>
-          <td class="t-right nowrap"><button class="icon-only" title="Editar" aria-label="Editar ${esc(d.nombre)}" data-action="do-edit" data-id="${d.id}">${icon("edit", 16)}</button>
-          <button class="icon-only danger" title="Eliminar" aria-label="Eliminar ${esc(d.nombre)}" data-action="do-del" data-id="${d.id}">${icon("trash", 16)}</button></td></tr>`).join("")}</tbody></table></div>`
-        : emptyState("No se encontraron docentes", "Agrega un nuevo docente o ajusta tu búsqueda.", "search");
+      const l = todos.filter((d) => !q || norm([d.nombre, d.rol, d.carrera].join(" ")).includes(q));
+      el.querySelector("#do-total").textContent = `${todos.filter((d) => /docente/i.test(d.rol)).length} docentes · ${todos.filter((d) => /coordinador/i.test(d.rol)).length} coordinadores`;
+      el.querySelector("#tbl").innerHTML = l.length ? `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Carrera</th><th>Cuenta</th></tr></thead><tbody>
+        ${l.map((d) => `<tr><td><div class="person"><span class="avatar" data-foto="${esc(d.foto_path || "")}">${esc(initials(d.nombre || "?"))}</span><span>${esc(d.nombre || "Sin nombre")}</span></div></td><td>${badge(d.rol, /coordinador/i.test(d.rol) ? "amber" : "green")}</td>
+          <td>${d.carrera ? esc(d.carrera) : '<span class="muted">—</span>'}</td><td>${d.sinCuenta ? badge("Sin cuenta", "neutral") : badge("Con acceso", "green")}</td></tr>`).join("")}</tbody></table></div>`
+        : emptyState("Aún no hay docentes", "Crea el primero en «Personal y accesos → Crear usuario» y aparecerá aquí.", "briefcase");
+      el.querySelectorAll(".avatar[data-foto]").forEach(async (av) => {
+        if (!av.dataset.foto) return;
+        const url = await api.fotoPersonalUrl(av.dataset.foto).catch(() => null);
+        if (url) { av.style.backgroundImage = `url("${url}")`; av.style.backgroundSize = "cover"; av.textContent = ""; }
+      });
     };
+    el.querySelector("#do-q").addEventListener("input", debounce((e) => { dq = e.target.value; el._repaint(); }, 150));
     el._repaint();
   },
 };
-
-function docenteForm(d) {
-  formModal({
-    title: d ? "Editar docente" : "Agregar docente",
-    fields: [
-      { name: "nombre", label: "Nombre completo", required: true, value: d?.nombre, placeholder: "Ej: Rosa Mendoza Ruiz" },
-      { name: "profesion", label: "Profesión", value: d?.profesion, placeholder: "Ej: Profesora de Comunicación" },
-      { name: "rol", label: "Rol dentro del sistema", type: "pills", options: ["Docente", "Coordinador", "Auxiliar", "Administrativo"].map((r) => ({ value: r, label: r })), value: d?.rol || "Docente" },
-      { name: "estado", label: "Estado", type: "pills", options: [{ value: "ACTIVO", label: "Activo" }, { value: "INACTIVO", label: "Inactivo" }], value: d?.estado || "ACTIVO" },
-    ],
-    onSubmit: async (v) => { await guardar("docentes", v, d?.id); repaint(); toast("Docente guardado correctamente", "success"); },
-  });
-}
 
 /* =========================== Comunicados =========================== */
 export const comunicadosPage = {
@@ -383,9 +380,6 @@ registerActions({
   "grado-new": () => crearCiclos(),
   "al-codigo": () => { location.hash = "#/codigo"; },
   "al-revisar": (el) => revisarEstudiante(alumnoPorId(el.dataset.id)),
-  "do-new": () => docenteForm(),
-  "do-edit": (el) => docenteForm(DB.docentes.find((x) => x.id === el.dataset.id)),
-  "do-del": (el) => { const d = DB.docentes.find((x) => x.id === el.dataset.id); eliminar("docentes", d.id, `¿Eliminar a <b>${esc(d.nombre)}</b>?`, "Docente eliminado"); },
   "co-new": () => formModal({ title: "Nuevo comunicado", submitLabel: "Publicar", fields: [
     { name: "titulo", label: "Título", required: true }, { name: "mensaje", label: "Mensaje", type: "textarea", required: true }],
   onSubmit: async (v) => { await guardar("comunicados", { ...v, fecha: todayStr() }); repaint(); toast("Comunicado publicado", "success"); } }),
