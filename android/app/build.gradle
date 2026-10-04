@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+}
+
+def appUrl = (findProperty('APP_URL') ?: 'https://TU-USUARIO.github.io/registro-academico/').toString()
+if (!appUrl.endsWith('/')) appUrl += '/'
+
+android {
+    namespace 'app.registroacademico'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'app.registroacademico'
+        minSdk 29            // Android 10+: permite guardar en Descargas vía MediaStore sin permisos de almacenamiento
+        targetSdk 34
+        versionCode = (findProperty('APP_VERSION_CODE') ?: '1').toString().toInteger()
+        versionName = (findProperty('APP_VERSION_NAME') ?: '2.1.0').toString()
+        buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Firma estable: si hay keystore (CI con secretos o local) se firma con ella; si no, con la clave debug.
+    // IMPORTANTE: para que un APK pueda actualizar a otro ya instalado, SIEMPRE debe firmarse con la misma clave.
+    signingConfigs {
+        release {
+            def ks = System.getenv('KEYSTORE_PATH')
+            if (ks && file(ks).exists()) {
+                storeFile file(ks)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig System.getenv('KEYSTORE_PATH') ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

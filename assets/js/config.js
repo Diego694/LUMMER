@@ -7,6 +7,8 @@ export const CONFIG = {
   SUPABASE_ANON_KEY: "TU-ANON-KEY-AQUI",
 
   APP_NAME: "Sistema de Registro Académico",
+  // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
+  APP_VERSION: "2.1.0",
   // Hora límite de ingreso (HH:MM, 24 h). Registros posteriores se marcan como "tardanza".
   HORA_LIMITE: "08:00",
   // Umbral (%) bajo el cual un alumno aparece en "Requieren atención" del dashboard.

@@ -8,3 +8,11 @@ Thumbs.db
 _site/
 .claude/
 *.log
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.jks
+*.keystore
+secretos-github.txt

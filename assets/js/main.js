@@ -127,6 +127,11 @@ async function boot() {
   $("#backdrop").addEventListener("click", () => toggleSidebar(false));
   addEventListener("hashchange", route);
   initLogin();
+  $("#app-version").textContent = `v${CONFIG.APP_VERSION} · ${globalThis.AndroidBridge ? "app Android" : "web"}`;
+  // PWA: instalable y con arranque sin conexión. El SW pide siempre la versión nueva primero (ver sw.js).
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker no registrado:", e.message));
+  }
   if (api.mode === "error") { const e = $("#login-err"); e.textContent = api.error.message; e.hidden = false; return; }
   try {
     const user = await api.init();

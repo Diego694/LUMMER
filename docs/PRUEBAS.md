@@ -13,7 +13,15 @@ Resultados de la verificación realizada sobre esta versión (4 de octubre de 20
 
 ## Resultados
 
-### Automatizados — 27/27
+### Versión 2.1.0 (PWA + APK) — añadido
+- **35/35 tests** en `tests/tests.html`: a los 27 anteriores se suman 6 del **service worker** (se ejecuta su código real contra un entorno simulado: red primero y revalidación `no-cache`, copia offline, fallback de navegación a `index.html`, cache-primero para CDN, y que **no** intercepta Supabase, otros orígenes ni peticiones no-GET) y 2 del **puente Android** simulado (el archivo llega a `saveFile` en base64 y sin puente usa `<a download>`).
+- En la app real con `AndroidBridge` simulado: descarga de CSV, PNG y PDF individual (29 KB) y masivo (65 carnets, 1,8 MB) → `saveFile`; flujo **NFC nativo** (`nfcState` → botón → `onNativeNfc` → asistencia registrada).
+- `check.py` ahora valida manifiesto, iconos y que **todos** los módulos JS estén en el precache del SW (22 archivos).
+- Corregido al revisar nginx: los `add_header` de cada `location` anulaban la CSP en `/assets/` e `index.html`.
+
+**No verificado en 2.1.0:** (1) el **APK no se ha compilado** — no hay Android SDK/Gradle aquí; el código nativo no pasó por un compilador y no se ha ejecutado en un teléfono; (2) el **service worker no pudo registrarse en vivo** porque el navegador integrado de este entorno rechaza incluso un SW trivial, por eso se probó su lógica simulada; (3) cámara y NFC físicos.
+
+### Automatizados — 27/27 (v2.0.0)
 - **19 unitarios** (`tests/unit.js`): escape HTML, fechas locales sin desfase UTC, días hábiles, porcentajes, CSV (comillas/saltos/BOM), tardanza, resumen del día, series, agrupación por grado con orden natural, baja asistencia, validación y deduplicación del CSV de importación.
 - **8 del adaptador de producción** (`tests/adapter.js`) contra un cliente Supabase simulado: paginación de 1000 filas, filtro por `colegio_id` en toda lectura, traducción del error `23505` a `duplicate`, upsert masivo con `ignoreDuplicates`, insert vs update, tablas no permitidas, perfil inexistente, lotes de 200 en importación.
 - **`check.py`**: 46 imports JS válidos, referencias de `index.html` existentes, 8/8 tablas con RLS, y detección de `service_role` (probado con una clave falsa: falla; con una anon key: pasa).

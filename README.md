@@ -33,6 +33,10 @@ Abre <http://127.0.0.1:8080>. Mientras `assets/js/config.js` tenga los placehold
 4. Edita `assets/js/config.js` con tu `SUPABASE_URL` y `SUPABASE_ANON_KEY` (Settings → API). La *anon key* es pública por diseño; **nunca** pongas la `service_role`.
 5. Sirve el sitio (Docker o GitHub Pages) — ver [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 
+## App Android (APK) y PWA
+
+La misma web funciona en el navegador, como **PWA instalable** y como **APK**. El APK es un envoltorio nativo mínimo que abre tu web publicada, así que **cada cambio que publiques —incluida la conexión a la base de datos— llega solo, sin reinstalar el APK**. Añade lo que un WebView no trae: permiso de cámara, descargas a *Descargas*, selector de archivos y lectura NFC nativa. Detalle, compilación y firma en [docs/ANDROID.md](docs/ANDROID.md).
+
 ## Estructura
 
 ```
@@ -46,12 +50,14 @@ assets/js/
   stats.js · utils.js       Lógica pura (estadísticas, CSV, fechas) — con tests
   demo-data.js              Generador de datos demo
   pages/                    dashboard · registro · consultas · carnet · mantenimiento
+sw.js · manifest.webmanifest  PWA: arranque sin conexión, actualización "red primero"
+android/                    Envoltorio nativo (WebView) que genera el APK
 supabase/schema.sql         Esquema PostgreSQL + políticas RLS
-tests/                      Tests unitarios y del adaptador (abrir tests/tests.html)
-scripts/                    serve.py (servidor con CSP) · check.py (verificaciones estáticas)
-Dockerfile · nginx.conf · docker-compose.yml
-.github/workflows/          ci.yml · pages.yml
-docs/                       Arquitectura, despliegue, guía de uso, pruebas
+tests/                      Tests: lógica, adaptador Supabase, service worker y puente Android (tests/tests.html)
+scripts/                    serve.py (servidor con CSP) · check.py · make_icons.py · make_keystore.py
+Dockerfile · nginx.conf · security-headers.conf · docker-compose.yml
+.github/workflows/          ci.yml · pages.yml · android.yml
+docs/                       Arquitectura, despliegue, Android, guía de uso, pruebas
 ```
 
 ## Desarrollo y pruebas
@@ -73,7 +79,7 @@ docker compose up --build        # http://localhost:8080
 
 ## Documentación
 
-- [Arquitectura](docs/ARQUITECTURA.md) · [Despliegue](docs/DESPLIEGUE.md) · [Guía de uso](docs/GUIA-DE-USO.md) · [Pruebas y auditoría](docs/PRUEBAS.md) · [Changelog](CHANGELOG.md)
+- [Arquitectura](docs/ARQUITECTURA.md) · [Despliegue](docs/DESPLIEGUE.md) · [App Android](docs/ANDROID.md) · [Guía de uso](docs/GUIA-DE-USO.md) · [Pruebas y auditoría](docs/PRUEBAS.md) · [Changelog](CHANGELOG.md)
 
 ## Licencia
 

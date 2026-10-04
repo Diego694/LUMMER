@@ -139,14 +139,26 @@ function bucleEscaneo() {
   loop();
 }
 
+// Dentro del APK, Web NFC no existe en WebView: el lector lo hace la app nativa (AndroidBridge) y llama a window.onNativeNfc(código).
+const nfcNativo = () => globalThis.AndroidBridge?.nfcState?.();
+
 function initNfc(root) {
   const msg = root.querySelector("#nfc-support-msg");
+  const estado = nfcNativo();
+  if (estado) {
+    window.onNativeNfc = (codigo) => procesarCodigo(String(codigo).trim(), true);
+    msg.textContent = estado === "on" ? "Lector NFC de la app disponible. Acerca el tag del alumno a la parte trasera del teléfono."
+      : estado === "off" ? "El NFC está desactivado en el teléfono. Actívalo en Ajustes y vuelve a esta pantalla." : "Este teléfono no tiene NFC.";
+    root.querySelector("#nfc-controls").hidden = estado !== "on";
+    return;
+  }
   const ok = "NDEFReader" in window;
   msg.textContent = ok ? "Tu navegador soporta NFC (Android + Chrome, con NFC activado). Acerca el tag del alumno a la parte trasera del teléfono."
     : "Este dispositivo o navegador no soporta lectura NFC desde la web (solo Android con Chrome).";
   root.querySelector("#nfc-controls").hidden = !ok;
 }
 async function iniciarNfc() {
+  if (nfcNativo()) { globalThis.AndroidBridge.startNfc(); toast("Lector NFC activado, acerca un tag", "success"); return; }
   if (!("NDEFReader" in window)) { toast("Este dispositivo no soporta NFC", "error"); return; }
   try {
     detenerNfc(true);
@@ -171,6 +183,7 @@ async function iniciarNfc() {
   }
 }
 function detenerNfc(silencioso) {
+  if (nfcNativo()) { globalThis.AndroidBridge.stopNfc(); if (!silencioso) toast("Lector NFC detenido"); return; }
   if (!nfcCtl) return;
   nfcCtl.abort(); nfcCtl = null;
   if (!silencioso) toast("Lector NFC detenido");

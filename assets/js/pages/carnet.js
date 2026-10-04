@@ -2,7 +2,7 @@
 import { CONFIG } from "../config.js";
 import { DB, alumnoPorId, opcionesGrado, opcionesNivel } from "../state.js";
 import { emptyState, formModal, icon, pageHead, registerActions, toast } from "../ui.js";
-import { debounce, esc, initials, norm } from "../utils.js";
+import { debounce, downloadFile, esc, initials, norm } from "../utils.js";
 
 let cq = { q: "", sel: null };
 
@@ -45,10 +45,11 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 /** Dibuja el carnet en un canvas 560×340 (el QR se genera fuera de pantalla). */
-export function carnetCanvas(a) {
+export function carnetCanvas(a, { opaque = false } = {}) {
   return new Promise((resolve) => {
     const canvas = document.createElement("canvas"); canvas.width = 560; canvas.height = 340;
     const ctx = canvas.getContext("2d");
+    if (opaque) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 560, 340); } // JPEG no tiene transparencia
     const g = ctx.createLinearGradient(0, 0, 560, 340); g.addColorStop(0, "#16223D"); g.addColorStop(1, "#22335A");
     ctx.fillStyle = g; roundRect(ctx, 0, 0, 560, 340, 24); ctx.fill();
     ctx.fillStyle = "rgba(232,163,61,.16)"; ctx.beginPath(); ctx.arc(540, 20, 110, 0, Math.PI * 2); ctx.fill();
@@ -76,12 +77,12 @@ registerActions({
   "carnet-png": async () => {
     if (!cq.sel) return;
     const c = await carnetCanvas(cq.sel);
-    const a = document.createElement("a"); a.download = `carnet-${cq.sel.codigo}.png`; a.href = c.toDataURL("image/png"); a.click();
+    await downloadFile(`carnet-${cq.sel.codigo}.png`, await new Promise((r) => c.toBlob(r, "image/png")));
   },
   "carnet-pdf": async () => {
     if (!cq.sel) return;
-    const pdf = pdfDoc(); pdf.addImage((await carnetCanvas(cq.sel)).toDataURL("image/png"), "PNG", 0, 0, 360, 220);
-    pdf.save(`carnet-${cq.sel.codigo}.pdf`);
+    const pdf = pdfDoc(); pdf.addImage((await carnetCanvas(cq.sel, { opaque: true })).toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, 360, 220);
+    await downloadFile(`carnet-${cq.sel.codigo}.pdf`, pdf.output("blob"));
   },
   "carnet-masivo": () => {
     const cuenta = (n, g) => DB.alumnos.filter((a) => (!n || a.nivel === n) && (!g || a.grado === g));
@@ -99,9 +100,9 @@ registerActions({
         const pdf = pdfDoc();
         for (let i = 0; i < l.length; i++) {
           if (i) pdf.addPage([360, 220], "landscape");
-          pdf.addImage((await carnetCanvas(l[i])).toDataURL("image/png"), "PNG", 0, 0, 360, 220);
+          pdf.addImage((await carnetCanvas(l[i], { opaque: true })).toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, 360, 220);
         }
-        pdf.save(`carnets-${nivel || "todos"}-${grado || "todos"}.pdf`);
+        await downloadFile(`carnets-${nivel || "todos"}-${grado || "todos"}.pdf`, pdf.output("blob"));
         toast("Descarga completada", "success");
       },
     });

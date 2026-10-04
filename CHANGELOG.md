@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.0 — 2026-10-04
+
+### Nuevo
+- **PWA**: `manifest.webmanifest`, iconos y `sw.js` (arranque sin conexión; archivos propios *red primero* con revalidación, para que cada publicación llegue sola).
+- **App Android** (`android/`): envoltorio WebView que abre la web publicada → actualizaciones automáticas sin reinstalar. Cámara, descargas a *Descargas*, selector de archivos y **NFC nativo**. CI (`android.yml`) que compila, firma y publica el APK en una release de enlace estable; `scripts/make_keystore.py` para la clave de firma.
+- Versión de la web visible en el menú lateral.
+
+### Cambiado
+- Descargas (CSV/PNG/PDF) unificadas en `downloadFile`, compatibles con el navegador y con el APK. Los PDF de carnets usan JPEG: ~96 % más livianos.
+
+### Corregido
+- `nginx.conf`: los `add_header` dentro de `location` anulaban la CSP en `/assets/` e `index.html`; ahora cada bloque incluye `security-headers.conf`.
+
 ## 2.0.0 — 2026-10-04
 
 Reescritura profesional del archivo único `CORREGIR.html`.

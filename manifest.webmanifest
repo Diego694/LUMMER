@@ -1,0 +1,17 @@
+{
+  "name": "Sistema de Registro Académico",
+  "short_name": "Asistencia",
+  "description": "Control de asistencia escolar con carnets QR/NFC, dashboard y reportes.",
+  "lang": "es",
+  "start_url": "./index.html#/dashboard",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16223D",
+  "theme_color": "#16223D",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -73,8 +73,23 @@ export function toCSV(rows, columns) {
   return "﻿" + [head, ...body].join("\r\n");
 }
 
-export function downloadFile(filename, content, type = "text/csv;charset=utf-8;") {
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1] || "");
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Descarga un archivo. En el navegador usa <a download>; dentro del APK (WebView) las descargas de blobs no
+ * funcionan, así que se entrega al puente nativo `AndroidBridge.saveFile`, que lo guarda en Descargas.
+ */
+export async function downloadFile(filename, content, type = "text/csv;charset=utf-8;") {
   const blob = content instanceof Blob ? content : new Blob([content], { type });
+  const bridge = globalThis.AndroidBridge;
+  if (bridge?.saveFile) return bridge.saveFile(filename, blob.type || type, await blobToBase64(blob));
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = filename;
@@ -82,6 +97,7 @@ export function downloadFile(filename, content, type = "text/csv;charset=utf-8;"
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return true;
 }
 
 export const uid = () =>

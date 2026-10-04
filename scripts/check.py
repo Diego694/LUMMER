@@ -36,6 +36,25 @@ def check_index_refs() -> int:
     return len(refs)
 
 
+def check_pwa() -> int:
+    """El manifiesto, sus iconos y todo el 'shell' que precachea sw.js deben existir (si no, el SW falla al instalar)."""
+    sw = (ROOT / "sw.js").read_text(encoding="utf-8")
+    shell = re.search(r"const SHELL = \[(.*?)\];", sw, re.S)
+    files = re.findall(r'"([^"]+)"', shell.group(1)) if shell else []
+    if not files:
+        errors.append("sw.js: no se pudo leer la lista SHELL")
+    manifest = json.loads((ROOT / "manifest.webmanifest").read_text(encoding="utf-8"))
+    files += [i["src"] for i in manifest.get("icons", [])]
+    for f in files:
+        if f != "./" and not (ROOT / f).exists():
+            errors.append(f"PWA: archivo inexistente {f}")
+    # todos los módulos JS deberían estar precacheados para que la app abra sin conexión
+    for js in (ROOT / "assets" / "js").rglob("*.js"):
+        if js.relative_to(ROOT).as_posix() not in files:
+            errors.append(f"sw.js: {js.relative_to(ROOT).as_posix()} no está en SHELL (la app no abriría sin conexión)")
+    return len(files)
+
+
 def check_no_secrets() -> None:
     cfg = (ROOT / "assets" / "js" / "config.js").read_text(encoding="utf-8")
     url = re.search(r'SUPABASE_URL:\s*"([^"]*)"', cfg)
@@ -67,9 +86,9 @@ def check_sql_rls() -> int:
 
 
 if __name__ == "__main__":
-    imports, refs, tables = check_js_imports(), check_index_refs(), check_sql_rls()
+    imports, refs, tables, pwa = check_js_imports(), check_index_refs(), check_sql_rls(), check_pwa()
     check_no_secrets()
-    print(f"imports JS: {imports} · referencias index.html: {refs} · tablas con RLS: {tables}")
+    print(f"imports JS: {imports} · referencias index.html: {refs} · tablas con RLS: {tables} · archivos PWA: {pwa}")
     if errors:
         print("\n".join("✘ " + e for e in errors))
         sys.exit(1)
