@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.nfc.NdefMessage;
@@ -12,6 +13,7 @@ import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.MediaStore;
@@ -31,7 +33,12 @@ import android.widget.Toast;
 
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +57,9 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
 
     private WebView web;
     private String appHost;
+    private String appUrl;          // URL vigente: la de app-config.json si existe, si no la compilada
+    private SharedPreferences prefs;
+    private boolean mostrandoError = false;
     private PermissionRequest pendingPermission;
     private ValueCallback<Uri[]> fileCallback;
     private NfcAdapter nfc;
@@ -59,7 +69,9 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        appHost = Uri.parse(BuildConfig.APP_URL).getHost();
+        prefs = getSharedPreferences("app-config", MODE_PRIVATE);
+        appUrl = urlValida(prefs.getString("url", null)) ? prefs.getString("url", null) : BuildConfig.APP_URL;
+        appHost = Uri.parse(appUrl).getHost();
         nfc = NfcAdapter.getDefaultAdapter(this);
 
         web = new WebView(this);
@@ -82,7 +94,8 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
         web.setWebChromeClient(new Chrome());
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState);
-        else web.loadUrl(BuildConfig.APP_URL);
+        else web.loadUrl(appUrl);
+        buscarConfigRemota();
     }
 
     @Override
@@ -122,10 +135,52 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
     /* ------------------------------ Navegación ------------------------------ */
 
     private boolean esNuestro(Uri u) {
-        return u != null && appHost != null && appHost.equalsIgnoreCase(u.getHost());
+        if (u == null || u.getHost() == null) return false;
+        return u.getHost().equalsIgnoreCase(appHost) || u.getHost().equalsIgnoreCase(Uri.parse(BuildConfig.APP_URL).getHost());
+    }
+
+    /* ------------------- Configuración remota (app-config.json) -------------------
+       Si el dominio de la web cambia, basta con editar app-config.json en el repositorio: la app lo lee al abrir
+       (y cuando no logra cargar) y pasa a la nueva dirección sin reinstalar. Solo se aceptan direcciones https. */
+
+    private static boolean urlValida(String u) {
+        if (u == null) return false;
+        Uri p = Uri.parse(u);
+        return "https".equals(p.getScheme()) && p.getHost() != null && !p.getHost().isEmpty();
+    }
+
+    private void buscarConfigRemota() {
+        new Thread(() -> {
+            HttpURLConnection c = null;
+            try {
+                c = (HttpURLConnection) new URL(BuildConfig.CONFIG_URL + "?t=" + System.currentTimeMillis()).openConnection();
+                c.setConnectTimeout(6000); c.setReadTimeout(6000);
+                if (c.getResponseCode() != 200) return;
+                StringBuilder sb = new StringBuilder();
+                try (InputStream in = c.getInputStream()) {
+                    byte[] buf = new byte[2048]; int n;
+                    while ((n = in.read(buf)) > 0 && sb.length() < 20000) sb.append(new String(buf, 0, n, StandardCharsets.UTF_8));
+                }
+                String nueva = new JSONObject(sb.toString()).optString(BuildConfig.CONFIG_KEY, "");
+                if (!urlValida(nueva)) return;
+                if (!nueva.endsWith("/")) nueva += "/";
+                if (nueva.equals(appUrl)) return;
+                final String destino = nueva;
+                prefs.edit().putString("url", destino).apply();
+                runOnUiThread(() -> {
+                    appUrl = destino;
+                    appHost = Uri.parse(destino).getHost();
+                    if (mostrandoError) { mostrandoError = false; web.loadUrl(destino); } // si no cargaba, prueba ya la nueva
+                });
+            } catch (Exception ignored) {
+                /* sin red o archivo no disponible: se sigue con la URL actual */
+            } finally { if (c != null) c.disconnect(); }
+        }).start();
     }
 
     private void mostrarSinConexion(String motivo) {
+        mostrandoError = true;
+        buscarConfigRemota();
         try {
             web.loadUrl("file:///android_asset/offline.html?m=" + URLEncoder.encode(motivo, "UTF-8"));
         } catch (Exception e) {
@@ -278,7 +333,7 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
         public void stopNfc() { nfcWanted = false; runOnUiThread(MainActivity.this::disableNfc); }
 
         @JavascriptInterface
-        public void retry() { runOnUiThread(() -> web.loadUrl(BuildConfig.APP_URL)); }
+        public void retry() { runOnUiThread(() -> { mostrandoError = false; web.loadUrl(appUrl); }); }
 
         /** Guarda un archivo (recibido en base64) en la carpeta Descargas. Devuelve true si se guardó. */
         @JavascriptInterface
@@ -287,20 +342,31 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
                 String safe = name == null ? "archivo" : name.replaceAll("[^\\w.\\- ]", "_");
                 if (safe.length() > 100) safe = safe.substring(safe.length() - 100);
                 byte[] data = Base64.decode(base64, Base64.DEFAULT);
-                ContentResolver cr = getContentResolver();
-                ContentValues v = new ContentValues();
-                v.put(MediaStore.Downloads.DISPLAY_NAME, safe);
-                v.put(MediaStore.Downloads.MIME_TYPE, (mime == null || mime.isEmpty()) ? "application/octet-stream" : mime.split(";")[0]);
-                v.put(MediaStore.Downloads.RELATIVE_PATH, "Download/");
-                v.put(MediaStore.Downloads.IS_PENDING, 1);
-                Uri uri = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
-                if (uri == null) throw new IllegalStateException("MediaStore no devolvió URI");
-                try (OutputStream out = cr.openOutputStream(uri)) { out.write(data); }
-                v.clear();
-                v.put(MediaStore.Downloads.IS_PENDING, 0);
-                cr.update(uri, v, null, null);
                 final String shown = safe;
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Guardado en Descargas: " + shown, Toast.LENGTH_LONG).show());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentResolver cr = getContentResolver();
+                    ContentValues v = new ContentValues();
+                    v.put(MediaStore.Downloads.DISPLAY_NAME, safe);
+                    v.put(MediaStore.Downloads.MIME_TYPE, (mime == null || mime.isEmpty()) ? "application/octet-stream" : mime.split(";")[0]);
+                    v.put(MediaStore.Downloads.RELATIVE_PATH, "Download/");
+                    v.put(MediaStore.Downloads.IS_PENDING, 1);
+                    Uri uri = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                    if (uri == null) throw new IllegalStateException("MediaStore no devolvió URI");
+                    try (OutputStream out = cr.openOutputStream(uri)) { out.write(data); }
+                    v.clear();
+                    v.put(MediaStore.Downloads.IS_PENDING, 0);
+                    cr.update(uri, v, null, null);
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Guardado en Descargas: " + shown, Toast.LENGTH_LONG).show());
+                } else {
+                    // Android 7–9: sin permisos de almacenamiento se guarda en la carpeta de descargas propia de la app
+                    // (Android/data/<app>/files/Download), visible desde el administrador de archivos.
+                    File dir = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
+                    if (dir == null) dir = getFilesDir();
+                    dir.mkdirs();
+                    final File destino = new File(dir, safe);
+                    try (OutputStream out = new FileOutputStream(destino)) { out.write(data); }
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Guardado en: " + destino.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                }
                 return true;
             } catch (Exception e) {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "No se pudo guardar el archivo", Toast.LENGTH_LONG).show());

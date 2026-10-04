@@ -4,16 +4,19 @@ plugins {
 
 def appUrl = (findProperty('APP_URL') ?: 'https://TU-USUARIO.github.io/registro-academico/').toString()
 if (!appUrl.endsWith('/')) appUrl += '/'
+// Config remota (app-config.json): permite cambiar la URL de la web sin reinstalar si el dominio cambia.
+def configUrl = (findProperty('CONFIG_URL') ?: 'https://raw.githubusercontent.com/Diego694/Sistema-de-control-de-asistencia/main/app-config.json').toString()
 
 android {
     namespace 'app.registroacademico'
     compileSdk 34
 
     defaultConfig {
-        minSdk 29            // Android 10+: permite guardar en Descargas vía MediaStore sin permisos de almacenamiento
+        minSdk 24            // Android 7+. Desde Android 10 se guarda en Descargas vía MediaStore; antes, en la carpeta propia de la app
         targetSdk 34
+        buildConfigField 'String', 'CONFIG_URL', "\"${configUrl}\""
         versionCode = (findProperty('APP_VERSION_CODE') ?: '1').toString().toInteger()
-        versionName = (findProperty('APP_VERSION_NAME') ?: '2.1.0').toString()
+        versionName = (findProperty('APP_VERSION_NAME') ?: '2.5.0').toString()
     }
 
     buildFeatures {
@@ -30,12 +33,14 @@ android {
             applicationId 'app.registroacademico'   // se conserva: así las instalaciones existentes se actualizan
             resValue 'string', 'app_name', 'Asistencia Institucional'
             buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
+            buildConfigField 'String', 'CONFIG_KEY', '"docente"'
         }
         estudiante {
             dimension 'rol'
             applicationId 'app.registroacademico.estudiante'
             resValue 'string', 'app_name', 'Mi Carnet Institucional'
             buildConfigField 'String', 'APP_URL', "\"${appUrl}estudiante/\""
+            buildConfigField 'String', 'CONFIG_KEY', '"estudiante"'
         }
     }
 

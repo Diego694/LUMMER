@@ -32,7 +32,10 @@ Esto aplica igual en el navegador: la misma web es una **PWA** (se puede “Inst
 | **Sin conexión** | Si no hay red ni copia en cache, muestra una pantalla con *Reintentar*. |
 | **Seguridad** | Solo HTTPS; solo tu dominio navega dentro de la app (enlaces externos abren el navegador); sin acceso a archivos locales; permisos de cámara solo para tu origen. |
 
-Requisito: Android 10 o superior (minSdk 29).
+Requisito: **Android 7.0 o superior** (minSdk 24). Desde Android 10 los archivos exportados van a *Descargas*; en Android 7–9 se guardan en la carpeta de descargas propia de la app (`Android/data/<app>/files/Download`), sin pedir permisos de almacenamiento. En teléfonos muy antiguos, actualiza *Android System WebView* desde Google Play; si no es posible, la app lo explica en pantalla.
+
+### URL remota (`app-config.json`)
+Si cambia la dirección de la web (p. ej. al pasar a un dominio propio), no hace falta reinstalar: edita `app-config.json` en la raíz del repositorio (claves `docente` y `estudiante`, solo `https`). Cada vez que la app abre —y cuando no logra cargar— lee `https://raw.githubusercontent.com/<usuario>/<repo>/main/app-config.json`, guarda la nueva dirección y pasa a ella. Se puede cambiar el origen del archivo al compilar con `-PCONFIG_URL=...`.
 
 ## Obtener el APK
 
