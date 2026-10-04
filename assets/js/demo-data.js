@@ -35,7 +35,7 @@ export function buildDemoDB() {
     for (let i = 0; i < cantidad; i++) {
       const ap1 = pick(APELLIDOS), ap2 = pick(APELLIDOS);
       db.alumnos.push({
-        id: uid(), colegio_id: colegioId, codigo: `a${++n}`,
+        id: uid(), colegio_id: colegioId, codigo: `a${++n}`, qr_secreto: Array.from({ length: 32 }, () => "0123456789abcdef"[Math.floor(r() * 16)]).join(""),
         nombre: `${pick(NOMBRES)} ${ap1} ${ap2}`, nivel, grado,
         apoderado: `${pick(APODERADOS)} ${ap1}`, estado: r() < 0.94 ? "ACTIVO" : "INACTIVO",
       });
@@ -56,6 +56,16 @@ export function buildDemoDB() {
       db.asistencias.push({ id: uid(), colegio_id: colegioId, alumno_id: a.id, fecha, hora, registrado_por: "demo-user" });
     });
   });
+
+  // Contacto de apoderados (≈85 % tiene teléfono) y algunos cursos de ejemplo
+  db.alumnos.forEach((a) => {
+    if (r() < 0.85) a.apoderado_telefono = `9${String(10000000 + Math.floor(r() * 89999999))}`;
+    if (r() < 0.3) a.apoderado_email = `apoderado.${a.codigo}@ejemplo.com`;
+  });
+  db.cursos = [
+    ["MECANICA ELECTRICA", "Circuitos eléctricos", ""], ["MECANICA ELECTRICA", "Mecánica de máquinas", ciclo("MECANICA ELECTRICA", "III")],
+    ["APSTI", "Soporte técnico", ""], ["APSTI", "Redes de computadoras", ciclo("APSTI", "IV")],
+  ].map(([nivel, nombre, grado]) => ({ id: uid(), colegio_id: colegioId, nivel, grado: grado || null, nombre, docente: "", activo: true }));
 
   db.docentes = [
     ["Rosa Mendoza Ruiz", "Profesora de Comunicación", "Docente"],

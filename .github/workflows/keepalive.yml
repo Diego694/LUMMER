@@ -1,0 +1,26 @@
+name: Mantener Supabase activo
+
+# El plan gratuito de Supabase pausa el proyecto tras ~7 días sin actividad. Este trabajo hace una
+# llamada de lectura sin datos personales (RPC hora_servidor) cada 3 días. No usa secretos: la URL y la
+# clave publishable ya son públicas en assets/js/config.js.
+on:
+  schedule:
+    - cron: "17 6 */3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Llamar a hora_servidor
+        run: |
+          URL=$(grep -oP 'URL_PRODUCCION = "\K[^"]+' assets/js/config.js)
+          KEY=$(grep -oP 'KEY_PRODUCCION = "\K[^"]+' assets/js/config.js)
+          code=$(curl -s -o out.txt -w '%{http_code}' -X POST "$URL/rest/v1/rpc/hora_servidor" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{}')
+          echo "HTTP $code"
+          test "$code" = "200"

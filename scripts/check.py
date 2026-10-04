@@ -57,10 +57,10 @@ def check_pwa() -> int:
 
 def check_no_secrets() -> None:
     cfg = (ROOT / "assets" / "js" / "config.js").read_text(encoding="utf-8")
-    url = re.search(r'SUPABASE_URL:\s*"([^"]*)"', cfg)
-    key = re.search(r'SUPABASE_ANON_KEY:\s*"([^"]*)"', cfg)
+    url = re.search(r'URL_PRODUCCION\s*=\s*"([^"]*)"', cfg)
+    key = re.search(r'KEY_PRODUCCION\s*=\s*"([^"]*)"', cfg)
     if not url or not key:
-        errors.append("config.js: no se encontraron SUPABASE_URL / SUPABASE_ANON_KEY.")
+        errors.append("config.js: no se encontraron URL_PRODUCCION / KEY_PRODUCCION.")
         return
     if "TU-PROYECTO" in url.group(1) or "TU-ANON-KEY" in key.group(1):
         print("ℹ config.js con placeholders → la app corre en modo demo")
@@ -92,4 +92,4 @@ if __name__ == "__main__":
     if errors:
         print("\n".join("✘ " + e for e in errors))
         sys.exit(1)
-    print("✔ todo correcto")
+    print("OK - todo correcto")

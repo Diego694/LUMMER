@@ -80,6 +80,49 @@ export function resumenAlumno(historial, diasClase, limite) {
   return { presentes, tardes, ausentes: Math.max(0, diasClase - presentes), pct: pct(presentes, diasClase) };
 }
 
+/**
+ * Matriz de asistencia (reporte mensual). Una columna por día de clase (día con al menos un registro o justificación
+ * entre estos alumnos). Código por celda: P presente · T tardanza · J justificado · F falta.
+ * pct = presentes (incluye tardanzas) / días de clase; pctJust = (presentes + justificados) / días de clase.
+ */
+export function matrizAsistencia(alumnos, asistencias, justificaciones, dias, limite) {
+  const ids = new Set(alumnos.map((a) => a.id));
+  const asis = new Map();   // "alumno|fecha" → hora
+  const just = new Map();   // "alumno|fecha" → tipo
+  asistencias.filter((x) => ids.has(x.alumno_id)).forEach((x) => asis.set(`${x.alumno_id}|${x.fecha}`, x.hora));
+  justificaciones.filter((x) => ids.has(x.alumno_id)).forEach((x) => just.set(`${x.alumno_id}|${x.fecha}`, x.tipo));
+  const conRegistro = new Set([...asis.keys(), ...just.keys()].map((k) => k.split("|")[1]));
+  const diasClase = dias.filter((d) => conRegistro.has(d));
+  const filas = alumnos.map((alumno) => {
+    const celdas = {};
+    let p = 0, t = 0, j = 0, f = 0;
+    diasClase.forEach((d) => {
+      const hora = asis.get(`${alumno.id}|${d}`);
+      if (hora !== undefined) { if (esTardanza(hora, limite)) { celdas[d] = "T"; t++; } else celdas[d] = "P"; p++; }
+      else if (just.has(`${alumno.id}|${d}`)) { celdas[d] = "J"; j++; }
+      else { celdas[d] = "F"; f++; }
+    });
+    return { alumno, celdas, p, t, j, f, pct: pct(p, diasClase.length), pctJust: pct(p + j, diasClase.length) };
+  });
+  const total = filas.reduce((s, r) => s + r.p, 0), posibles = filas.length * diasClase.length;
+  return { dias: diasClase, filas, resumen: { alumnos: filas.length, dias: diasClase.length, pct: pct(total, posibles) } };
+}
+
+/** Número para wa.me (solo dígitos, con prefijo de país). Perú por defecto: 9 dígitos que empiezan con 9 → 51XXXXXXXXX. */
+export function numeroWhatsApp(tel, paisPorDefecto = "51") {
+  const d = String(tel || "").replace(/[^0-9]/g, "");
+  if (!d) return "";
+  if (String(tel).trim().startsWith("+")) return d;
+  if (d.length === 9 && d.startsWith("9")) return paisPorDefecto + d;
+  return d;
+}
+export const enlaceWhatsApp = (tel, texto) => { const n = numeroWhatsApp(tel); return n ? `https://wa.me/${n}?text=${encodeURIComponent(texto)}` : ""; };
+/** Rellena {alumno}, {fecha}, {instituto}, {hora}, {ciclo} en una plantilla de aviso. */
+export const mensajeAviso = (plantilla, datos) => String(plantilla).replace(/\{(\w+)\}/g, (m, k) => (datos[k] ?? m));
+
+/** ¿El alumno puede asistir a este curso? (misma carrera y, si el curso fija ciclo, el mismo ciclo). */
+export const perteneceACurso = (alumno, curso) => alumno.nivel === curso.nivel && (!curso.grado || alumno.grado === curso.grado);
+
 /** Normaliza y valida las filas de un CSV de importación de alumnos. */
 export function normalizarFilasImport(rows, niveles = [], grados = []) {
   const validas = [];

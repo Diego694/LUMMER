@@ -122,7 +122,7 @@ export function formModal({ title, fields, submitLabel = "Guardar", onSubmit }) 
     } else if (f.type === "pills") {
       control = `<div class="pill-select" role="radiogroup" data-pills="${f.name}">${f.options.map((o) => `<button type="button" role="radio" aria-checked="${o.value === v}" class="pill ${o.value === v ? "active" : ""}" data-val="${esc(o.value)}">${esc(o.label)}</button>`).join("")}</div><input type="hidden" name="${f.name}" value="${esc(v)}">`;
     } else {
-      control = `<input id="${id}" name="${f.name}" type="text" value="${esc(v)}" placeholder="${esc(f.placeholder || "")}" ${f.required ? "required" : ""} autocomplete="off">`;
+      control = `<input id="${id}" name="${f.name}" type="${f.type === "date" ? "date" : "text"}" value="${esc(v)}" ${f.max ? `max="${esc(f.max)}"` : ""} placeholder="${esc(f.placeholder || "")}" ${f.required ? "required" : ""} autocomplete="off">`;
     }
     return `<div class="field ${f.half ? "half" : ""}"><label for="${id}">${esc(f.label)}${f.required ? ' <span class="req">*</span>' : ""}</label>${control}</div>`;
   };
@@ -187,11 +187,14 @@ export function pageHead(title, subtitle = "", actions = "") {
 
 /** Delegación de eventos: <button data-action="nombre" data-id="..."> → handlers.nombre(el, event). */
 const handlers = {};
+let autorizador = null;   // (accion) => boolean; lo fija la app según el rol (defensa en profundidad: la base de datos es el control real)
 export function registerActions(map) { Object.assign(handlers, map); }
+export function setAutorizador(fn) { autorizador = fn; }
 export function bindActions(root = document) {
   root.addEventListener("click", (e) => {
     const el = e.target.closest("[data-action]");
     if (!el || el.disabled) return;
+    if (autorizador && !autorizador(el.dataset.action)) { e.preventDefault(); toast("Solo el administrador puede hacer esto.", "error"); return; }
     const fn = handlers[el.dataset.action];
     if (fn) { e.preventDefault(); fn(el, e); }
   });

@@ -1,5 +1,7 @@
 // Tests unitarios sin dependencias. Se ejecutan abriendo tests/tests.html (o con scripts/check.py en CI).
+import { ahora, esErrorRed, esErrorSesion, fechaZona, horaZona, sincronizarReloj, todayStr, nowHHMM } from "../assets/js/utils.js";
 import { CICLOS, addDays, censurarNombre, cicloCorto, compararCiclos, dateStr, esc, etiquetaCiclo, nombreCiclo, parsearCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
+import { enlaceWhatsApp, matrizAsistencia, mensajeAviso, numeroWhatsApp, perteneceACurso } from "../assets/js/stats.js";
 import { bajaAsistencia, esTardanza, normalizarFilasImport, porGrado, resumenAlumno, resumenDia, serieDiaria } from "../assets/js/stats.js";
 
 const results = [];
@@ -46,6 +48,24 @@ test("censurarNombre: apellidos cortos y vacío no fallan", () => {
   assert(!censurarNombre({ nombres: "Eva", apellidos: "Castillo" }).includes("Castillo"));
 });
 
+test("Zona Lima: fecha y hora no dependen de la zona del equipo ni del horario UTC", () => {
+  // 03:00 UTC del 6-oct = 22:00 del 5-oct en Lima (UTC-5): la fecha NO debe saltar al día siguiente.
+  const d = new Date(Date.UTC(2026, 9, 6, 3, 0));
+  same([fechaZona(d), horaZona(d)], ["2026-10-05", "22:00"]);
+  const e = new Date(Date.UTC(2026, 9, 6, 5, 0));
+  same([fechaZona(e), horaZona(e)], ["2026-10-06", "00:00"]); // medianoche exacta: "00", nunca "24"
+});
+test("Reloj confiable: usa la hora del servidor aunque el equipo esté desfasado", () => {
+  sincronizarReloj(Date.UTC(2026, 9, 5, 12, 30)); // el servidor dice 07:30 en Lima
+  same([todayStr(), nowHHMM()], ["2026-10-05", "07:30"]);
+  const a = ahora().getTime(), b = ahora().getTime();
+  assert(b >= a && b - a < 50, "el reloj debe avanzar sin saltos");
+  sincronizarReloj(Date.now()); // restaura
+});
+test("esErrorRed / esErrorSesion clasifican los errores", () => {
+  same([esErrorRed(new TypeError("Failed to fetch")), esErrorRed({ message: "AbortError: signal is aborted" }), esErrorRed({ message: "x", code: "23505" }), esErrorRed({ message: "violates row-level security", code: "42501" })], [true, true, false, false]);
+  same([esErrorSesion({ message: "JWT expired" }), esErrorSesion({ message: "otro" })], [true, false]);
+});
 test("CICLOS son exactamente del I al VI", () => same(CICLOS, ["I", "II", "III", "IV", "V", "VI"]));
 test("nombreCiclo: formato fijo, con y sin salón", () => {
   same(nombreCiclo("APSTI", "IV"), "APSTI · IV CICLO");
@@ -100,6 +120,28 @@ test("bajaAsistencia usa días con registros como días de clase", () => {
 });
 test("bajaAsistencia sin registros devuelve vacío", () => same(bajaAsistencia([A(1)], [], 85), []));
 test("resumenAlumno calcula ausencias", () => same(resumenAlumno([X(1, "a"), X(1, "b", "08:30")], 5, "08:00"), { presentes: 2, tardes: 1, ausentes: 3, pct: 40 }));
+test("matrizAsistencia: P/T/J/F, solo cuenta días de clase y calcula porcentajes", () => {
+  const al = [A(1), A(2), A(3)];
+  const dias = ["d1", "d2", "d3", "d4"];
+  const asis = [X(1, "d1"), X(1, "d2", "08:30"), X(2, "d1"), X(3, "d1")]; // d3 y d4 sin registros → no hubo clase
+  const just = [{ alumno_id: 2, fecha: "d2", tipo: "Permiso" }];
+  const m = matrizAsistencia(al, asis, just, dias, "08:00");
+  same(m.dias, ["d1", "d2"]);
+  same(m.filas.map((f) => Object.values(f.celdas).join("")), ["PT", "PJ", "PF"]);
+  same(m.filas.map((f) => [f.p, f.t, f.j, f.f, f.pct, f.pctJust]), [[2, 1, 0, 0, 100, 100], [1, 0, 1, 0, 50, 100], [1, 0, 0, 1, 50, 50]]);
+  same(m.resumen, { alumnos: 3, dias: 2, pct: 67 });
+});
+test("matrizAsistencia sin registros no divide por cero", () => same(matrizAsistencia([A(1)], [], [], ["d1"], "08:00").filas[0].pct, 0));
+test("numeroWhatsApp / enlaceWhatsApp: formato peruano e internacional", () => {
+  same([numeroWhatsApp("999 888 777"), numeroWhatsApp("+51 999-888-777"), numeroWhatsApp("+34 600 111 222"), numeroWhatsApp("51999888777"), numeroWhatsApp("")], ["51999888777", "51999888777", "34600111222", "51999888777", ""]);
+  same(enlaceWhatsApp("999888777", "Hola & chao"), "https://wa.me/51999888777?text=Hola%20%26%20chao");
+  same(enlaceWhatsApp("", "x"), "");
+});
+test("mensajeAviso rellena variables y deja intactas las desconocidas", () => same(mensajeAviso("{alumno} faltó el {fecha} ({otra})", { alumno: "Ana", fecha: "05/10" }), "Ana faltó el 05/10 ({otra})"));
+test("perteneceACurso: carrera y, si el curso fija ciclo, ciclo", () => {
+  const al = { nivel: "APSTI", grado: "APSTI · I CICLO" };
+  same([perteneceACurso(al, { nivel: "APSTI" }), perteneceACurso(al, { nivel: "APSTI", grado: "APSTI · I CICLO" }), perteneceACurso(al, { nivel: "APSTI", grado: "APSTI · II CICLO" }), perteneceACurso(al, { nivel: "OTRA" })], [true, true, false, false]);
+});
 test("normalizarFilasImport acepta las columnas carrera y ciclo", () => {
   const r = normalizarFilasImport([{ nombre: "Ana", codigo: "a1", carrera: "APSTI", ciclo: "APSTI III" }], ["APSTI"], [{ nivel: "APSTI", nombre: "APSTI III" }]);
   same(r.validas.map((v) => [v.nivel, v.grado, v.aviso.length]), [["APSTI", "APSTI III", 0]]);

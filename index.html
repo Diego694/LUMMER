@@ -12,6 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316223D'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='700' font-size='16' text-anchor='middle' fill='%23E8A33D'%3ERA%3C/text%3E%3C/svg%3E">
 <script src="assets/js/theme-init.js"></script>
+<script src="assets/js/compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -70,6 +71,7 @@
       <button class="icon-only menu-btn" id="menu-toggle" data-action="menu" aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
       <div class="crumbs"><span class="muted">Panel</span><span class="muted">/</span><strong id="topbar-title">Dashboard</strong></div>
       <div class="top-right">
+        <button class="chip net-chip" id="net-chip" data-action="sync-now" hidden aria-live="polite"></button>
         <span class="chip chip-amber" id="mode-badge" hidden>Modo demo</span>
         <span class="muted hide-sm" id="topbar-date"></span>
         <button class="icon-only bordered" data-action="theme" aria-label="Cambiar tema"></button>

@@ -35,3 +35,13 @@ body.est{min-height:100vh;display:flex;flex-direction:column}
 .cam-box.espejo video{transform:scaleX(-1)}
 .cam-guia{position:absolute;inset:12%;border:2px dashed rgba(255,255,255,.7);border-radius:50%;pointer-events:none}
 .cam-botones{display:flex;gap:8px;flex-wrap:wrap}.cam-botones .btn{flex:1;min-width:120px}
+
+/* QR dinámico, aviso legal y captcha */
+.qr-timer{height:5px;background:var(--line,#E3E8F0);border-radius:99px;overflow:hidden;margin:10px auto 4px;max-width:220px}
+.qr-timer #qr-bar{display:block;height:100%;width:100%;background:var(--amber,#E8A33D);transition:width 1s linear}
+.qr-info{font-size:12px;text-align:center;color:var(--ink-soft,#5A6784)}
+.est-legal{font-size:12.5px;text-align:center;margin-top:14px}
+.est-legal a,.link-btn{color:var(--amber-ink,#B8741A)}
+.link-btn{background:none;border:0;padding:0;font:inherit;text-decoration:underline;cursor:pointer}
+.link-peligro{color:#C1443A}
+.captcha{display:flex;justify-content:center;margin:10px 0}

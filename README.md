@@ -87,7 +87,7 @@ docker compose up --build        # http://localhost:8080
 
 ## Documentación
 
-- [Arquitectura](docs/ARQUITECTURA.md) · [Despliegue](docs/DESPLIEGUE.md) · [App Android](docs/ANDROID.md) · [Portal del estudiante](docs/ESTUDIANTES.md) · [Guía de uso](docs/GUIA-DE-USO.md) · [Pruebas y auditoría](docs/PRUEBAS.md) · [Changelog](CHANGELOG.md)
+- [Arquitectura](docs/ARQUITECTURA.md) · [Despliegue](docs/DESPLIEGUE.md) · [App Android](docs/ANDROID.md) · [Portal del estudiante](docs/ESTUDIANTES.md) · [Guía de uso](docs/GUIA-DE-USO.md) · [Pruebas y auditoría](docs/PRUEBAS.md) · [Piloto](docs/PILOTO.md) · [Operación](docs/OPERACION.md) · [Privacidad](docs/PRIVACIDAD.md) · [Seguridad](docs/SEGURIDAD.md) · [Entornos](docs/ENTORNOS.md) · [Changelog](CHANGELOG.md)
 
 ## Licencia
 

@@ -13,6 +13,14 @@ export function vocabulario(msg = "") {
   return String(msg).replace(/Nivel o grado/g, "Carrera o ciclo").replace(/\bcolegio\b/g, "instituto").replace(/\bColegio\b/g, "Instituto");
 }
 
+/** fetch con tiempo de espera (mismo criterio que el panel del docente; no se importa api.js para no crear un segundo cliente de sesión). */
+function fetchConTimeout(url, opts = {}) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), String(url).includes("/storage/") ? 60000 : 15000);
+  if (opts.signal) opts.signal.addEventListener("abort", () => ctl.abort());
+  return fetch(url, { ...opts, signal: ctl.signal }).finally(() => clearTimeout(t));
+}
+
 function blobADataUrl(blob) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
 }
@@ -37,6 +45,19 @@ class DemoEstudiante {
     const id = localStorage.getItem(this.SESSION);
     const email = Object.keys(this.users()).find((e) => this.users()[e].id === id);
     return id && email ? { id, email } : null;
+  }
+  async horaServidor() { return Date.now() + (Number(localStorage.getItem("ra-sim-desfase-ms")) || 0); }
+  async registrarError(row) { const db = this.load(); (db.logs_cliente ||= []).unshift({ id: uid(), creado_en: new Date().toISOString(), colegio_id: db.colegio.id, ...row }); db.logs_cliente = db.logs_cliente.slice(0, 200); this.save(db); }
+  async solicitarRecuperacion() { throw err("En modo demo no se envían correos."); }
+  async cambiarPassword() { throw err("En modo demo no hay recuperación de contraseña."); }
+  alRecuperar() { /* sin eventos en demo */ }
+  async eliminarMiCuenta(user) {
+    const db = this.load();
+    db.alumnos = db.alumnos.filter((a) => a.user_id !== user.id);
+    this.save(db);
+    const us = this.users(); const email = Object.keys(us).find((e) => us[e].id === user.id);
+    if (email) { delete us[email]; localStorage.setItem(this.USERS, JSON.stringify(us)); }
+    localStorage.removeItem(this.SESSION);
   }
   async signUp(email, password) {
     const e = email.trim().toLowerCase(), us = this.users();
@@ -70,6 +91,7 @@ class DemoEstudiante {
       id: uid(), colegio_id: db.colegio.id, codigo, nombre: `${f.nombres.trim()} ${f.apellidos.trim()}`, nivel: f.nivel, grado: f.grado,
       apoderado: f.apoderado || "", estado: "ACTIVO", user_id: user.id, nombres: f.nombres.trim(), apellidos: f.apellidos.trim(),
       dni: f.dni || null, aprobado: false, consentimiento_en: new Date().toISOString(), registrado_en: new Date().toISOString(),
+      apoderado_telefono: f.apoderadoTel || null, apoderado_email: (f.apoderadoEmail || "").toLowerCase() || null, qr_secreto: uid().replace(/-/g, ""),
     };
     db.alumnos.push(a);
     this.save(db);
@@ -99,11 +121,38 @@ class SupabaseEstudiante {
   constructor() {
     if (!window.supabase) throw new Error("No se pudo cargar la librería de Supabase (¿sin conexión?)");
     // storageKey propio: la sesión del estudiante no debe mezclarse con la del panel del docente (mismo origen).
-    this.sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { auth: { storageKey: "ra-estudiante-auth" } });
+    this.sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { auth: { storageKey: "ra-estudiante-auth" }, global: { fetch: (u, o) => fetchConTimeout(u, o) } });
   }
   async init() { const { data } = await this.sb.auth.getSession(); return data.session?.user ?? null; }
-  async signUp(email, password) {
-    const { data, error } = await this.sb.auth.signUp({ email: email.trim(), password });
+  async horaServidor() {
+    const { data, error } = await this.sb.rpc("hora_servidor");
+    if (error) throw err(error.message, error.code);
+    return new Date(data).getTime();
+  }
+  async registrarError(row) {
+    const { error } = await this.sb.from("logs_cliente").insert(row);
+    if (error) throw err(error.message, error.code);
+  }
+  async solicitarRecuperacion(email, redirectTo) {
+    const { error } = await this.sb.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    if (error) throw err(/rate limit/i.test(error.message) ? "Se enviaron demasiados correos. Espera unos minutos e inténtalo de nuevo." : error.message, error.code);
+  }
+  async cambiarPassword(password) {
+    const { error } = await this.sb.auth.updateUser({ password });
+    if (error) throw err(error.message, error.code);
+  }
+  alRecuperar(cb) { this.sb.auth.onAuthStateChange((evento) => { if (evento === "PASSWORD_RECOVERY") cb(); }); }
+  /** Derecho de supresión: borra las fotos propias, el registro (con su historial) y la cuenta. */
+  async eliminarMiCuenta(user) {
+    const bucket = this.sb.storage.from("fotos-alumnos");
+    const { data } = await bucket.list(user.id);
+    const rutas = (data || []).map((f) => `${user.id}/${f.name}`);
+    if (rutas.length) await bucket.remove(rutas);
+    await this.#rpc("eliminar_mi_registro", {});
+    await this.sb.auth.signOut();
+  }
+  async signUp(email, password, captchaToken) {
+    const { data, error } = await this.sb.auth.signUp({ email: email.trim(), password, options: captchaToken ? { captchaToken } : undefined });
     if (error) throw err(/registered|already/i.test(error.message) ? "Ese correo ya está registrado" : error.message, "auth");
     if (!data.session) throw err("Te enviamos un correo para confirmar tu cuenta. Confírmalo y luego inicia sesión.", "confirm");
     return data.user;
@@ -121,11 +170,13 @@ class SupabaseEstudiante {
     return data;
   }
   infoColegio(codigo) { return this.#rpc("info_colegio", { p_codigo: codigo }); }
-  registrar(_u, f) {
-    return this.#rpc("registrar_estudiante", {
+  async registrar(_u, f) {
+    const r = await this.#rpc("registrar_estudiante", {
       p_codigo_colegio: f.codigoColegio, p_nombres: f.nombres, p_apellidos: f.apellidos, p_nivel: f.nivel, p_grado: f.grado,
-      p_apoderado: f.apoderado || "", p_dni: f.dni || null,
+      p_apoderado: f.apoderado || "", p_dni: f.dni || null, p_apoderado_tel: f.apoderadoTel || null, p_apoderado_email: f.apoderadoEmail || null,
     });
+    if (r?.error === "codigo_invalido") throw err("Código de instituto inválido");
+    return r;
   }
   miRegistro() { return this.#rpc("mi_registro", {}); }
   async subirFoto(user, blob) {

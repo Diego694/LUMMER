@@ -10,7 +10,39 @@ const pad = (n) => String(n).padStart(2, "0");
 export function dateStr(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
-export const todayStr = () => dateStr(new Date());
+/* ---------- Reloj confiable ----------
+ * La asistencia NUNCA debe depender del reloj ni de la zona del teléfono: se usa la hora del servidor
+ * (sincronizada al iniciar y periódicamente) y la zona horaria del instituto (Lima, sin horario de verano).
+ * Mientras la página está abierta se avanza con performance.now(), que no se altera si cambian el reloj del equipo. */
+export const ZONA_HORARIA = "America/Lima";
+let ancla = null;   // { servidor, perf }
+let desfase = 0;    // ms (servidor − dispositivo); se restaura de la última sincronización si no hay red
+try { desfase = Number(JSON.parse(localStorage.getItem("ra-reloj"))?.desfase) || 0; } catch { /* sin storage (Node) */ }
+
+export function sincronizarReloj(servidorMs) {
+  ancla = { servidor: servidorMs, perf: performance.now() };
+  desfase = servidorMs - Date.now();
+  try { localStorage.setItem("ra-reloj", JSON.stringify({ desfase, en: Date.now() })); } catch { /* sin storage */ }
+}
+export const desfaseReloj = () => desfase;
+export const ahora = () => new Date(ancla ? ancla.servidor + (performance.now() - ancla.perf) : Date.now() + desfase);
+
+function partesZona(d, zona = ZONA_HORARIA) {
+  const p = {};
+  new Intl.DateTimeFormat("en-CA", { timeZone: zona, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+    .formatToParts(d).forEach((x) => { p[x.type] = x.value; });
+  return p;
+}
+/** Fecha YYYY-MM-DD en la zona del instituto. */
+export const fechaZona = (d = ahora()) => { const p = partesZona(d); return `${p.year}-${p.month}-${p.day}`; };
+/** Hora HH:MM (24 h) en la zona del instituto. */
+export const horaZona = (d = ahora()) => { const p = partesZona(d); return `${p.hour}:${p.minute}`; };
+export const todayStr = () => fechaZona(ahora());
+
+/** ¿El error es de red/tiempo de espera (y por tanto reintentable sin perder datos)? */
+export const esErrorRed = (e) => !e?.code && /fetch|network|abort|timeout|timed out|load failed|conexi/i.test(String(e?.message || e || ""));
+/** ¿El error indica sesión vencida o sin permisos de sesión? */
+export const esErrorSesion = (e) => /jwt|expired|not authenticated|no autenticado|invalid token|401/i.test(String(e?.message || "")) || e?.status === 401;
 
 export function parseDate(str) {
   const [y, m, d] = str.split("-").map(Number);
@@ -35,8 +67,22 @@ export function lastWeekdays(n, hasta = todayStr()) {
   }
   return out;
 }
-export function nowHHMM(d = new Date()) {
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+/** Hora actual HH:MM según el reloj confiable y la zona del instituto. */
+/** Días hábiles (lun-vie) de un mes "YYYY-MM", sin pasar de `hasta` (YYYY-MM-DD). */
+export function diasHabilesDelMes(mes, hasta = todayStr()) {
+  const [y, m] = mes.split("-").map(Number);
+  const ultimo = new Date(y, m, 0).getDate();
+  const out = [];
+  for (let d = 1; d <= ultimo; d++) {
+    const f = `${mes}-${String(d).padStart(2, "0")}`;
+    if (f > hasta) break;
+    if (!isWeekend(f)) out.push(f);
+  }
+  return out;
+}
+
+export function nowHHMM(d = ahora()) {
+  return horaZona(d);
 }
 export function fmtDate(str, opts = { day: "2-digit", month: "short", year: "numeric" }) {
   return parseDate(str).toLocaleDateString("es-PE", opts).replace(".", "");

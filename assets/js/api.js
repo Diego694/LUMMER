@@ -4,9 +4,10 @@
 // El resto de la app solo habla con `api`.
 import { CONFIG, DEMO_USER, isDemoMode } from "./config.js";
 import { buildDemoDB } from "./demo-data.js";
+import { extrasDemo, extrasSupabase } from "./api-extra.js";
 import { uid } from "./utils.js";
 
-const TABLAS = ["alumnos", "niveles", "grados", "docentes", "comunicados"];
+const TABLAS = ["alumnos", "niveles", "grados", "docentes", "comunicados", "cursos"];
 const err = (message, code) => Object.assign(new Error(message), { code });
 
 /* ----------------------------- DEMO ----------------------------- */
@@ -29,8 +30,10 @@ class DemoBackend {
     return { id: "demo-user", email: DEMO_USER.email };
   }
   async signOut() { localStorage.removeItem(this.SESSION); }
-  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "admin", nombre: "Administrador demo", colegio: this.db.colegio.nombre }; }
+  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: "Administrador demo", carrera: null, colegio: this.db.colegio.nombre }; }
   async userId() { return "demo-user"; }
+  /** Hora "del servidor". En demo se puede simular un reloj de teléfono desfasado con localStorage ra-sim-desfase-ms. */
+  async horaServidor() { return Date.now() + (Number(localStorage.getItem("ra-sim-desfase-ms")) || 0); }
 
   // El portal de estudiantes (otra página, mismo navegador) escribe en el mismo localStorage: se relee antes de cargar.
   reload() { try { const d = JSON.parse(localStorage.getItem(this.KEY)); if (d) this.db = d; } catch { /* se conserva la copia en memoria */ } }
@@ -41,10 +44,11 @@ class DemoBackend {
   async loadAll() {
     this.reload();
     const { alumnos, niveles, grados, comunicados, docentes } = this.db;
+    const cursos = [...(this.db.cursos || [])];
     const sort = (a, k) => [...a].sort((x, y) => String(x[k]).localeCompare(String(y[k]), "es", { numeric: true }));
     return {
       alumnos: sort(alumnos, "nombre"), niveles: sort(niveles, "nombre"), grados: sort(grados, "nombre"),
-      docentes: sort(docentes, "nombre"), comunicados: [...comunicados].sort((a, b) => b.fecha.localeCompare(a.fecha)),
+      docentes: sort(docentes, "nombre"), comunicados: [...comunicados].sort((a, b) => b.fecha.localeCompare(a.fecha)), cursos: sort(cursos, "nombre"),
     };
   }
   async asistenciasRango(_c, desde, hasta) { return this.db.asistencias.filter((a) => a.fecha >= desde && a.fecha <= hasta); }
@@ -71,6 +75,8 @@ class DemoBackend {
     if (!TABLAS.includes(tabla)) throw err("Tabla inválida");
     const list = this.db[tabla];
     if (tabla === "alumnos" && list.some((x) => x.codigo === data.codigo && x.id !== id)) throw err("Código duplicado", "duplicate");
+    // misma regla que el índice único de la base: curso único por carrera + ciclo + nombre (sin distinguir mayúsculas)
+    if (tabla === "cursos" && list.some((x) => x.id !== id && x.nivel === data.nivel && (x.grado || "") === (data.grado || "") && x.nombre.toLowerCase() === String(data.nombre).toLowerCase())) throw err("Curso duplicado", "duplicate");
     if (id) Object.assign(list.find((x) => x.id === id), data);
     else list.push({ id: uid(), colegio_id: this.db.colegio.id, ...data });
     this.persist();
@@ -91,13 +97,37 @@ class DemoBackend {
   }
 }
 
+// Pruebas sin conexión: con globalThis.__simOffline = true, toda llamada "de red" del demo falla como un corte real.
+["loadAll", "asistenciasRango", "asistenciasPorFecha", "asistenciasAlumno", "registrarAsistencia", "registrarMasivo", "save", "remove", "upsertAlumnos", "horaServidor"].forEach((m) => {
+  const original = DemoBackend.prototype[m];
+  DemoBackend.prototype[m] = async function (...args) {
+    if (globalThis.__simOffline) throw err("Failed to fetch (sin conexión simulada)");
+    return original.apply(this, args);
+  };
+});
+
+/** fetch con tiempo de espera: en redes "colgadas" (señal sin datos) falla pronto y el registro pasa a la cola local. */
+export function fetchConTimeout(url, opts = {}, ms) {
+  const limite = ms ?? (String(url).includes("/storage/") ? 60000 : 15000);
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), limite);
+  if (opts.signal) opts.signal.addEventListener("abort", () => ctl.abort());
+  return fetch(url, { ...opts, signal: ctl.signal }).finally(() => clearTimeout(t));
+}
+
 /* --------------------------- SUPABASE --------------------------- */
 class SupabaseBackend {
   mode = "supabase";
 
   constructor() {
     if (!window.supabase) throw new Error("No se pudo cargar la librería de Supabase (¿sin conexión?)");
-    this.sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    this.sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { global: { fetch: (u, o) => fetchConTimeout(u, o) } });
+  }
+  /** Hora del servidor en ms (función SQL hora_servidor, migración 004). */
+  async horaServidor() {
+    const { data, error } = await this.sb.rpc("hora_servidor");
+    if (error) throw err(error.message, error.code);
+    return new Date(data).getTime();
   }
   async init() { const { data } = await this.sb.auth.getSession(); return data.session?.user ?? null; }
   async signIn(email, password) {
@@ -110,7 +140,7 @@ class SupabaseBackend {
   async getProfile(user) {
     const { data, error } = await this.sb.from("perfiles").select("*, colegios(nombre)").eq("id", user.id).single();
     if (error || !data) throw err("No se encontró un perfil de instituto para esta cuenta.", "profile");
-    return { colegio_id: data.colegio_id, rol: data.rol, nombre: data.nombre, colegio: data.colegios?.nombre ?? "" };
+    return { colegio_id: data.colegio_id, rol: data.rol, nombre: data.nombre, carrera: data.carrera ?? null, colegio: data.colegios?.nombre ?? "" };
   }
 
   // Portal de estudiantes. Todo es opcional: si la migración 002 aún no se aplicó, estas funciones devuelven null y la app sigue igual.
@@ -148,10 +178,10 @@ class SupabaseBackend {
 
   async loadAll(cid) {
     const q = (t, col, asc = true) => this.#todo(() => this.sb.from(t).select("*").eq("colegio_id", cid).order(col, { ascending: asc }));
-    const [alumnos, niveles, grados, comunicados, docentes] = await Promise.all([
-      q("alumnos", "nombre"), q("niveles", "nombre"), q("grados", "nombre"), q("comunicados", "fecha", false), q("docentes", "nombre"),
+    const [alumnos, niveles, grados, comunicados, docentes, cursos] = await Promise.all([
+      q("alumnos", "nombre"), q("niveles", "nombre"), q("grados", "nombre"), q("comunicados", "fecha", false), q("docentes", "nombre"), this.cursosLista(cid),
     ]);
-    return { alumnos, niveles, grados, comunicados, docentes };
+    return { alumnos, niveles, grados, comunicados, docentes, cursos };
   }
   asistenciasRango(cid, desde, hasta) {
     return this.#todo(() => this.sb.from("asistencias").select("*").eq("colegio_id", cid).gte("fecha", desde).lte("fecha", hasta).order("id"));
@@ -193,6 +223,17 @@ class SupabaseBackend {
     return n;
   }
 }
+
+Object.assign(DemoBackend.prototype, extrasDemo);
+Object.assign(SupabaseBackend.prototype, extrasSupabase);
+// Las operaciones nuevas de red del demo también fallan con la red simulada caída
+["cursosLista", "justificacionesRango", "guardarJustificacion", "asistenciasCursoPorFecha", "registrarAsistenciaCurso", "registrarMasivoCurso", "avisosPorFecha", "registrarAviso", "exportarTodo"].forEach((m) => {
+  const original = DemoBackend.prototype[m];
+  DemoBackend.prototype[m] = async function (...args) {
+    if (globalThis.__simOffline) throw err("Failed to fetch (sin conexión simulada)");
+    return original.apply(this, args);
+  };
+});
 
 function crearBackend() {
   try { return isDemoMode() ? new DemoBackend() : new SupabaseBackend(); }

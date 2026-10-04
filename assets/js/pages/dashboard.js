@@ -6,6 +6,7 @@ import { resumenDia, serieDiaria, porGrado, porNivel, bajaAsistencia, esTardanza
 import { downloadFile, esc, fmtDate, fmtDay, greeting, initials, isWeekend, lastWeekdays, todayStr, toCSV } from "../utils.js";
 
 let rango = 7;
+let carrera = "";   // filtro del panel por carrera ("" = todas)
 let cache = null;
 let charts = [];
 let timer = null;
@@ -49,29 +50,35 @@ async function cargar(silencioso = false) {
 }
 
 function pintar() {
-  const { dias, filas, hoy, actualizado } = cache;
+  const { dias, filas, actualizado } = cache;
+  let hoy = cache.hoy;
   const L = CONFIG.HORA_LIMITE;
-  const r = resumenDia(DB.alumnos, hoy, L);
-  const activosIds = new Set(DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false).map((a) => a.id));
-  const serie = serieDiaria(dias, filas.filter((f) => activosIds.has(f.alumno_id)), r.activos, L);
+  const AL = carrera ? DB.alumnos.filter((a) => a.nivel === carrera) : DB.alumnos;   // alumnos de la vista actual
+  const idsAL = new Set(AL.map((a) => a.id));
+  hoy = hoy.filter((x) => idsAL.has(x.alumno_id));
+  const filasAL = filas.filter((f) => idsAL.has(f.alumno_id));
+  const r = resumenDia(AL, hoy, L);
+  const activosIds = new Set(AL.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false).map((a) => a.id));
+  const serie = serieDiaria(dias, filasAL.filter((f) => activosIds.has(f.alumno_id)), r.activos, L);
   const previos = serie.filter((s) => s.fecha !== todayStr() && s.presentes > 0);
   const promedio = previos.length ? Math.round(previos.reduce((t, s) => t + s.pct, 0) / previos.length) : 0;
   const delta = previos.length ? r.pct - promedio : null;
   const deltaTxt = delta === null ? "Sin histórico" : `${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta)} pts vs. promedio (${promedio}%)`;
-  const atencion = bajaAsistencia(DB.alumnos, filas, CONFIG.UMBRAL_ASISTENCIA);
+  const atencion = bajaAsistencia(AL, filasAL, CONFIG.UMBRAL_ASISTENCIA);
   const recientes = [...hoy].sort((a, b) => b.hora.localeCompare(a.hora)).slice(0, 8);
   const alum = new Map(DB.alumnos.map((a) => [a.id, a]));
-  const inactivos = DB.alumnos.length - r.activos;
+  const inactivos = AL.length - r.activos;
   const nombre = (DB.perfil?.nombre || "").split(" ")[0];
   const finde = isWeekend(todayStr());
 
   rootEl.innerHTML = `
     ${pageHead(`${greeting()}${nombre ? ", " + esc(nombre) : ""}`,
       `${esc(fmtDate(todayStr(), { weekday: "long", day: "numeric", month: "long", year: "numeric" }))} · Actualizado ${actualizado.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}`,
-      `<label class="sr-only" for="dash-rango">Periodo</label>
+      `${DB.niveles.length > 1 ? `<label class="sr-only" for="dash-carrera">Carrera</label><select class="filter" id="dash-carrera" aria-label="Carrera"><option value="">Todas las carreras</option>${DB.niveles.map((n) => `<option value="${esc(n)}" ${n === carrera ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}
+       <label class="sr-only" for="dash-rango">Periodo</label>
        <select class="filter" id="dash-rango" aria-label="Periodo">${[7, 14, 30].map((n) => `<option value="${n}" ${n === rango ? "selected" : ""}>Últimos ${n} días hábiles</option>`).join("")}</select>
        <button class="btn btn-outline" data-action="dash-export">${icon("download", 16)} Exportar CSV</button>
-       <a class="btn btn-outline" href="#/codigo">${icon("qr", 16)} Código de registro</a>
+       <a class="btn btn-outline" data-admin-link href="#/codigo">${icon("qr", 16)} Código de registro</a>
        <a class="btn btn-primary" href="#/registro-qr">${icon("qr", 16)} Registrar asistencia</a>`)}
 
     <section class="kpi-grid" aria-label="Indicadores del día">
@@ -108,6 +115,7 @@ function pintar() {
           : emptyState("Sin comunicados", "Publica el primero desde la sección Comunicados.", "megaphone")}</article>
     </section>`;
 
+  rootEl.querySelector("#dash-carrera")?.addEventListener("change", (e) => { carrera = e.target.value; pintar(); });
   rootEl.querySelector("#dash-rango").addEventListener("change", async (e) => {
     rango = Number(e.target.value);
     const mia = ++ver;
@@ -115,7 +123,7 @@ function pintar() {
     await cargar();
     if (mia === ver) pintar();
   });
-  cache.derived = { r, serie, porGrado: porGrado(DB.alumnos, hoy), porNivel: porNivel(DB.alumnos, DB.niveles) };
+  cache.derived = { r, serie, porGrado: porGrado(AL, hoy), porNivel: porNivel(AL, carrera ? [carrera] : DB.niveles) };
   dibujarGraficos();
 }
 

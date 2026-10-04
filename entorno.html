@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Entorno de pruebas · Registro Académico</title>
+<style>
+  :root{--ink:#16223D;--soft:#5A6784;--line:#E3E8F0;--bg:#F3F5F9}*{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{max-width:560px;margin:0 auto;padding:26px 16px 60px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:16px}
+  h1{font-size:22px;margin:0 0 6px}p{color:#2b3957}.muted{color:var(--soft);font-size:14px}label{display:block;font-weight:600;font-size:13px;margin:14px 0 6px;color:var(--soft)}
+  input{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:9px;font:inherit}button{font:inherit;font-weight:700;border:0;border-radius:9px;padding:11px 18px;cursor:pointer}
+  .p{background:#E8A33D;color:#2A1B02}.s{background:#fff;border:1.5px solid var(--line);color:var(--ink)}.row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .estado{padding:12px 14px;border-radius:10px;font-weight:600;margin-bottom:14px}.prod{background:#E1F3EE;color:#12806A}.test{background:#FCEFD9;color:#8a5a12}.err{color:#C1443A;font-size:14px;margin-top:10px}
+  @media(prefers-color-scheme:dark){:root{--bg:#0C1322;--ink:#E8ECF5;--soft:#9AA7C6;--line:#27324F}.card{background:#141D33}p{color:#C7D0E6}input{background:#1A2540;color:#E8ECF5}.s{background:#1A2540}}
+</style>
+</head>
+<body><main>
+<div class="card">
+<h1>Entorno de pruebas</h1>
+<p class="muted">Apunta <b>solo este navegador</b> a otro proyecto de Supabase (por ejemplo uno de pruebas) para ensayar cambios sin tocar los datos reales. No afecta a nadie más. Ver <code>docs/ENTORNOS.md</code>.</p>
+<div id="estado" class="estado"></div>
+<form id="f">
+  <label for="n">Nombre del entorno</label><input id="n" placeholder="pruebas" value="pruebas" maxlength="24">
+  <label for="u">URL del proyecto Supabase</label><input id="u" placeholder="https://xxxx.supabase.co" autocomplete="off">
+  <label for="k">Publishable (anon) key</label><input id="k" placeholder="sb_publishable_…" autocomplete="off">
+  <p class="err" id="err" hidden></p>
+  <div class="row"><button class="p" type="submit">Usar este entorno</button><button class="s" type="button" id="quitar">Volver a producción</button></div>
+</form>
+<p class="muted" style="margin-top:16px">Pega solo la <b>publishable / anon key</b>. Nunca la «service_role» ni claves secretas.</p>
+</div>
+<a href="./">← Ir a la aplicación</a>
+<script>
+  var est = document.getElementById("estado"), err = document.getElementById("err");
+  function pintar() {
+    var o = null; try { o = JSON.parse(localStorage.getItem("ra-entorno")); } catch (e) {}
+    if (o && o.url) { est.className = "estado test"; est.textContent = "Entorno activo: " + (o.nombre || "pruebas") + " → " + o.url; }
+    else { est.className = "estado prod"; est.textContent = "Entorno activo: PRODUCCIÓN (datos reales)."; }
+  }
+  document.getElementById("f").addEventListener("submit", function (e) {
+    e.preventDefault(); err.hidden = true;
+    var url = document.getElementById("u").value.trim().replace(/\/+$/, ""), key = document.getElementById("k").value.trim();
+    if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url)) { err.textContent = "La URL debe ser como https://xxxx.supabase.co"; err.hidden = false; return; }
+    if (/service_role|sb_secret_/.test(key) || key.length < 20) { err.textContent = "Esa clave no es válida o es una clave secreta. Usa la publishable/anon key."; err.hidden = false; return; }
+    try { var p = key.split(".")[1]; if (p && JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/"))).role === "service_role") { err.textContent = "¡Es una clave service_role! No la uses en el navegador."; err.hidden = false; return; } } catch (x) {}
+    localStorage.setItem("ra-entorno", JSON.stringify({ nombre: document.getElementById("n").value.trim() || "pruebas", url: url, key: key }));
+    pintar(); alert("Listo. Abre la aplicación: verás una marca de ENTORNO DE PRUEBAS.");
+  });
+  document.getElementById("quitar").addEventListener("click", function () { localStorage.removeItem("ra-entorno"); pintar(); });
+  pintar();
+</script>
+</main></body></html>

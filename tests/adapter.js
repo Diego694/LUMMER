@@ -47,7 +47,7 @@ await check("loadAll filtra siempre por colegio_id", async () => {
   const api = await backendCon(() => ({ data: [], error: null }));
   api.sb.queries.length = 0;
   await api.loadAll("c1");
-  assert(api.sb.queries.length === 5 && api.sb.queries.every((q) => op(q, "eq")?.[0] === "colegio_id" && op(q, "eq")?.[1] === "c1"));
+  assert(api.sb.queries.length === 6 && api.sb.queries.every((q) => op(q, "eq")?.[0] === "colegio_id" && op(q, "eq")?.[1] === "c1"));
 });
 
 await check("registrarAsistencia traduce 23505 a 'duplicate'", async () => {

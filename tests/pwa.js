@@ -96,5 +96,39 @@ await check("Puente: sin AndroidBridge la descarga usa el navegador (<a download
   assert(res === true && clicked === "x.csv", String(clicked));
 });
 
+/* ---- QR dinámico ---- */
+const { generarQR, verificarQR, ventana, VENTANA_MS } = await import("../assets/js/qr-seguro.js");
+const alumnoQR = { id: "1", codigo: "e1234567890", qr_secreto: "s3creto-de-prueba" };
+const buscar = (c) => (c === alumnoQR.codigo ? alumnoQR : null);
+const T0 = Date.UTC(2026, 9, 5, 12, 0, 0);
+
+await check("QR dinámico: un QR recién generado se verifica y la firma depende del secreto", async () => {
+  const q = await generarQR(alumnoQR.codigo, alumnoQR.qr_secreto, T0);
+  assert(q.startsWith(alumnoQR.codigo + ".") && q.split(".").length === 3, q);
+  const r = await verificarQR(q, buscar, T0 + 5000);
+  assert(r.ok === true && r.alumno.id === "1", JSON.stringify(r));
+  const otro = await generarQR(alumnoQR.codigo, "otro-secreto", T0);
+  assert((await verificarQR(otro, buscar, T0)).motivo === "firma", "un secreto distinto debe fallar");
+});
+
+await check("QR dinámico: vence (captura de pantalla inútil) pero tolera pequeños desfases", async () => {
+  const q = await generarQR(alumnoQR.codigo, alumnoQR.qr_secreto, T0);
+  assert((await verificarQR(q, buscar, T0 + 60000)).ok === true, "a 60 s todavía vale (2 ventanas)");
+  const tarde = await verificarQR(q, buscar, T0 + 5 * VENTANA_MS);
+  assert(tarde.ok === false && tarde.motivo === "vencido", JSON.stringify(tarde));
+  assert((await verificarQR(q, buscar, T0 - 5 * VENTANA_MS)).motivo === "vencido", "tampoco sirve uno 'del futuro'");
+});
+
+await check("QR dinámico: manipular el código, la ventana o la firma lo invalida; los estáticos pasan", async () => {
+  const q = await generarQR(alumnoQR.codigo, alumnoQR.qr_secreto, T0);
+  const [c, t, s] = q.split(".");
+  assert((await verificarQR(`${c}.${t}.${s.replace(/./, (x) => (x === "a" ? "b" : "a"))}`, buscar, T0)).ok === false, "firma alterada");
+  assert((await verificarQR(`${c}.${(ventana(T0) + 1).toString(36)}.${s}`, buscar, T0)).motivo === "firma", "ventana alterada con la firma vieja");
+  assert((await verificarQR("noexiste.abc.123", buscar, T0)).motivo === "desconocido");
+  assert((await verificarQR(alumnoQR.codigo, buscar, T0)).estatico === true && (await verificarQR("lo-que-sea", buscar, T0)).estatico === true);
+  const sinSecreto = { ...alumnoQR, qr_secreto: undefined };
+  assert((await verificarQR(q, (x) => (x === c ? sinSecreto : null), T0)).motivo === "sinsecreto");
+});
+
 const fail = out.filter((r) => !r.ok);
 document.body.insertAdjacentHTML("beforeend", `<h2>PWA y puente Android (simulados)</h2><p id="summary-pwa" data-failed="${fail.length}">${out.length - fail.length}/${out.length} correctos</p><ul>${out.map((r) => `<li style="color:${r.ok ? "#127a4f" : "#b3261e"}">${r.ok ? "✔" : "✘"} ${r.name}${r.msg ? " — " + r.msg : ""}</li>`).join("")}</ul>`);

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.4.0 — 2026-10-04
+
+### Añadido (preparación para uso real)
+- **Modo sin internet:** las asistencias se guardan en el teléfono y se envían solas (sin duplicar); copia local de datos y apertura sin sesión.
+- **Hora del servidor** y zona America/Lima: cambiar la hora del teléfono no altera los registros.
+- **Roles** Administrador / Docente / Coordinador (por carrera) con RLS restrictivas (migración 004).
+- **QR dinámico** firmado (HMAC, 30 s) en el carnet y verificación en el docente (`QR_MODO`).
+- Portal del estudiante: recuperar contraseña, CAPTCHA opcional, contacto del apoderado, eliminar mi cuenta y datos, política de privacidad.
+- **Asistencia por curso/hora**, **avisos a apoderados** (WhatsApp), **reportes mensuales**, **justificaciones** y **panel por carrera**.
+- **Sistema:** diagnóstico, respaldo JSON y registro de errores.
+- Entorno de pruebas (`entorno.html`), aviso para navegadores antiguos, keep-alive de Supabase.
+- Documentación: PILOTO, OPERACION, PRIVACIDAD, SEGURIDAD, ENTORNOS.
+
 ## 2.3.1 — 2026-10-04
 
 ### Cambiado

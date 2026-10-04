@@ -1,14 +1,18 @@
 // Portal del estudiante: crear cuenta → registrarse con el código del instituto → subir foto → carnet con QR único.
 import { CONFIG, isDemoMode } from "../config.js";
 import { api } from "./api.js";
-import { bindActions, icon, openModal, registerActions, toast } from "../ui.js";
-import { cicloCorto, compararCiclos, downloadFile, esc, etiquetaCiclo, initials } from "../utils.js";
+import { bindActions, confirmDialog, icon, openModal, registerActions, toast } from "../ui.js";
+import { ahora, cicloCorto, compararCiclos, downloadFile, esc, etiquetaCiclo, initials, sincronizarReloj } from "../utils.js";
+import { enviarPendientes, iniciarLogErrores } from "../errlog.js";
+import { VENTANA_MS, generarQR, segundosRestantes } from "../qr-seguro.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const root = () => $("#est-root");
 let user = null;      // sesión
 let registro = null;  // { alumno, colegio: nombre del instituto }
 let tema = "light";
+let qrTimer = null;   // temporizador del QR dinámico
+const PRIVACIDAD = new URL("../privacidad.html", location.href).href;
 
 /* ------------------------------ Tema ------------------------------ */
 function setTheme(t, persistir = true) {
@@ -102,12 +106,18 @@ function vistaAuth(modo = "login") {
         <div class="field"><label for="a-email">Correo</label><input id="a-email" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com" required></div>
         <div class="field"><label for="a-pass">Contraseña</label><input id="a-pass" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${reg ? "Mínimo 8 caracteres" : "••••••••"}" required></div>
         ${reg ? `<div class="field"><label for="a-pass2">Repite la contraseña</label><input id="a-pass2" type="password" autocomplete="new-password" required></div>` : ""}
+        ${reg && CONFIG.TURNSTILE_SITEKEY ? '<div id="captcha" class="captcha"></div>' : ""}
         <button class="btn btn-primary btn-block" id="a-go" type="submit">${reg ? "Crear cuenta" : "Ingresar"}</button>
         <p class="err-msg" id="a-err" role="alert" hidden></p>
+        ${reg ? "" : '<p class="est-link"><button type="button" class="link-btn" data-olvide>¿Olvidaste tu contraseña?</button></p>'}
+        <p class="muted est-legal">Al continuar aceptas la <a href="${PRIVACIDAD}" target="_blank" rel="noopener">política de privacidad</a>.</p>
         ${isDemoMode() ? `<p class="demo-hint"><strong>Modo demo</strong>: crea una cuenta con cualquier correo. El código del instituto de prueba es <code>DEMO2026</code>.</p>` : ""}
       </form>
     </section>`;
   root().querySelectorAll("[data-modo]").forEach((b) => b.addEventListener("click", () => vistaAuth(b.dataset.modo)));
+  root().querySelector("[data-olvide]")?.addEventListener("click", () => vistaRecuperar());
+  let captchaToken = "";
+  if (reg && CONFIG.TURNSTILE_SITEKEY) cargarTurnstile((tk) => { captchaToken = tk; });
   $("#f-auth").addEventListener("submit", async (e) => {
     e.preventDefault();
     const err = $("#a-err"), btn = $("#a-go"), email = $("#a-email").value.trim(), pass = $("#a-pass").value;
@@ -115,9 +125,10 @@ function vistaAuth(modo = "login") {
     if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = "Escribe un correo válido."; err.hidden = false; return; }
     if (reg && pass.length < 8) { err.textContent = "La contraseña debe tener al menos 8 caracteres."; err.hidden = false; return; }
     if (reg && pass !== $("#a-pass2").value) { err.textContent = "Las contraseñas no coinciden."; err.hidden = false; return; }
+    if (reg && CONFIG.TURNSTILE_SITEKEY && !captchaToken) { err.textContent = "Completa la verificación de seguridad."; err.hidden = false; return; }
     btn.disabled = true;
     try {
-      user = reg ? await api.signUp(email, pass) : await api.signIn(email, pass);
+      user = reg ? await api.signUp(email, pass, captchaToken) : await api.signIn(email, pass);
       await entrar();
     } catch (ex) {
       err.textContent = ex.code === "auth" && !reg ? "Correo o contraseña incorrectos." : ex.message || "No se pudo continuar.";
@@ -142,7 +153,10 @@ function vistaRegistro() {
           <div class="field"><label for="r-gra">Ciclo / salón <span class="req">*</span></label><select id="r-gra"></select></div></div>
           <div class="field"><label for="r-dni">DNI (opcional)</label><input id="r-dni" inputmode="numeric" maxlength="12" autocomplete="off"></div>
           <div class="field"><label for="r-apo">Apoderado (opcional)</label><input id="r-apo" autocomplete="off"></div>
-          <label class="consent"><input type="checkbox" id="r-ok"><span>Autorizo el tratamiento de mis datos personales y de mi foto para el control de asistencia institucional. Si soy menor de edad, mi padre, madre o apoderado lo autoriza.</span></label>
+          <div class="row2"><div class="field"><label for="r-atel">Celular del apoderado</label><input id="r-atel" type="tel" inputmode="tel" placeholder="999 888 777" autocomplete="off"></div>
+          <div class="field"><label for="r-amail">Correo del apoderado</label><input id="r-amail" type="email" autocomplete="off"></div></div>
+          <p class="muted" style="margin:-6px 0 12px;font-size:12px">Sirven para avisarle si faltas o llegas tarde. Son opcionales.</p>
+          <label class="consent"><input type="checkbox" id="r-ok"><span>Autorizo el tratamiento de mis datos personales y de mi foto para el control de asistencia institucional. Si soy menor de edad, mi padre, madre o apoderado lo autoriza. <a href="${PRIVACIDAD}" target="_blank" rel="noopener">Ver política de privacidad</a>.</span></label>
           <button class="btn btn-primary btn-block" id="r-go" type="submit">Crear mi carnet</button>
           <p class="err-msg" id="r-err" role="alert" hidden></p>
         </form>`
@@ -173,10 +187,12 @@ function vistaRegistro() {
     $("#f-reg").addEventListener("submit", async (e) => {
       e.preventDefault();
       const err = $("#r-err"), btn = $("#r-go"); err.hidden = true;
-      const f = { codigoColegio: codigo, nombres: $("#r-nom").value.trim(), apellidos: $("#r-ape").value.trim(), nivel: sel.value, grado: gra.value, dni: $("#r-dni").value.trim(), apoderado: $("#r-apo").value.trim() };
+      const f = { codigoColegio: codigo, nombres: $("#r-nom").value.trim(), apellidos: $("#r-ape").value.trim(), nivel: sel.value, grado: gra.value, dni: $("#r-dni").value.trim(), apoderado: $("#r-apo").value.trim(), apoderadoTel: $("#r-atel").value.trim(), apoderadoEmail: $("#r-amail").value.trim() };
       if (f.nombres.length < 2 || f.apellidos.length < 2) { err.textContent = "Escribe tus nombres y apellidos."; err.hidden = false; return; }
       if (!f.grado) { err.textContent = "Elige tu ciclo."; err.hidden = false; return; }
       if (f.dni && !/^\d{6,12}$/.test(f.dni)) { err.textContent = "El DNI solo debe tener números."; err.hidden = false; return; }
+      if (f.apoderadoTel && !/^\+?[\d\s-]{6,16}$/.test(f.apoderadoTel)) { err.textContent = "El celular del apoderado no es válido."; err.hidden = false; return; }
+      if (f.apoderadoEmail && !/^\S+@\S+\.\S+$/.test(f.apoderadoEmail)) { err.textContent = "El correo del apoderado no es válido."; err.hidden = false; return; }
       if (!$("#r-ok").checked) { err.textContent = "Debes aceptar la autorización para continuar."; err.hidden = false; return; }
       btn.disabled = true;
       try { await api.registrar(user, f); registro = await api.miRegistro(user); await vistaCarnet(true); }
@@ -189,6 +205,8 @@ function vistaRegistro() {
 async function vistaCarnet(recienCreado = false) {
   const { alumno: a, colegio } = registro;
   const aprobado = a.aprobado !== false;
+  const dinamico = CONFIG.QR_MODO !== "off" && !!a.qr_secreto;
+  detenerQR();
   $("#est-instituto").textContent = colegio;
   root().innerHTML = `
     <section class="carnet-est" aria-label="Mi carnet institucional">
@@ -199,6 +217,7 @@ async function vistaCarnet(recienCreado = false) {
           <span class="estado-chip ${aprobado ? "estado-ok" : "estado-pend"}">${icon(aprobado ? "check" : "clock", 13)} ${aprobado ? "Registro aprobado" : "Pendiente de aprobación"}</span></div>
       </div>
       <div class="ce-qr" id="ce-qr" aria-label="Código QR de asistencia"></div>
+      ${dinamico ? '<div class="qr-timer" aria-hidden="true"><i id="qr-bar"></i></div><div class="qr-info" id="qr-info">QR seguro: se actualiza solo</div>' : ""}
       <div class="ce-code">${esc(a.codigo)}</div>
     </section>
     ${aprobado ? "" : `<div class="aviso">${icon("info", 15)} ${recienCreado ? "¡Listo! Tu carnet fue creado. " : ""}Tu QR empezará a registrar asistencia cuando el instituto apruebe tu registro. Mientras tanto, agrega tu foto.</div>`}
@@ -207,9 +226,76 @@ async function vistaCarnet(recienCreado = false) {
       <button class="btn btn-primary" data-action="foto">${icon("camera", 16)} ${a.foto_path ? "Cambiar foto" : "Agregar foto"}</button>
       <button class="btn btn-outline" data-action="descargar">${icon("download", 16)} Descargar carnet</button>
     </div>
-    <p class="muted" style="text-align:center;margin-top:18px">Muestra este QR al docente al ingresar a clases. No lo compartas con otras personas.</p>`;
-  new QRCode($("#ce-qr"), { text: a.codigo, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    <p class="muted" style="text-align:center;margin-top:18px">Muestra este QR al docente al ingresar a clases. No lo compartas con otras personas.</p>
+    <p class="est-legal muted"><a href="${PRIVACIDAD}" target="_blank" rel="noopener">Política de privacidad</a> · <button type="button" class="link-btn link-peligro" data-action="eliminar-cuenta">Eliminar mi cuenta y mis datos</button></p>`;
+  const qr = new QRCode($("#ce-qr"), { text: a.codigo, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+  if (dinamico) iniciarQRDinamico(qr, a);
   cargarFoto(a);
+}
+
+/* ---------------------- QR dinámico (CONFIG.QR_MODO) ---------------------- */
+function detenerQR() { clearInterval(qrTimer); qrTimer = null; }
+function iniciarQRDinamico(qr, a) {
+  let ultima = -1;
+  const tick = () => {
+    const ms = ahora().getTime(), w = Math.floor(ms / VENTANA_MS);
+    if (w !== ultima) { ultima = w; generarQR(a.codigo, a.qr_secreto, ms).then((txt) => { if (qrTimer) qr.makeCode(txt); }); }
+    const bar = $("#qr-bar"), info = $("#qr-info");
+    if (!bar) { detenerQR(); return; }
+    bar.style.width = `${100 - ((ms % VENTANA_MS) / VENTANA_MS) * 100}%`;
+    info.textContent = `QR seguro · se actualiza en ${segundosRestantes(ms)} s`;
+  };
+  qrTimer = setInterval(tick, 500); tick();
+}
+
+/* ---------------------- Recuperar contraseña ---------------------- */
+function vistaRecuperar() {
+  detenerQR();
+  root().innerHTML = `<section class="est-card"><h1>Recuperar contraseña</h1><p class="est-sub">Escribe tu correo y te enviaremos un enlace para crear una nueva.</p>
+    <form id="f-rec" class="est-form" novalidate><div class="field"><label for="rc-email">Correo</label><input id="rc-email" type="email" autocomplete="username" required></div>
+      <button class="btn btn-primary btn-block" id="rc-go" type="submit">Enviar enlace</button><p class="err-msg" id="rc-err" role="alert" hidden></p><p class="ok-msg" id="rc-ok" hidden></p>
+      <p class="est-link"><button type="button" class="link-btn" data-volver>Volver</button></p></form></section>`;
+  root().querySelector("[data-volver]").addEventListener("click", () => vistaAuth("login"));
+  $("#f-rec").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("#rc-err"), ok = $("#rc-ok"), btn = $("#rc-go"), email = $("#rc-email").value.trim();
+    err.hidden = true; ok.hidden = true;
+    if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = "Escribe un correo válido."; err.hidden = false; return; }
+    btn.disabled = true;
+    try {
+      await api.solicitarRecuperacion(email, new URL("./", location.href).href);
+      ok.textContent = "Si el correo está registrado, recibirás un enlace en unos minutos. Revisa también la carpeta de spam."; ok.hidden = false;
+    } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+    btn.disabled = false;
+  });
+}
+function vistaNuevaPassword() {
+  detenerQR();
+  root().innerHTML = `<section class="est-card"><h1>Nueva contraseña</h1><p class="est-sub">Elige una contraseña de al menos 8 caracteres.</p>
+    <form id="f-np" class="est-form" novalidate><div class="field"><label for="np-1">Nueva contraseña</label><input id="np-1" type="password" autocomplete="new-password" required></div>
+      <div class="field"><label for="np-2">Repite la contraseña</label><input id="np-2" type="password" autocomplete="new-password" required></div>
+      <button class="btn btn-primary btn-block" id="np-go" type="submit">Guardar</button><p class="err-msg" id="np-err" role="alert" hidden></p></form></section>`;
+  $("#f-np").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("#np-err"), a = $("#np-1").value; err.hidden = true;
+    if (a.length < 8) { err.textContent = "La contraseña debe tener al menos 8 caracteres."; err.hidden = false; return; }
+    if (a !== $("#np-2").value) { err.textContent = "Las contraseñas no coinciden."; err.hidden = false; return; }
+    try {
+      await api.cambiarPassword(a);
+      history.replaceState(null, "", location.pathname);
+      toast("Contraseña actualizada", "success");
+      user = await api.init(); if (user) await entrar(); else vistaAuth("login");
+    } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+  });
+}
+
+/* ---------------------- Verificación anti‑bots (opcional) ---------------------- */
+function cargarTurnstile(alToken) {
+  const montar = () => window.turnstile?.render("#captcha", { sitekey: CONFIG.TURNSTILE_SITEKEY, callback: alToken, "expired-callback": () => alToken(""), theme: tema });
+  if (window.turnstile) { montar(); return; }
+  const s = document.createElement("script");
+  s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; s.async = true; s.onload = montar;
+  document.head.appendChild(s);
 }
 
 async function cargarFoto(a) {
@@ -268,6 +354,15 @@ registerActions({
       await vistaCarnet();
     } catch (e) { toast("No se pudo guardar la foto: " + e.message, "error"); btn.disabled = false; }
   },
+  "eliminar-cuenta": async () => {
+    if (!(await confirmDialog({ title: "Eliminar mi cuenta y mis datos", message: "Se borrarán de forma <b>definitiva</b> tu cuenta, tu foto, tu carnet y tu historial de asistencia. Esta acción no se puede deshacer.", confirmLabel: "Sí, eliminar todo" }))) return;
+    if (!(await confirmDialog({ title: "¿Estás seguro?", message: "Última confirmación: no podrás recuperar tu carnet ni tu historial.", confirmLabel: "Eliminar definitivamente" }))) return;
+    try {
+      await api.eliminarMiCuenta(user);
+      user = null; registro = null; $("#est-logout").hidden = true; $("#est-instituto").textContent = "Portal del estudiante";
+      vistaAuth("login"); toast("Tu cuenta y tus datos fueron eliminados", "success");
+    } catch (e) { toast("No se pudo eliminar: " + e.message, "error"); }
+  },
   descargar: async () => {
     const c = await carnetCanvas(registro.alumno, registro.colegio);
     await downloadFile(`mi-carnet-${registro.alumno.codigo}.png`, await new Promise((r) => c.toBlob(r, "image/png")));
@@ -275,8 +370,13 @@ registerActions({
 });
 
 /* ------------------------------ Arranque ------------------------------ */
+async function sincronizarRelojEstudiante() {
+  try { sincronizarReloj(await api.horaServidor()); } catch { /* sin red: se usa la última corrección guardada */ }
+}
+
 async function entrar() {
   $("#est-logout").hidden = false;
+  sincronizarRelojEstudiante(); enviarPendientes();
   registro = await api.miRegistro(user);
   if (registro) await vistaCarnet(); else vistaRegistro();
 }
@@ -288,11 +388,15 @@ async function boot() {
   $("#est-logout").innerHTML = icon("logout");
   $("#est-demo").hidden = !isDemoMode();
   bindActions();
+  iniciarLogErrores("estudiante", api);
+  setInterval(sincronizarRelojEstudiante, 10 * 60 * 1000);
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch((e) => console.warn("Service worker no registrado:", e.message));
   }
   if (api.mode === "error") { vistaAuth(); const e = $("#a-err"); e.textContent = api.error.message; e.hidden = false; return; }
+  api.alRecuperar(() => vistaNuevaPassword());   // el enlace del correo abre el portal con una sesión de recuperación
   try { user = await api.init(); } catch (e) { console.error(e); }
+  if (/type=recovery/.test(location.hash)) return;   // la vista de nueva contraseña la muestra alRecuperar
   if (user) { try { await entrar(); return; } catch (e) { console.error(e); } }
   vistaAuth("login");
 }
