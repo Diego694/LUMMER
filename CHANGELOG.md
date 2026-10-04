@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.11.0 — 2026-10-05
+
+### Añadido
+- **Respaldo offline** (Sistema → Respaldo offline, administrador; web, app Android y programa de PC): exporta lo registrado sin internet a un archivo **`.rabackup`** (asistencias con hora de ingreso y salida, por curso y justificaciones, con huella SHA-256) y lo **importa después en las fechas originales**. Vista previa por fecha, sin duplicar, completa salidas faltantes, omite códigos desconocidos y rechaza archivos alterados o futuros. Documentado en `docs/RESPALDO-OFFLINE.md`.
+
 ## 2.10.0 — 2026-10-05
 
 ### Añadido

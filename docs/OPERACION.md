@@ -8,6 +8,9 @@ Supabase pausa el proyecto tras ~7 días sin actividad. El workflow `keepalive.y
 - **Sistema → Respaldo**: descarga un JSON con todas las tablas del instituto. Hazlo **semanalmente** y guárdalo fuera del equipo. Contiene datos personales: trátalo como confidencial.
 - Con plan Pro, Supabase además conserva copias diarias (restauración desde el panel).
 
+## Sin internet varios días
+Exporta cada día un **respaldo offline** (`.rabackup`) y, al volver la conexión, impórtalo: queda en las fechas originales. Ver [RESPALDO-OFFLINE.md](RESPALDO-OFFLINE.md).
+
 ## Restauración
 1. Crea un proyecto nuevo y aplica el esquema y las migraciones de `supabase/` en orden.
 2. Importa las tablas del JSON de respaldo desde el SQL Editor.

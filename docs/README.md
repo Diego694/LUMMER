@@ -12,6 +12,7 @@
 - [Gestión académica: periodos, calendario, alertas, reportes, apoderados](GESTION-ACADEMICA.md)
 - [Despliegue](DESPLIEGUE.md) · [Entornos y dominio propio](ENTORNOS.md)
 - [Operación: respaldos y pausa del plan gratuito](OPERACION.md)
+- [Respaldo offline: exportar sin internet e importar después](RESPALDO-OFFLINE.md)
 - [Prueba piloto](PILOTO.md)
 
 ## Diseño, seguridad y calidad

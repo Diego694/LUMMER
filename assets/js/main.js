@@ -18,6 +18,7 @@ import { historialPage } from "./pages/historial.js";
 import { migrarPage } from "./pages/migrar.js";
 import { quioscoPage, reanudarQuiosco } from "./pages/quiosco.js";
 import { pendientes, solicitudesPage } from "./pages/solicitudes.js";
+import { offlinePage } from "./pages/offline.js";
 import { esErrorRed, esc, fmtDate, initials, todayStr } from "./utils.js";
 import { dashboardPage } from "./pages/dashboard.js";
 import { registroAlumnoPage, registroMasivoPage, registroQrPage } from "./pages/registro.js";
@@ -35,7 +36,7 @@ const PAGES = [
   registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, alertasPage, avisosPage,
   carnetPage, codigoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
-  diagnosticoPage, respaldoPage, historialPage, migrarPage, erroresPage,
+  diagnosticoPage, respaldoPage, offlinePage, historialPage, migrarPage, erroresPage,
 ];
 const $ = (s) => document.querySelector(s);
 let actual = null;
