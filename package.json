@@ -1,0 +1,13 @@
+{
+  "name": "registro-academico",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Sistema de registro académico y control de asistencia escolar (QR/NFC) con dashboard.",
+  "type": "module",
+  "scripts": {
+    "start": "python scripts/serve.py 8080",
+    "check": "python scripts/check.py",
+    "test": "node tests/unit.js"
+  },
+  "license": "MIT"
+}

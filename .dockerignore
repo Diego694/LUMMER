@@ -1,0 +1,8 @@
+.git
+.github
+docs
+tests
+scripts
+supabase
+node_modules
+*.md

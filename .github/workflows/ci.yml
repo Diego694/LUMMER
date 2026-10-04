@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verificaciones estáticas (imports, referencias, secretos, RLS)
+        run: python scripts/check.py
+      - name: Tests unitarios (lógica pura)
+        run: npm test
+      - name: Construir imagen Docker
+        run: docker build -t registro-academico:ci .
+      - name: Probar contenedor (HTTP 200 + cabeceras de seguridad)
+        run: |
+          docker run -d --name ra -p 8080:80 registro-academico:ci
+          for i in $(seq 1 15); do curl -fsS -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
+          curl -fsSI http://127.0.0.1:8080/ | tee headers.txt
+          grep -qi "content-security-policy" headers.txt
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/tests/tests.html)" = "404"

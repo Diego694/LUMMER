@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem('cv-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Registro Académico · Control de Asistencia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4F6FA; --panel:#FFFFFF; --ink:#16223D; --ink-soft:#4C5A78;
+    --navy:#16223D; --navy-2:#22335A; --amber:#E8A33D; --amber-dark:#C7842A;
+    --teal:#177E67; --teal-soft:#E4F3EE; --red:#C1443A; --line:#E4E8F0;
+    --surface:#FFFFFF; --muted-bg:#F1F2F5; --hover-bg:#F5F6F9; --amber-soft:#FBEBD2;
+    --shadow: 0 8px 24px rgba(22,34,61,0.08); --radius: 12px;
+  }
+  [data-theme="dark"]{
+    --paper:#0F1626; --panel:#17213A; --ink:#E8ECF5; --ink-soft:#9AA6C4;
+    --line:#2A3555; --surface:#1D2842; --muted-bg:#232F4E; --hover-bg:#26315683;
+    --amber-soft:#3A2E12; --teal-soft:#123A32; --shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);}
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);position:relative;}
+  #login-screen .bg-lines{position:fixed;inset:0;background:repeating-linear-gradient(180deg, transparent 0 34px, rgba(255,255,255,0.03) 34px 35px);pointer-events:none;}
+  .login-card{position:relative;z-index:2;width:380px;background:var(--panel);border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.35);}
+  .login-card .brand{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+  .brand-mark{width:38px;height:38px;border-radius:9px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:var(--amber);font-weight:700;font-family:'Space Grotesk';}
+  .login-card h1{font-size:19px;margin:0;}
+  .login-card p.sub{color:var(--ink-soft);font-size:13px;margin:2px 0 0;}
+  .tabs{display:flex;gap:4px;background:#F1F2F5;border-radius:9px;padding:4px;margin:18px 0 16px;}
+  .tab{flex:1;text-align:center;padding:8px;border-radius:6px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .tab.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  .field input,.field select,.field textarea{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--line);font-size:14px;outline:none;background:var(--surface);color:var(--ink);}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);}
+  .btn{border:none;border-radius:8px;padding:11px 18px;font-weight:600;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-primary{background:var(--amber);color:#2A1B02;width:100%;}
+  .btn-navy{background:var(--navy);color:#fff;}
+  .btn-teal{background:var(--teal);color:#fff;}
+  .btn-outline{background:transparent;border:1.5px solid var(--line);color:var(--ink);}
+  .btn-danger{background:#FDEDEC;color:var(--red);}
+  .err-msg{color:var(--red);font-size:12.5px;margin-top:8px;}
+  .ok-msg{color:var(--teal);font-size:12.5px;margin-top:8px;}
+
+  #app{display:none;min-height:100vh;}
+  .topbar{height:60px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:20;}
+  .topbar .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-family:'Space Grotesk';}
+  .topbar .welcome{color:var(--ink-soft);font-size:13.5px;}
+  .topbar .welcome b{color:var(--ink);}
+  .layout{display:flex;}
+  .sidebar{width:236px;background:var(--navy);min-height:calc(100vh - 60px);padding:16px 12px;position:sticky;top:60px;align-self:flex-start;}
+  .nav-group-title{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#7C88A8;margin:16px 10px 6px;font-weight:700;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:#C9D2E6;font-size:13.5px;font-weight:500;cursor:pointer;margin-bottom:2px;}
+  .nav-item .ic{width:18px;text-align:center;}
+  .nav-item:hover{background:rgba(255,255,255,0.06);color:#fff;}
+  .nav-item.active{background:var(--amber);color:#2A1B02;font-weight:700;}
+  .main{flex:1;padding:26px 30px;max-width:1200px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+  .page-head h1{font-size:24px;margin:0;}
+  .page-head .actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);}}
+  .menu-btn{display:none;background:none;border:none;font-size:20px;color:var(--ink);margin-right:12px;padding:4px 6px;border-radius:6px;}
+  .menu-btn:hover{background:var(--hover-bg);}
+  .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(22,34,61,0.5);z-index:29;}
+  .sidebar-backdrop.open{display:block;}
+  .stat-card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;position:relative;overflow:hidden;}
+  .stat-card .label{font-size:12px;color:var(--ink-soft);font-weight:600;padding-right:64px;}
+  .stat-card .value{font-size:30px;font-weight:700;font-family:'Space Grotesk';margin-top:4px;}
+  .stat-card .tag{position:absolute;top:14px;right:14px;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;white-space:nowrap;}
+  .tag-teal{background:var(--teal-soft);color:var(--teal);}
+  .tag-amber{background:var(--amber-soft);color:var(--amber-dark);}
+  .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+  .search-input{flex:1;min-width:200px;padding:10px 14px;border-radius:8px;border:1.5px solid var(--line);font-size:13.5px;background:var(--surface);color:var(--ink);}
+  select.filter{padding:10px 12px;border-radius:8px;border:1.5px solid var(--line);font-size:13.5px;background:var(--surface);color:var(--ink);}
+  .student-card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:14px;}
+  .student-card .row1{display:flex;justify-content:space-between;align-items:flex-start;}
+  .student-card h3{margin:0 0 10px;font-size:16px;}
+  .badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;}
+  .badge-activo{background:var(--teal-soft);color:var(--teal);}
+  .badge-inactivo{background:var(--muted-bg);color:var(--ink-soft);}
+  .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;font-size:12.5px;}
+  .meta-grid .m-label{color:var(--ink-soft);font-weight:600;margin-bottom:2px;}
+  @media(max-width:900px){
+    .grid-4{grid-template-columns:repeat(2,1fr);}
+    .menu-btn{display:inline-block;}
+    .sidebar{
+      display:block;position:fixed;left:0;top:60px;bottom:0;z-index:30;
+      transform:translateX(-105%);transition:transform .22s ease;overflow-y:auto;
+    }
+    .sidebar.open{transform:translateX(0);}
+    .main{padding:20px 16px;}
+  }
+  @media(max-width:520px){
+    .grid-4{grid-template-columns:1fr;}
+    .stat-card .label{padding-right:0;}
+    .meta-grid{grid-template-columns:1fr 1fr;}
+  }
+  .student-card .actions-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .icon-btn{
+    height:34px;padding:0 14px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink-soft);
+    display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;white-space:nowrap;
+  }
+  .icon-btn:hover{background:var(--hover-bg);border-color:var(--ink-soft);color:var(--ink);}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;color:var(--ink-soft);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;border-bottom:2px solid var(--line);}
+  td{padding:11px 12px;border-bottom:1px solid var(--line);}
+  tr:last-child td{border-bottom:none;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(22,34,61,0.45);z-index:100;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);color:var(--ink);border-radius:14px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line);}
+  .modal-head h3{margin:0;font-size:16px;}
+  .modal-close{background:none;border:none;font-size:20px;color:var(--ink-soft);}
+  .modal-body{padding:20px 22px;}
+  .modal-foot{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
+  .empty-state{text-align:center;padding:50px 20px;color:var(--ink-soft);}
+  .empty-state .big{font-size:34px;margin-bottom:8px;}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 18px;border-radius:10px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,0.25);z-index:200;display:none;}
+  .toast.show{display:block;animation:fadein .2s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .qr-frame{width:100%;max-width:320px;aspect-ratio:1;border-radius:14px;overflow:hidden;background:#000;margin:0 auto 14px;border:3px solid var(--navy);position:relative;}
+  .qr-frame video{width:100%;height:100%;object-fit:cover;}
+  .scan-result{margin-top:14px;padding:14px;border-radius:10px;background:var(--teal-soft);color:var(--teal);font-weight:600;text-align:center;display:none;}
+  .carnet-preview{width:280px;border-radius:16px;background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;padding:18px;margin:0 auto;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+  .carnet-preview::after{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:rgba(232,163,61,0.18);}
+  .carnet-preview .c-head{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--amber);text-transform:uppercase;}
+  .carnet-preview .c-name{font-family:'Space Grotesk';font-size:17px;margin:12px 0 2px;position:relative;z-index:1;}
+  .carnet-preview .c-code{font-family:'JetBrains Mono';font-size:11.5px;color:#B8C2DC;position:relative;z-index:1;}
+  .carnet-preview .c-info{display:flex;gap:16px;margin-top:12px;font-size:11px;color:#CFD7EA;position:relative;z-index:1;}
+  .carnet-preview .c-qr{background:var(--surface);padding:8px;border-radius:8px;margin-top:14px;display:flex;justify-content:center;position:relative;z-index:1;}
+  .checkbox-row{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .checkbox-row input{width:18px;height:18px;}
+  .small-note{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+  .pill-select{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{padding:7px 13px;border-radius:20px;border:1.5px solid var(--line);font-size:12.5px;cursor:pointer;}
+  .pill.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .theme-toggle-btn{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;}
+  .theme-toggle-btn:hover{background:var(--hover-bg);}
+  .theme-toggle-btn svg{width:18px;height:18px;}
+  .theme-toggle-btn .icon-sun{display:none;}
+  .theme-toggle-btn .icon-moon{display:block;}
+  [data-theme="dark"] .theme-toggle-btn .icon-sun{display:block;}
+  [data-theme="dark"] .theme-toggle-btn .icon-moon{display:none;}
+  .theme-toggle-desktop{margin-right:14px;}
+  .theme-toggle-mobile{display:none;margin:18px auto 0;}
+  @media(max-width:900px){
+    .theme-toggle-mobile{display:inline-flex;}
+  }
+  .setup-warning{background:#FDEDEC;color:var(--red);padding:14px 18px;border-radius:10px;font-size:13px;max-width:480px;margin:16px auto 0;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="bg-lines"></div>
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-mark">CV</div>
+      <div><h1>Sistema de Registro Académico</h1><p class="sub">Control de asistencia escolar</p></div>
+    </div>
+
+    <div style="text-align:center;font-weight:700;margin:18px 0 16px;color:var(--ink-soft);font-size:12px;letter-spacing:.05em;">INICIAR SESIÓN</div>
+
+    <div id="form-login">
+      <div class="field"><label>Correo</label><input id="login-email" type="email" placeholder="admin@micolegio.com"></div>
+      <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••••"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Ingresar</button>
+      <p class="err-msg" id="login-err" style="display:none;"></p>
+    </div>
+
+    <div id="config-warning"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand"><button class="menu-btn" id="menu-toggle" onclick="toggleSidebar()">☰</button>Sistema de Registro Académico</div>
+    <div class="welcome"><button class="theme-toggle-btn theme-toggle-desktop" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"></path></svg>
+    </button><span id="topbar-colegio"></span> · Bienvenido: <b id="topbar-user">Administrador</b> &nbsp;·&nbsp; <a href="#" onclick="doLogout();return false;" style="color:var(--red);text-decoration:none;font-weight:600;">Cerrar sesión</a></div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="nav-item active" data-page="inicio">Inicio</div>
+      <div class="nav-item" data-page="registro-qr">Registro por QR</div>
+      <div class="nav-item" data-page="registro-alumno">Registro por Alumno</div>
+      <div class="nav-item" data-page="registro-masivo">Registro Masivo por Grado</div>
+      <div class="nav-group-title">Consultas</div>
+      <div class="nav-item" data-page="dashboard">Dashboard</div>
+      <div class="nav-item" data-page="asist-grado">Asistencia por Grado</div>
+      <div class="nav-item" data-page="asist-alumno">Asistencia por Alumno</div>
+      <div class="nav-group-title">Registrar</div>
+      <div class="nav-item" data-page="carnet">Carnet</div>
+      <div class="nav-item" data-page="niveles">Niveles</div>
+      <div class="nav-item" data-page="grados">Grados</div>
+      <div class="nav-item" data-page="alumnos">Alumnos</div>
+      <div class="nav-item" data-page="docentes">Docentes</div>
+      <div class="nav-item" data-page="comunicados">Comunicados</div>
+    </div>
+
+    <div class="main">
+      <div class="page active" id="page-inicio">
+        <div class="card" style="margin-bottom:20px;">
+          <span class="badge tag-amber" style="display:inline-block;margin-bottom:10px;">ADMIN</span>
+          <h1 style="font-size:22px;margin:2px 0 6px;">¡Hola de nuevo!</h1>
+          <p style="color:var(--ink-soft);margin:0;max-width:560px;">Resumen de asistencias, alumnos registrados y novedades institucionales.</p>
+        </div>
+        <div class="grid-4" id="inicio-stats"></div>
+        <div class="card"><h3 style="margin-top:0;">Últimos comunicados</h3><div id="inicio-comunicados"></div></div>
+      </div>
+
+      <div class="page" id="page-registro-qr">
+        <div class="page-head"><h1>Registro por QR</h1></div>
+        <div class="card" style="max-width:420px;margin:0 auto;">
+          <div class="qr-frame"><video id="qr-video" playsinline></video></div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn-navy" onclick="startScanner()">Iniciar cámara</button>
+            <button class="btn btn-outline" onclick="stopScanner()">Detener</button>
+            <button class="btn btn-outline" id="flip-camera-btn" onclick="flipCamera()" style="display:none;">Voltear cámara</button>
+          </div>
+          <p class="small-note" style="text-align:center;">Apunta la cámara al carnet QR del alumno.</p>
+          <div class="scan-result" id="scan-result"></div>
+          <hr style="border:none;border-top:1px solid var(--line);margin:16px 0;">
+          <p class="small-note" style="text-align:center;margin-bottom:8px;">¿Sin cámara? Ingresa el código manualmente:</p>
+          <div style="display:flex;gap:8px;">
+            <input class="search-input" id="manual-qr-code" placeholder="Código único, ej: a1234">
+            <button class="btn btn-teal" onclick="registrarPorCodigo()">Registrar</button>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:420px;margin:20px auto 0;">
+          <h3 style="margin-top:0;">Registro por NFC</h3>
+          <p class="small-note" id="nfc-support-msg"></p>
+          <div id="nfc-controls" style="display:none;">
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:10px;">
+              <button class="btn btn-navy" id="nfc-start-btn" onclick="startNFC()">Activar lector NFC</button>
+              <button class="btn btn-outline" onclick="stopNFC()">Detener</button>
+            </div>
+            <p class="small-note" style="text-align:center;">Acerca el tag NFC del alumno a la parte trasera del teléfono.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-registro-alumno">
+        <div class="page-head"><h1>Registro por Alumno</h1></div>
+        <div class="toolbar"><input class="search-input" id="reg-alumno-search" placeholder="Buscar alumno por nombre o código..." oninput="renderRegistroAlumno()"></div>
+        <div id="registro-alumno-list"></div>
+      </div>
+
+      <div class="page" id="page-registro-masivo">
+        <div class="page-head"><h1>Registro Masivo por Grado</h1></div>
+        <div class="toolbar">
+          <select class="filter" id="rm-nivel" onchange="fillGradosFilter('rm-nivel','rm-grado');renderRegistroMasivo();"></select>
+          <select class="filter" id="rm-grado" onchange="renderRegistroMasivo()"></select>
+          <input class="filter" type="date" id="rm-fecha" onchange="renderRegistroMasivo()">
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span class="small-note" id="rm-count" style="margin:0;"></span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline" onclick="toggleAllMasivo(true)">Marcar todos</button>
+              <button class="btn btn-outline" onclick="toggleAllMasivo(false)">Desmarcar todos</button>
+            </div>
+          </div>
+          <div id="registro-masivo-list"></div>
+          <div style="margin-top:16px;text-align:right;">
+            <button class="btn btn-navy" onclick="guardarRegistroMasivo()">Guardar asistencia del grupo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-dashboard">
+        <div class="page-head"><h1>Dashboard de Asistencia</h1></div>
+        <div class="grid-4" id="dash-stats"></div>
+        <div class="grid-2">
+          <div class="card"><h3 style="margin-top:0;">Asistencia últimos 7 días</h3><canvas id="chart-7dias" height="180"></canvas></div>
+          <div class="card"><h3 style="margin-top:0;">Alumnos por nivel</h3><canvas id="chart-niveles" height="180"></canvas></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-asist-grado">
+        <div class="page-head"><h1>Asistencia por Grado</h1></div>
+        <div class="toolbar">
+          <select class="filter" id="ag-nivel" onchange="fillGradosFilter('ag-nivel','ag-grado');renderAsistGrado();"></select>
+          <select class="filter" id="ag-grado" onchange="renderAsistGrado()"></select>
+          <input class="filter" type="date" id="ag-fecha" onchange="renderAsistGrado()">
+        </div>
+        <div class="card"><div id="asist-grado-table"></div></div>
+      </div>
+
+      <div class="page" id="page-asist-alumno">
+        <div class="page-head"><h1>Asistencia por Alumno</h1></div>
+        <div class="toolbar"><input class="search-input" id="aa-search" placeholder="Buscar alumno..." oninput="renderAsistAlumnoList()"></div>
+        <div class="grid-2">
+          <div class="card" style="max-height:520px;overflow-y:auto;"><div id="aa-list"></div></div>
+          <div class="card"><h3 style="margin-top:0;" id="aa-title">Selecciona un alumno</h3><div id="aa-history"></div></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-carnet">
+        <div class="page-head"><h1>Carnet</h1><div class="actions"><button class="btn btn-navy" onclick="openMassCarnetModal()">Descarga Masiva Carnet</button></div></div>
+        <div class="toolbar"><input class="search-input" id="carnet-search" placeholder="Buscar alumno para generar carnet..." oninput="renderCarnetList()"></div>
+        <div class="grid-2">
+          <div class="card" style="max-height:520px;overflow-y:auto;"><div id="carnet-list"></div></div>
+          <div class="card" style="text-align:center;">
+            <div id="carnet-preview-holder"><p class="small-note">Selecciona un alumno para previsualizar su carnet.</p></div>
+            <div id="carnet-preview-actions" style="display:none;margin-top:16px;gap:10px;justify-content:center;">
+              <button class="btn btn-navy" onclick="downloadCarnetImage()">Descargar imagen</button>
+              <button class="btn btn-teal" onclick="downloadCarnetPDF()">Descargar PDF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-niveles">
+        <div class="page-head"><h1>Niveles</h1><div class="actions"><button class="btn btn-navy" onclick="openNivelModal()">+ Agregar nivel</button></div></div>
+        <div class="card"><div id="niveles-table"></div></div>
+      </div>
+
+      <div class="page" id="page-grados">
+        <div class="page-head"><h1>Grados</h1><div class="actions"><button class="btn btn-navy" onclick="openGradoModal()">+ Agregar grado</button></div></div>
+        <div class="card"><div id="grados-table"></div></div>
+      </div>
+
+      <div class="page" id="page-alumnos">
+        <div class="page-head"><h1>Alumnos</h1><div class="actions"><button class="btn btn-outline" onclick="renderAlumnos()">Consultar</button><button class="btn btn-outline" onclick="openImportModal()">Importar CSV</button><button class="btn btn-navy" onclick="openAlumnoModal()">+ Agregar</button></div></div>
+        <div class="toolbar">
+          <input class="search-input" id="al-search" placeholder="Buscar en todos los campos..." oninput="alumnosPage=1;renderAlumnos()">
+          <select class="filter" id="al-filtro-nivel" onchange="alumnosPage=1;fillGradosFilter('al-filtro-nivel','al-filtro-grado');renderAlumnos()"></select>
+          <select class="filter" id="al-filtro-grado" onchange="alumnosPage=1;renderAlumnos()"></select>
+        </div>
+        <div id="alumnos-list"></div>
+        <div id="alumnos-pagination" style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:20px;"></div>
+      </div>
+
+      <div class="page" id="page-docentes">
+        <div class="page-head"><h1>Docentes</h1><div class="actions"><button class="btn btn-outline" onclick="renderDocentes()">Consultar</button><button class="btn btn-navy" onclick="openDocenteModal()">+ Agregar</button></div></div>
+        <div class="toolbar"><input class="search-input" id="do-search" placeholder="Buscar por nombre, rol o profesión..." oninput="renderDocentes()"></div>
+        <div id="docentes-list"></div>
+      </div>
+
+      <div class="page" id="page-comunicados">
+        <div class="page-head"><h1>Comunicados</h1><div class="actions"><button class="btn btn-navy" onclick="openComunicadoModal()">+ Nuevo comunicado</button></div></div>
+        <div id="comunicados-list"></div>
+        <div style="text-align:center;">
+          <button class="theme-toggle-btn theme-toggle-mobile" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-alumno">
+  <div class="modal">
+    <div class="modal-head"><h3 id="alumno-modal-title">Agregar alumno</h3><button class="modal-close" onclick="closeModal('modal-alumno')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="al-id">
+      <div class="field"><label>Nombre completo</label><input id="al-nombre"></div>
+      <div class="field"><label>Código único de acceso</label><input id="al-codigo"></div>
+      <div class="grid-2">
+        <div class="field"><label>Nivel</label><select id="al-nivel" onchange="fillGradosFilter('al-nivel','al-grado')"></select></div>
+        <div class="field"><label>Grado</label><select id="al-grado"></select></div>
+      </div>
+      <div class="field"><label>Apoderado</label><input id="al-apoderado"></div>
+      <div class="field"><label>Estado</label>
+        <div class="pill-select">
+          <div class="pill active" data-val="ACTIVO" onclick="selectPill(this,'al-estado')">Activo</div>
+          <div class="pill" data-val="INACTIVO" onclick="selectPill(this,'al-estado')">Inactivo</div>
+        </div>
+        <input type="hidden" id="al-estado" value="ACTIVO">
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-alumno')">Cancelar</button><button class="btn btn-navy" onclick="saveAlumno()">Guardar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nivel">
+  <div class="modal">
+    <div class="modal-head"><h3>Agregar nivel</h3><button class="modal-close" onclick="closeModal('modal-nivel')">✕</button></div>
+    <div class="modal-body"><div class="field"><label>Nombre del nivel</label><input id="niv-nombre"></div></div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-nivel')">Cancelar</button><button class="btn btn-navy" onclick="saveNivel()">Guardar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-grado">
+  <div class="modal">
+    <div class="modal-head"><h3>Agregar grado</h3><button class="modal-close" onclick="closeModal('modal-grado')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nivel</label><select id="gr-nivel"></select></div>
+      <div class="field"><label>Nombre del grado</label><input id="gr-nombre" placeholder='Ej: 1er "A"'></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-grado')">Cancelar</button><button class="btn btn-navy" onclick="saveGrado()">Guardar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-comunicado">
+  <div class="modal">
+    <div class="modal-head"><h3>Nuevo comunicado</h3><button class="modal-close" onclick="closeModal('modal-comunicado')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Título</label><input id="co-titulo"></div>
+      <div class="field"><label>Mensaje</label><textarea id="co-mensaje" rows="4"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-comunicado')">Cancelar</button><button class="btn btn-navy" onclick="saveComunicado()">Publicar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-docente">
+  <div class="modal">
+    <div class="modal-head"><h3 id="docente-modal-title">Agregar docente</h3><button class="modal-close" onclick="closeModal('modal-docente')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="do-id">
+      <div class="field"><label>Nombre completo</label><input id="do-nombre" placeholder="Ej: Rosa Mendoza Ruiz"></div>
+      <div class="field"><label>Profesión</label><input id="do-profesion" placeholder="Ej: Profesora de Comunicación, Psicólogo escolar..."></div>
+      <div class="field"><label>Rol dentro del sistema</label>
+        <div class="pill-select">
+          <div class="pill active" data-val="Docente" onclick="selectPill(this,'do-rol')">Docente</div>
+          <div class="pill" data-val="Coordinador" onclick="selectPill(this,'do-rol')">Coordinador</div>
+          <div class="pill" data-val="Auxiliar" onclick="selectPill(this,'do-rol')">Auxiliar</div>
+          <div class="pill" data-val="Administrativo" onclick="selectPill(this,'do-rol')">Administrativo</div>
+        </div>
+        <input type="hidden" id="do-rol" value="Docente">
+      </div>
+      <div class="field"><label>Estado</label>
+        <div class="pill-select">
+          <div class="pill active" data-val="ACTIVO" onclick="selectPill(this,'do-estado')">Activo</div>
+          <div class="pill" data-val="INACTIVO" onclick="selectPill(this,'do-estado')">Inactivo</div>
+        </div>
+        <input type="hidden" id="do-estado" value="ACTIVO">
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-docente')">Cancelar</button><button class="btn btn-navy" onclick="saveDocente()">Guardar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-mass-carnet">
+  <div class="modal">
+    <div class="modal-head"><h3>Descarga Masiva Carnet</h3><button class="modal-close" onclick="closeModal('modal-mass-carnet')">✕</button></div>
+    <div class="modal-body">
+      <div class="grid-2">
+        <div class="field"><label>Nivel</label><select id="mc-nivel" onchange="fillGradosFilter('mc-nivel','mc-grado');updateMassCount();"></select></div>
+        <div class="field"><label>Grado</label><select id="mc-grado" onchange="updateMassCount()"><option value="">Todos</option></select></div>
+      </div>
+      <p class="small-note" id="mc-count"></p>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('modal-mass-carnet')">Cerrar</button><button class="btn btn-teal" onclick="massDownload()">Carnets PDF</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <div class="modal-head"><h3>Importar alumnos desde CSV</h3><button class="modal-close" onclick="closeModal('modal-import')">✕</button></div>
+    <div class="modal-body">
+      <p class="small-note" style="margin-top:0;">El archivo debe tener estas columnas exactas en la primera fila (en cualquier orden): <b>nombre, codigo, nivel, grado, apoderado, estado</b>. La columna "apoderado" y "estado" son opcionales (si falta "estado", se asigna ACTIVO).</p>
+      <button class="btn btn-outline" style="margin-bottom:14px;" onclick="downloadCsvTemplate()">Descargar plantilla de ejemplo</button>
+      <div class="field"><label>Archivo CSV</label><input type="file" id="import-file-input" accept=".csv"></div>
+      <div id="import-preview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn btn-navy" id="import-confirm-btn" onclick="confirmImport()" style="display:none;">Importar alumnos</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
+const SUPABASE_ANON_KEY = "TU-ANON-KEY-AQUI";
+
+let sb = null;
+let DB = { colegioId:null, rol:null, alumnos:[], niveles:[], grados:[], asistencias:[], comunicados:[] };
+let selectedCarnetAlumno = null, selectedAsistAlumno = null;
+let scannerStream = null, scannerRAF = null, currentFacingMode = 'environment';
+
+function todayStr(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+function toggleTheme(){
+  const esOscuro = document.documentElement.getAttribute('data-theme')==='dark';
+  setTheme(esOscuro ? 'light' : 'dark');
+}
+function setTheme(theme){
+  if(theme==='dark'){ document.documentElement.setAttribute('data-theme','dark'); }
+  else { document.documentElement.removeAttribute('data-theme'); }
+  try{ localStorage.setItem('cv-theme', theme); }catch(e){}
+}
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function emptyState(icon,title,sub){ return `<div class="empty-state"><h3>${title}</h3><p>${sub}</p></div>`; }
+function statCard(label,value,tagClass,tagText){ return `<div class="stat-card"><span class="tag ${tagClass}">${tagText}</span><div class="label">${label}</div><div class="value">${value}</div></div>`; }
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  setTheme(document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light');
+  if(SUPABASE_URL.includes('TU-PROYECTO') || SUPABASE_ANON_KEY.includes('TU-ANON-KEY')){
+    document.getElementById('config-warning').innerHTML = `<div class="setup-warning">Falta configurar Supabase. Edita las constantes SUPABASE_URL y SUPABASE_ANON_KEY al inicio del archivo (etiqueta &lt;script&gt;) con los datos de tu proyecto.</div>`;
+    return;
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  checkExistingSession();
+});
+
+async function checkExistingSession(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) await afterLogin(session.user);
+}
+
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-err');
+  errEl.style.display='none';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){ errEl.textContent = 'Correo o contraseña incorrectos.'; errEl.style.display='block'; return; }
+  await afterLogin(data.user);
+}
+
+async function afterLogin(user){
+  const { data:perfil, error } = await sb.from('perfiles').select('*, colegios(nombre)').eq('id', user.id).single();
+  if(error || !perfil){ showToast('No se encontró un perfil de colegio para esta cuenta.'); await sb.auth.signOut(); return; }
+  DB.colegioId = perfil.colegio_id;
+  DB.rol = perfil.rol;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('topbar-user').textContent = perfil.nombre || perfil.rol;
+  document.getElementById('topbar-colegio').textContent = perfil.colegios ? perfil.colegios.nombre : '';
+  await loadAll();
+  initAppData();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+async function loadAll(){
+  const cid = DB.colegioId;
+  const [{data:alumnos},{data:niveles},{data:grados},{data:comunicados},{data:docentes}] = await Promise.all([
+    sb.from('alumnos').select('*').eq('colegio_id',cid).order('nombre'),
+    sb.from('niveles').select('*').eq('colegio_id',cid).order('nombre'),
+    sb.from('grados').select('*').eq('colegio_id',cid).order('nombre'),
+    sb.from('comunicados').select('*').eq('colegio_id',cid).order('fecha',{ascending:false}),
+    sb.from('docentes').select('*').eq('colegio_id',cid).order('nombre')
+  ]);
+  DB.alumnos = alumnos||[]; DB.niveles = (niveles||[]).map(n=>n.nombre); DB.gradosRaw = grados||[];
+  DB.grados = grados||[]; DB.comunicados = comunicados||[]; DB.docentes = docentes||[];
+  await refreshAsistenciasHoy();
+}
+async function refreshAsistenciasHoy(){
+  const { data } = await sb.from('asistencias').select('*').eq('colegio_id',DB.colegioId).eq('fecha', todayStr());
+  DB.asistenciasHoy = data||[];
+}
+
+function toggleSidebar(force){
+  const sb = document.querySelector('.sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  const shouldOpen = typeof force === 'boolean' ? force : !sb.classList.contains('open');
+  sb.classList.toggle('open', shouldOpen);
+  bd.classList.toggle('open', shouldOpen);
+}
+
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+item.dataset.page).classList.add('active');
+    renderPage(item.dataset.page);
+    if(item.dataset.page !== 'registro-qr'){ stopScanner(); stopNFC(); }
+    if(item.dataset.page === 'registro-qr') initNfcSupport();
+    toggleSidebar(false);
+  });
+});
+
+function renderPage(page){
+  if(page==='inicio') renderInicio();
+  if(page==='alumnos') renderAlumnos();
+  if(page==='niveles') renderNiveles();
+  if(page==='grados') renderGrados();
+  if(page==='comunicados') renderComunicados();
+  if(page==='docentes') renderDocentes();
+  if(page==='registro-alumno') renderRegistroAlumno();
+  if(page==='registro-masivo'){ fillNivelSelect('rm-nivel', true); fillGradosFilter('rm-nivel','rm-grado'); document.getElementById('rm-fecha').value = todayStr(); renderRegistroMasivo(); }
+  if(page==='dashboard') renderDashboard();
+  if(page==='asist-grado'){ fillNivelSelect('ag-nivel', true); fillGradosFilter('ag-nivel','ag-grado'); document.getElementById('ag-fecha').value = todayStr(); renderAsistGrado(); }
+  if(page==='asist-alumno') renderAsistAlumnoList();
+  if(page==='carnet') renderCarnetList();
+}
+
+function initAppData(){
+  fillNivelSelect('al-filtro-nivel', true);
+  fillNivelSelect('al-nivel');
+  fillNivelSelect('gr-nivel');
+  fillGradosFilter('al-filtro-nivel','al-filtro-grado');
+  fillGradosFilter('al-nivel','al-grado');
+  renderInicio();
+}
+
+function fillNivelSelect(selectId, withAllOption){
+  const sel = document.getElementById(selectId);
+  const current = sel.value;
+  sel.innerHTML = (withAllOption? '<option value="">Todos los niveles</option>':'') + DB.niveles.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  if(current) sel.value = current;
+}
+function fillGradosFilter(nivelSelectId, gradoSelectId){
+  if(!gradoSelectId) return;
+  const nivel = document.getElementById(nivelSelectId).value;
+  const sel = document.getElementById(gradoSelectId);
+  const withAll = ['al-filtro-grado','ag-grado','mc-grado','rm-grado'].includes(sel.id);
+  const list = DB.grados.filter(g=> !nivel || g.nivel===nivel);
+  sel.innerHTML = (withAll? '<option value="">Todos los grados</option>':'') + list.map(g=>`<option value="${esc(g.nombre)}">${esc(g.nombre)}</option>`).join('');
+}
+
+function renderInicio(){
+  const total = DB.alumnos.length;
+  const activos = DB.alumnos.filter(a=>a.estado==='ACTIVO').length;
+  const asistHoy = DB.asistenciasHoy.length;
+  document.getElementById('inicio-stats').innerHTML = `
+    ${statCard('Alumnos registrados', total, 'tag-teal', 'Total')}
+    ${statCard('Alumnos activos', activos, 'tag-amber', 'Activos')}
+    ${statCard('Asistencias hoy', asistHoy, 'tag-teal', 'Hoy')}
+    ${statCard('Niveles educativos', DB.niveles.length, 'tag-amber', 'Niveles')}`;
+  const co = DB.comunicados.slice(0,3);
+  document.getElementById('inicio-comunicados').innerHTML = co.length? co.map(c=>`
+    <div style="padding:12px 0;border-bottom:1px solid var(--line);"><b>${esc(c.titulo)}</b><p style="margin:4px 0 0;color:var(--ink-soft);font-size:13px;">${esc(c.mensaje)}</p></div>`).join('')
+    : `<p class="small-note">Aún no hay comunicados publicados.</p>`;
+}
+
+let alumnosPage = 1;
+const ALUMNOS_POR_PAGINA = 25;
+function renderAlumnos(){
+  const q = (document.getElementById('al-search').value||'').toLowerCase();
+  const nivel = document.getElementById('al-filtro-nivel').value;
+  const grado = document.getElementById('al-filtro-grado').value;
+  const listaCompleta = DB.alumnos.filter(a=>{
+    const matchQ = !q || [a.nombre,a.codigo,a.nivel,a.grado].join(' ').toLowerCase().includes(q);
+    return matchQ && (!nivel||a.nivel===nivel) && (!grado||a.grado===grado);
+  });
+  const el = document.getElementById('alumnos-list');
+  const pagEl = document.getElementById('alumnos-pagination');
+  if(listaCompleta.length===0){ el.innerHTML = emptyState('','No se encontraron alumnos','Prueba con otro criterio o agrega un nuevo alumno.'); pagEl.innerHTML=''; return; }
+  const totalPaginas = Math.max(1, Math.ceil(listaCompleta.length / ALUMNOS_POR_PAGINA));
+  if(alumnosPage > totalPaginas) alumnosPage = totalPaginas;
+  const inicio = (alumnosPage-1) * ALUMNOS_POR_PAGINA;
+  const list = listaCompleta.slice(inicio, inicio + ALUMNOS_POR_PAGINA);
+  el.innerHTML = list.map(a=>`
+    <div class="student-card">
+      <div class="row1"><h3>${esc(a.nombre)}</h3><span class="badge ${a.estado==='ACTIVO'?'badge-activo':'badge-inactivo'}">${a.estado}</span></div>
+      <div class="meta-grid">
+        <div><div class="m-label">CÓDIGO ÚNICO ACCESO</div><div class="mono">${esc(a.codigo)}</div></div>
+        <div><div class="m-label">NIVEL</div><div>${esc(a.nivel)}</div></div>
+        <div><div class="m-label">GRADO</div><div>${esc(a.grado)}</div></div>
+        <div><div class="m-label">APODERADO</div><div>${a.apoderado? esc(a.apoderado):'(Vacío)'}</div></div>
+      </div>
+      <div class="actions-row">
+        <button class="icon-btn" title="Editar" onclick="openAlumnoModal('${a.id}')">Editar</button>
+        <button class="icon-btn" title="Eliminar" onclick="deleteAlumno('${a.id}')">Eliminar</button>
+        <button class="icon-btn" title="Carnet" onclick="goToCarnet('${a.id}')">Carnet</button>
+        <button class="icon-btn" title="Historial" onclick="goToHistorial('${a.id}')">Historial</button>
+      </div>
+    </div>`).join('');
+  pagEl.innerHTML = totalPaginas > 1 ? `
+    <button class="btn btn-outline" ${alumnosPage<=1?'disabled':''} onclick="cambiarPaginaAlumnos(-1)">Anterior</button>
+    <span class="small-note">Página ${alumnosPage} de ${totalPaginas} (${listaCompleta.length} alumnos)</span>
+    <button class="btn btn-outline" ${alumnosPage>=totalPaginas?'disabled':''} onclick="cambiarPaginaAlumnos(1)">Siguiente</button>` : '';
+}
+function cambiarPaginaAlumnos(delta){ alumnosPage += delta; renderAlumnos(); window.scrollTo({top:0, behavior:'smooth'}); }
+function openAlumnoModal(id){
+  fillNivelSelect('al-nivel');
+  document.getElementById('alumno-modal-title').textContent = id? 'Editar alumno' : 'Agregar alumno';
+  if(id){
+    const a = DB.alumnos.find(x=>x.id===id);
+    document.getElementById('al-id').value = a.id;
+    document.getElementById('al-nombre').value = a.nombre;
+    document.getElementById('al-codigo').value = a.codigo;
+    document.getElementById('al-nivel').value = a.nivel;
+    fillGradosFilter('al-nivel','al-grado');
+    document.getElementById('al-grado').value = a.grado;
+    document.getElementById('al-apoderado').value = a.apoderado||'';
+    document.getElementById('al-estado').value = a.estado;
+    document.querySelectorAll('#modal-alumno .pill').forEach(p=>p.classList.toggle('active', p.dataset.val===a.estado));
+  } else {
+    document.getElementById('al-id').value='';
+    document.getElementById('al-nombre').value='';
+    document.getElementById('al-codigo').value='';
+    fillGradosFilter('al-nivel','al-grado');
+    document.getElementById('al-apoderado').value='';
+    document.getElementById('al-estado').value='ACTIVO';
+    document.querySelectorAll('#modal-alumno .pill').forEach(p=>p.classList.toggle('active', p.dataset.val==='ACTIVO'));
+  }
+  openModal('modal-alumno');
+}
+function selectPill(el, hiddenInputId){
+  el.parentElement.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(hiddenInputId).value = el.dataset.val;
+}
+async function saveAlumno(){
+  const id = document.getElementById('al-id').value;
+  const nombre = document.getElementById('al-nombre').value.trim();
+  const codigo = document.getElementById('al-codigo').value.trim();
+  if(!nombre || !codigo){ showToast('Nombre y código son obligatorios'); return; }
+  const data = {
+    colegio_id: DB.colegioId, nombre, codigo,
+    nivel: document.getElementById('al-nivel').value,
+    grado: document.getElementById('al-grado').value,
+    apoderado: document.getElementById('al-apoderado').value.trim(),
+    estado: document.getElementById('al-estado').value
+  };
+  const { error } = id ? await sb.from('alumnos').update(data).eq('id',id) : await sb.from('alumnos').insert(data);
+  if(error){ showToast(error.message.includes('unique')? 'Ese código ya está en uso' : 'Error: '+error.message); return; }
+  await loadAll(); closeModal('modal-alumno'); renderAlumnos(); showToast('Alumno guardado correctamente');
+}
+async function deleteAlumno(id){
+  if(!confirm('¿Eliminar este alumno? Esta acción no se puede deshacer.')) return;
+  await sb.from('alumnos').delete().eq('id',id);
+  await loadAll(); renderAlumnos(); showToast('Alumno eliminado');
+}
+function goToCarnet(id){ document.querySelector('[data-page="carnet"]').click(); selectedCarnetAlumno = DB.alumnos.find(a=>a.id===id); renderCarnetPreview(); }
+function goToHistorial(id){ document.querySelector('[data-page="asist-alumno"]').click(); selectedAsistAlumno = DB.alumnos.find(a=>a.id===id); renderAsistAlumnoHistory(); }
+
+let importedRows = [];
+function openImportModal(){
+  importedRows = [];
+  document.getElementById('import-preview').innerHTML = '';
+  document.getElementById('import-confirm-btn').style.display = 'none';
+  document.getElementById('import-file-input').value = '';
+  openModal('modal-import');
+}
+function downloadCsvTemplate(){
+  const csv = 'nombre,codigo,nivel,grado,apoderado,estado\nJuan Perez Rios,a2001,Primaria,1er grado,Maria Rios,ACTIVO\nAna Torres Vega,a2002,Secundaria,2do grado,,ACTIVO\n';
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'plantilla-alumnos.csv';
+  link.click();
+}
+document.getElementById('import-file-input')?.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results)=>{
+      const cols = (results.meta.fields||[]).map(f=>f.trim().toLowerCase());
+      if(!cols.includes('nombre') || !cols.includes('codigo')){
+        document.getElementById('import-preview').innerHTML = `<p class="err-msg" style="display:block;">El archivo debe tener al menos las columnas "nombre" y "codigo".</p>`;
+        return;
+      }
+      importedRows = results.data.map(row=>{
+        const norm = {};
+        Object.keys(row).forEach(k=> norm[k.trim().toLowerCase()] = (row[k]||'').toString().trim());
+        return {
+          nombre: norm.nombre||'', codigo: norm.codigo||'', nivel: norm.nivel||'', grado: norm.grado||'',
+          apoderado: norm.apoderado||'', estado: (norm.estado||'ACTIVO').toUpperCase()==='INACTIVO' ? 'INACTIVO':'ACTIVO'
+        };
+      }).filter(r=> r.nombre && r.codigo);
+      const invalidas = results.data.length - importedRows.length;
+      document.getElementById('import-preview').innerHTML = `
+        <p class="ok-msg" style="display:block;">${importedRows.length} alumno(s) listos para importar${invalidas>0? ` (se ignoraron ${invalidas} filas sin nombre o código)`:''}.</p>
+        <div style="max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;">
+          <table><thead><tr><th>Nombre</th><th>Código</th><th>Nivel</th><th>Grado</th></tr></thead><tbody>
+            ${importedRows.slice(0,50).map(r=>`<tr><td>${esc(r.nombre)}</td><td class="mono">${esc(r.codigo)}</td><td>${esc(r.nivel)}</td><td>${esc(r.grado)}</td></tr>`).join('')}
+          </tbody></table>
+        </div>
+        ${importedRows.length>50? `<p class="small-note">Mostrando los primeros 50 de ${importedRows.length}.</p>`:''}`;
+      document.getElementById('import-confirm-btn').style.display = importedRows.length? 'inline-flex':'none';
+    },
+    error: ()=>{ document.getElementById('import-preview').innerHTML = `<p class="err-msg" style="display:block;">No se pudo leer el archivo. Verifica que sea un CSV válido.</p>`; }
+  });
+});
+async function confirmImport(){
+  if(importedRows.length===0) return;
+  const btn = document.getElementById('import-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Importando...';
+  const rows = importedRows.map(r=>({ colegio_id: DB.colegioId, nombre:r.nombre, codigo:r.codigo, nivel:r.nivel, grado:r.grado, apoderado:r.apoderado, estado:r.estado }));
+  const tam = 200; let insertados = 0, fallidos = 0;
+  for(let i=0;i<rows.length;i+=tam){
+    const lote = rows.slice(i, i+tam);
+    const { error, count } = await sb.from('alumnos').upsert(lote, { onConflict:'colegio_id,codigo', ignoreDuplicates:false, count:'exact' });
+    if(error){ fallidos += lote.length; } else { insertados += lote.length; }
+  }
+  btn.disabled = false; btn.textContent = 'Importar alumnos';
+  await loadAll(); closeModal('modal-import'); renderAlumnos();
+  showToast(fallidos===0 ? `${insertados} alumnos importados correctamente` : `${insertados} importados, ${fallidos} con errores`);
+}
+
+function renderNiveles(){
+  document.getElementById('niveles-table').innerHTML = `<table><thead><tr><th>Nivel</th><th>Grados asociados</th><th></th></tr></thead><tbody>
+    ${DB.niveles.map(n=>`<tr><td>${esc(n)}</td><td>${DB.grados.filter(g=>g.nivel===n).length}</td><td><button class="icon-btn" onclick="deleteNivel('${esc(n)}')">Eliminar</button></td></tr>`).join('')}
+  </tbody></table>`;
+}
+function openNivelModal(){ document.getElementById('niv-nombre').value=''; openModal('modal-nivel'); }
+async function saveNivel(){
+  const n = document.getElementById('niv-nombre').value.trim();
+  if(!n) return;
+  if(DB.niveles.includes(n)){ showToast('Ese nivel ya existe'); return; }
+  await sb.from('niveles').insert({ colegio_id:DB.colegioId, nombre:n });
+  await loadAll(); closeModal('modal-nivel'); renderNiveles();
+  fillNivelSelect('al-filtro-nivel', true); fillNivelSelect('al-nivel'); fillNivelSelect('gr-nivel');
+  showToast('Nivel agregado');
+}
+async function deleteNivel(n){
+  if(!confirm('¿Eliminar este nivel?')) return;
+  await sb.from('niveles').delete().eq('colegio_id',DB.colegioId).eq('nombre',n);
+  await loadAll(); renderNiveles();
+}
+
+function renderGrados(){
+  document.getElementById('grados-table').innerHTML = `<table><thead><tr><th>Grado</th><th>Nivel</th><th></th></tr></thead><tbody>
+    ${DB.grados.map(g=>`<tr><td>${esc(g.nombre)}</td><td>${esc(g.nivel)}</td><td><button class="icon-btn" onclick="deleteGrado('${g.id}')">Eliminar</button></td></tr>`).join('')}
+  </tbody></table>`;
+}
+function openGradoModal(){ fillNivelSelect('gr-nivel'); document.getElementById('gr-nombre').value=''; openModal('modal-grado'); }
+async function saveGrado(){
+  const nombre = document.getElementById('gr-nombre').value.trim();
+  const nivel = document.getElementById('gr-nivel').value;
+  if(!nombre){ showToast('Escribe un nombre de grado'); return; }
+  await sb.from('grados').insert({ colegio_id:DB.colegioId, nivel, nombre });
+  await loadAll(); closeModal('modal-grado'); renderGrados(); showToast('Grado agregado');
+}
+async function deleteGrado(id){
+  if(!confirm('¿Eliminar este grado?')) return;
+  await sb.from('grados').delete().eq('id',id);
+  await loadAll(); renderGrados();
+}
+
+function renderComunicados(){
+  const el = document.getElementById('comunicados-list');
+  if(DB.comunicados.length===0){ el.innerHTML = emptyState('','Sin comunicados','Publica el primer comunicado para tus alumnos y apoderados.'); return; }
+  el.innerHTML = DB.comunicados.map(c=>`
+    <div class="student-card"><div class="row1"><h3>${esc(c.titulo)}</h3><span class="small-note">${c.fecha}</span></div>
+    <p style="margin:0;color:var(--ink-soft);">${esc(c.mensaje)}</p>
+    <div class="actions-row"><button class="icon-btn" onclick="deleteComunicado('${c.id}')">Eliminar</button></div></div>`).join('');
+}
+function openComunicadoModal(){ document.getElementById('co-titulo').value=''; document.getElementById('co-mensaje').value=''; openModal('modal-comunicado'); }
+async function saveComunicado(){
+  const titulo = document.getElementById('co-titulo').value.trim();
+  const mensaje = document.getElementById('co-mensaje').value.trim();
+  if(!titulo || !mensaje){ showToast('Completa título y mensaje'); return; }
+  await sb.from('comunicados').insert({ colegio_id:DB.colegioId, titulo, mensaje, fecha: todayStr() });
+  await loadAll(); closeModal('modal-comunicado'); renderComunicados(); showToast('Comunicado publicado');
+}
+async function deleteComunicado(id){ await sb.from('comunicados').delete().eq('id',id); await loadAll(); renderComunicados(); }
+
+function renderDocentes(){
+  const q = (document.getElementById('do-search').value||'').toLowerCase();
+  const list = DB.docentes.filter(d=> !q || [d.nombre,d.rol,d.profesion].join(' ').toLowerCase().includes(q));
+  const el = document.getElementById('docentes-list');
+  if(list.length===0){ el.innerHTML = emptyState('','No se encontraron docentes','Agrega un nuevo docente o ajusta tu búsqueda.'); return; }
+  el.innerHTML = list.map(d=>`
+    <div class="student-card">
+      <div class="row1"><h3>${esc(d.nombre)}</h3><span class="badge ${d.estado==='ACTIVO'?'badge-activo':'badge-inactivo'}">${d.estado}</span></div>
+      <div class="meta-grid">
+        <div><div class="m-label">ROL</div><div>${esc(d.rol)}</div></div>
+        <div><div class="m-label">PROFESIÓN</div><div>${d.profesion? esc(d.profesion):'(Vacío)'}</div></div>
+        <div></div><div></div>
+      </div>
+      <div class="actions-row">
+        <button class="icon-btn" onclick="openDocenteModal('${d.id}')">Editar</button>
+        <button class="icon-btn" onclick="deleteDocente('${d.id}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+function openDocenteModal(id){
+  document.getElementById('docente-modal-title').textContent = id? 'Editar docente' : 'Agregar docente';
+  if(id){
+    const d = DB.docentes.find(x=>x.id===id);
+    document.getElementById('do-id').value = d.id;
+    document.getElementById('do-nombre').value = d.nombre;
+    document.getElementById('do-profesion').value = d.profesion||'';
+    document.getElementById('do-rol').value = d.rol;
+    document.getElementById('do-estado').value = d.estado;
+    document.querySelectorAll('#modal-docente .pill[onclick*="do-rol"]').forEach(p=>p.classList.toggle('active', p.dataset.val===d.rol));
+    document.querySelectorAll('#modal-docente .pill[onclick*="do-estado"]').forEach(p=>p.classList.toggle('active', p.dataset.val===d.estado));
+  } else {
+    document.getElementById('do-id').value='';
+    document.getElementById('do-nombre').value='';
+    document.getElementById('do-profesion').value='';
+    document.getElementById('do-rol').value='Docente';
+    document.getElementById('do-estado').value='ACTIVO';
+    document.querySelectorAll('#modal-docente .pill[onclick*="do-rol"]').forEach(p=>p.classList.toggle('active', p.dataset.val==='Docente'));
+    document.querySelectorAll('#modal-docente .pill[onclick*="do-estado"]').forEach(p=>p.classList.toggle('active', p.dataset.val==='ACTIVO'));
+  }
+  openModal('modal-docente');
+}
+async function saveDocente(){
+  const id = document.getElementById('do-id').value;
+  const nombre = document.getElementById('do-nombre').value.trim();
+  if(!nombre){ showToast('El nombre es obligatorio'); return; }
+  const data = {
+    colegio_id: DB.colegioId, nombre,
+    profesion: document.getElementById('do-profesion').value.trim(),
+    rol: document.getElementById('do-rol').value,
+    estado: document.getElementById('do-estado').value
+  };
+  const { error } = id ? await sb.from('docentes').update(data).eq('id',id) : await sb.from('docentes').insert(data);
+  if(error){ showToast('Error: '+error.message); return; }
+  await loadAll(); closeModal('modal-docente'); renderDocentes(); showToast('Docente guardado correctamente');
+}
+async function deleteDocente(id){
+  if(!confirm('¿Eliminar este docente?')) return;
+  await sb.from('docentes').delete().eq('id',id);
+  await loadAll(); renderDocentes(); showToast('Docente eliminado');
+}
+
+function renderRegistroAlumno(){
+  const q = (document.getElementById('reg-alumno-search').value||'').toLowerCase();
+  const list = DB.alumnos.filter(a=> !q || [a.nombre,a.codigo].join(' ').toLowerCase().includes(q));
+  const el = document.getElementById('registro-alumno-list');
+  if(list.length===0){ el.innerHTML = emptyState('','Sin resultados','Busca por nombre o código de alumno.'); return; }
+  const hoy = todayStr();
+  el.innerHTML = list.map(a=>{
+    const yaRegistrado = DB.asistenciasHoy.some(x=>x.alumno_id===a.id);
+    return `<div class="student-card">
+      <div class="row1"><h3>${esc(a.nombre)}</h3>${yaRegistrado?'<span class="badge badge-activo">Asistió hoy</span>':''}</div>
+      <div class="meta-grid"><div><div class="m-label">CÓDIGO</div><div class="mono">${esc(a.codigo)}</div></div>
+      <div><div class="m-label">NIVEL</div><div>${esc(a.nivel)}</div></div>
+      <div><div class="m-label">GRADO</div><div>${esc(a.grado)}</div></div><div></div></div>
+      <div class="actions-row"><button class="btn btn-teal" ${yaRegistrado?'disabled':''} onclick="registrarAsistencia('${a.id}')">Registrar asistencia</button></div>
+    </div>`;
+  }).join('');
+}
+async function registrarAsistencia(alumnoId){
+  const hoy = todayStr();
+  if(DB.asistenciasHoy.some(x=>x.alumno_id===alumnoId && x.fecha===hoy)){ showToast('Ya registrado hoy'); return; }
+  const { data:{ user } } = await sb.auth.getUser();
+  const { error } = await sb.from('asistencias').insert({ colegio_id:DB.colegioId, alumno_id:alumnoId, fecha:hoy,
+    hora:new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}), registrado_por:user.id });
+  if(error){ if(!error.message.includes('duplicate')) showToast('Error al registrar: '+error.message); }
+  await refreshAsistenciasHoy();
+  renderRegistroAlumno();
+  showToast('Asistencia registrada');
+}
+async function procesarCodigoDetectado(codigo, mostrarErrorSiNoExiste){
+  const a = DB.alumnos.find(x=>x.codigo===codigo);
+  if(!a){ if(mostrarErrorSiNoExiste) showToast('Código no encontrado: '+codigo); return null; }
+  await registrarAsistencia(a.id);
+  const res = document.getElementById('scan-result');
+  res.style.display='block';
+  res.textContent = `${a.nombre} — asistencia registrada`;
+  return a;
+}
+async function registrarPorCodigo(){
+  const code = document.getElementById('manual-qr-code').value.trim();
+  if(!code) return;
+  const a = await procesarCodigoDetectado(code, true);
+  if(a) document.getElementById('manual-qr-code').value='';
+}
+
+async function renderRegistroMasivo(){
+  const nivel = document.getElementById('rm-nivel').value;
+  const grado = document.getElementById('rm-grado').value;
+  const fecha = document.getElementById('rm-fecha').value || todayStr();
+  const list = DB.alumnos.filter(a=> (!nivel||a.nivel===nivel) && (!grado||a.grado===grado) && a.estado==='ACTIVO');
+  const el = document.getElementById('registro-masivo-list');
+  document.getElementById('rm-count').textContent = `${list.length} alumno(s) en este grupo`;
+  if(list.length===0){ el.innerHTML = emptyState('','Selecciona nivel y grado','Elige un grado con alumnos para registrar asistencia en lote.'); return; }
+  el.innerHTML = `<p class="small-note">Cargando asistencia del ${fecha}...</p>`;
+  const asistenciasDelDia = fecha===todayStr() ? DB.asistenciasHoy :
+    (await sb.from('asistencias').select('*').eq('colegio_id',DB.colegioId).eq('fecha',fecha)).data || [];
+  el.innerHTML = list.map(a=>{
+    const yaRegistrado = asistenciasDelDia.some(x=>x.alumno_id===a.id);
+    return `<label class="checkbox-row"><input type="checkbox" data-alumno-id="${a.id}" ${yaRegistrado?'checked disabled':''}>
+      <span>${esc(a.nombre)} <span class="mono small-note">(${esc(a.codigo)})</span> ${yaRegistrado?'<span class="badge badge-activo" style="margin-left:6px;">Ya registrado</span>':''}</span>
+    </label>`;
+  }).join('');
+}
+function toggleAllMasivo(checked){
+  document.querySelectorAll('#registro-masivo-list input[type=checkbox]:not(:disabled)').forEach(cb=>cb.checked=checked);
+}
+async function guardarRegistroMasivo(){
+  const fecha = document.getElementById('rm-fecha').value || todayStr();
+  const checks = [...document.querySelectorAll('#registro-masivo-list input[type=checkbox]:checked:not(:disabled)')];
+  if(checks.length===0){ showToast('Selecciona al menos un alumno'); return; }
+  const { data:{ user } } = await sb.auth.getUser();
+  const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+  const rows = checks.map(cb=>({ colegio_id:DB.colegioId, alumno_id:cb.dataset.alumnoId, fecha, hora, registrado_por:user.id }));
+  const { error } = await sb.from('asistencias').upsert(rows, { onConflict:'alumno_id,fecha', ignoreDuplicates:true });
+  if(error){ showToast('Error al guardar: '+error.message); return; }
+  if(fecha===todayStr()) await refreshAsistenciasHoy();
+  await renderRegistroMasivo(); showToast(`${rows.length} asistencias registradas`);
+}
+
+async function startScanner(){
+  try{
+    scannerStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:currentFacingMode}});
+    const video = document.getElementById('qr-video');
+    video.srcObject = scannerStream; await video.play(); tickScanner();
+    checkMultipleCameras();
+  }catch(e){ showToast('No se pudo acceder a la cámara. Usa el registro manual.'); }
+}
+async function checkMultipleCameras(){
+  try{
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d=>d.kind==='videoinput');
+    document.getElementById('flip-camera-btn').style.display = cams.length > 1 ? 'inline-flex' : 'none';
+  }catch(e){ }
+}
+async function flipCamera(){
+  currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+  stopScanner();
+  await startScanner();
+}
+function stopScanner(){
+  if(scannerRAF) cancelAnimationFrame(scannerRAF);
+  if(scannerStream){ scannerStream.getTracks().forEach(t=>t.stop()); scannerStream=null; }
+}
+function tickScanner(){
+  const video = document.getElementById('qr-video');
+  const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+  let lastScan = 0;
+  function loop(){
+    if(!video.srcObject) return;
+    if(video.readyState === video.HAVE_ENOUGH_DATA){
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const code = jsQR(img.data, img.width, img.height);
+      if(code && code.data && Date.now()-lastScan > 2000){
+        lastScan = Date.now();
+        procesarCodigoDetectado(code.data, false);
+      }
+    }
+    scannerRAF = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+let nfcController = null;
+function initNfcSupport(){
+  const msg = document.getElementById('nfc-support-msg');
+  const controls = document.getElementById('nfc-controls');
+  if(!msg) return;
+  if('NDEFReader' in window){
+    msg.textContent = 'Tu navegador soporta NFC. Solo funciona con Android + Chrome (o similar), con NFC activado en el equipo.';
+    controls.style.display = 'block';
+  } else {
+    msg.textContent = 'Este dispositivo o navegador no soporta lectura NFC desde la web. Esta función solo está disponible en Android con Chrome (no funciona en iPhone ni en computadoras).';
+    controls.style.display = 'none';
+  }
+}
+async function startNFC(){
+  if(!('NDEFReader' in window)){ showToast('Este dispositivo no soporta NFC'); return; }
+  try{
+    nfcController = new AbortController();
+    const ndef = new NDEFReader();
+    await ndef.scan({ signal: nfcController.signal });
+    showToast('Lector NFC activado, acerca un tag');
+    let lastRead = 0;
+    ndef.onreading = (event) => {
+      if(Date.now()-lastRead < 1500) return;
+      lastRead = Date.now();
+      let codigo = null;
+      for(const record of event.message.records){
+        try{
+          if(record.recordType === 'text'){
+            codigo = new TextDecoder(record.encoding || 'utf-8').decode(record.data).trim();
+          } else if(record.recordType === 'url'){
+            codigo = new TextDecoder().decode(record.data).trim();
+          } else {
+            codigo = new TextDecoder().decode(record.data).trim();
+          }
+        }catch(e){ continue; }
+        if(codigo) break;
+      }
+      if(codigo){ procesarCodigoDetectado(codigo, true); }
+      else { showToast('No se pudo leer el contenido del tag NFC'); }
+    };
+    ndef.onreadingerror = () => { showToast('No se pudo leer el tag NFC, intenta de nuevo'); };
+  }catch(error){
+    if(error.name === 'NotAllowedError'){ showToast('Permiso de NFC denegado. Actívalo en la configuración del navegador.'); }
+    else if(error.name === 'NotSupportedError'){ showToast('Este dispositivo no tiene NFC o está desactivado.'); }
+    else { showToast('No se pudo iniciar el lector NFC: '+error.message); }
+  }
+}
+function stopNFC(){
+  if(nfcController){ nfcController.abort(); nfcController = null; showToast('Lector NFC detenido'); }
+}
+async function renderDashboard(){
+  const total = DB.alumnos.length;
+  const activos = DB.alumnos.filter(a=>a.estado==='ACTIVO').length;
+  const hoy = DB.asistenciasHoy.length;
+  const pct = total? Math.round((hoy/total)*100):0;
+  document.getElementById('dash-stats').innerHTML = `
+    ${statCard('Total alumnos', total, 'tag-teal','Total')} ${statCard('Activos', activos, 'tag-amber','Activos')}
+    ${statCard('Asistieron hoy', hoy, 'tag-teal','Hoy')} ${statCard('% asistencia hoy', pct+'%', 'tag-amber','Hoy')}`;
+  await draw7Dias(); drawNiveles();
+}
+async function draw7Dias(){
+  const canvas = document.getElementById('chart-7dias'); const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth; canvas.height=180;
+  const days = [...Array(7)].map((_,i)=>{ const d = new Date(); d.setDate(d.getDate()-(6-i)); return d.toISOString().slice(0,10); });
+  const { data } = await sb.from('asistencias').select('fecha').eq('colegio_id',DB.colegioId).gte('fecha', days[0]);
+  const rows = data||[];
+  drawBarChart(ctx, canvas.width, canvas.height, days.map(d=>d.slice(5)), days.map(d=> rows.filter(a=>a.fecha===d).length), '#177E67');
+}
+function drawNiveles(){
+  const canvas = document.getElementById('chart-niveles'); const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth; canvas.height=180;
+  drawBarChart(ctx, canvas.width, canvas.height, DB.niveles, DB.niveles.map(n=> DB.alumnos.filter(a=>a.nivel===n).length), '#E8A33D');
+}
+function drawBarChart(ctx,w,h,labels,values,color){
+  ctx.clearRect(0,0,w,h);
+  const max = Math.max(1,...values); const padL=30, padB=24, padT=10;
+  const bw = (w-padL-10)/Math.max(1,values.length);
+  ctx.strokeStyle = '#E4E8F0'; ctx.beginPath(); ctx.moveTo(padL,h-padB); ctx.lineTo(w-5,h-padB); ctx.stroke();
+  values.forEach((v,i)=>{
+    const bh = (h-padB-padT) * (v/max); const x = padL + i*bw + bw*0.15; const y = h - padB - bh;
+    ctx.fillStyle = color; ctx.fillRect(x,y,bw*0.7,bh);
+    ctx.fillStyle = '#4C5A78'; ctx.font='11px Inter'; ctx.textAlign='center'; ctx.fillText(labels[i], x+bw*0.35, h-8);
+    ctx.fillStyle='#16223D'; ctx.fillText(v, x+bw*0.35, y-4);
+  });
+}
+
+async function renderAsistGrado(){
+  const nivel = document.getElementById('ag-nivel').value;
+  const grado = document.getElementById('ag-grado').value;
+  const fecha = document.getElementById('ag-fecha').value || todayStr();
+  const alumnos = DB.alumnos.filter(a=> (!nivel||a.nivel===nivel) && (!grado||a.grado===grado));
+  const el = document.getElementById('asist-grado-table');
+  if(alumnos.length===0){ el.innerHTML = emptyState('','Sin alumnos','Selecciona un nivel y grado con alumnos registrados.'); return; }
+  el.innerHTML = `<p class="small-note">Cargando...</p>`;
+  const asistenciasDelDia = fecha===todayStr() ? DB.asistenciasHoy :
+    (await sb.from('asistencias').select('*').eq('colegio_id',DB.colegioId).eq('fecha',fecha)).data || [];
+  el.innerHTML = `<table><thead><tr><th>Alumno</th><th>Código</th><th>Estado</th><th>Hora</th></tr></thead><tbody>
+    ${alumnos.map(a=>{
+      const asis = asistenciasDelDia.find(x=>x.alumno_id===a.id);
+      return `<tr><td>${esc(a.nombre)}</td><td class="mono">${esc(a.codigo)}</td>
+        <td>${asis?'<span class="badge badge-activo">Presente</span>':'<span class="badge badge-inactivo">Ausente</span>'}</td><td>${asis?asis.hora:'—'}</td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function renderAsistAlumnoList(){
+  const q = (document.getElementById('aa-search').value||'').toLowerCase();
+  const list = DB.alumnos.filter(a=> !q || a.nombre.toLowerCase().includes(q));
+  document.getElementById('aa-list').innerHTML = list.map(a=>`<div class="student-card" style="cursor:pointer;padding:12px 16px;margin-bottom:8px;" onclick='selectAsistAlumno("${a.id}")'>
+    <b>${esc(a.nombre)}</b><div class="small-note">${esc(a.grado)} · ${esc(a.nivel)}</div></div>`).join('') || emptyState('','Sin alumnos','Ajusta tu búsqueda.');
+}
+function selectAsistAlumno(id){ selectedAsistAlumno = DB.alumnos.find(a=>a.id===id); renderAsistAlumnoHistory(); }
+async function renderAsistAlumnoHistory(){
+  if(!selectedAsistAlumno) return;
+  document.getElementById('aa-title').textContent = selectedAsistAlumno.nombre;
+  document.getElementById('aa-history').innerHTML = `<p class="small-note">Cargando historial...</p>`;
+  const { data:hist } = await sb.from('asistencias').select('*').eq('alumno_id',selectedAsistAlumno.id)
+    .order('fecha',{ascending:false}).limit(100);
+  const rows = hist||[];
+  const nota = rows.length===100 ? '<p class="small-note">Mostrando los últimos 100 registros.</p>' : '';
+  document.getElementById('aa-history').innerHTML = rows.length? `<table><thead><tr><th>Fecha</th><th>Hora</th></tr></thead><tbody>
+    ${rows.map(h=>`<tr><td>${h.fecha}</td><td>${h.hora}</td></tr>`).join('')}</tbody></table>${nota}` : `<p class="small-note">Sin registros de asistencia todavía.</p>`;
+}
+
+function renderCarnetList(){
+  const q = (document.getElementById('carnet-search').value||'').toLowerCase();
+  const list = DB.alumnos.filter(a=> !q || a.nombre.toLowerCase().includes(q));
+  document.getElementById('carnet-list').innerHTML = list.map(a=>`
+    <div class="student-card" style="cursor:pointer;padding:12px 16px;margin-bottom:8px;" onclick='selectCarnetAlumno("${a.id}")'>
+      <b>${esc(a.nombre)}</b><div class="small-note mono">${esc(a.codigo)} · ${esc(a.grado)}</div></div>`).join('') || emptyState('','Sin alumnos','Ajusta tu búsqueda.');
+}
+function selectCarnetAlumno(id){ selectedCarnetAlumno = DB.alumnos.find(a=>a.id===id); renderCarnetPreview(); }
+function renderCarnetPreview(){
+  const holder = document.getElementById('carnet-preview-holder'); const actions = document.getElementById('carnet-preview-actions');
+  if(!selectedCarnetAlumno){ holder.innerHTML = '<p class="small-note">Selecciona un alumno para previsualizar su carnet.</p>'; actions.style.display='none'; return; }
+  const a = selectedCarnetAlumno;
+  holder.innerHTML = `<div class="carnet-preview"><div class="c-head">Sistema de Registro Académico · Carnet Escolar</div>
+    <div class="c-name">${esc(a.nombre)}</div><div class="c-code">${esc(a.codigo)}</div>
+    <div class="c-info"><span>${esc(a.nivel)}</span><span>${esc(a.grado)}</span></div>
+    <div class="c-qr" id="carnet-qr-holder"></div></div>`;
+  document.getElementById('carnet-qr-holder').innerHTML='';
+  new QRCode(document.getElementById('carnet-qr-holder'), {text:a.codigo, width:96, height:96});
+  actions.style.display='flex';
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function carnetToCanvasPromise(alumno){
+  return new Promise(resolve=>{
+    const canvas = document.createElement('canvas'); canvas.width = 560; canvas.height = 340;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0,0,560,340); grad.addColorStop(0,'#16223D'); grad.addColorStop(1,'#22335A');
+    ctx.fillStyle = grad; roundRect(ctx,0,0,560,340,24); ctx.fill();
+    ctx.fillStyle = '#E8A33D'; ctx.font='bold 15px Arial'; ctx.fillText('CAMPUS VIRTUAL · CARNET ESCOLAR', 30, 44);
+    ctx.fillStyle = '#FFFFFF'; ctx.font='bold 26px Arial'; ctx.fillText(alumno.nombre, 30, 100);
+    ctx.fillStyle = '#B8C2DC'; ctx.font='16px monospace'; ctx.fillText(alumno.codigo, 30, 128);
+    ctx.fillStyle = '#CFD7EA'; ctx.font='14px Arial'; ctx.fillText(alumno.nivel+'  ·  '+alumno.grado, 30, 160);
+    const qrTemp = document.createElement('div'); qrTemp.style.position='absolute'; qrTemp.style.left='-9999px'; document.body.appendChild(qrTemp);
+    new QRCode(qrTemp, {text:alumno.codigo, width:140, height:140, correctLevel: QRCode.CorrectLevel.M});
+    const drawQr = ()=>{
+      const qrCanvas = qrTemp.querySelector('canvas');
+      ctx.fillStyle='#fff'; roundRect(ctx,30,190,150,150,10); ctx.fill();
+      try{
+        if(qrCanvas) ctx.drawImage(qrCanvas,40,200,130,130);
+        else { const qrImg = qrTemp.querySelector('img'); if(qrImg) ctx.drawImage(qrImg,40,200,130,130); }
+      }catch(e){}
+      document.body.removeChild(qrTemp); resolve(canvas);
+    };
+    requestAnimationFrame(()=> requestAnimationFrame(drawQr));
+  });
+}
+async function downloadCarnetImage(){
+  if(!selectedCarnetAlumno) return;
+  const canvas = await carnetToCanvasPromise(selectedCarnetAlumno);
+  const link = document.createElement('a'); link.download = `carnet-${selectedCarnetAlumno.codigo}.png`; link.href = canvas.toDataURL('image/png'); link.click();
+}
+async function downloadCarnetPDF(){
+  if(!selectedCarnetAlumno) return;
+  const canvas = await carnetToCanvasPromise(selectedCarnetAlumno);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({orientation:'landscape', unit:'pt', format:[360,220]});
+  pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,360,220);
+  pdf.save(`carnet-${selectedCarnetAlumno.codigo}.pdf`);
+}
+function openMassCarnetModal(){ fillNivelSelect('mc-nivel', true); document.getElementById('mc-grado').innerHTML = '<option value="">Todos</option>'; updateMassCount(); openModal('modal-mass-carnet'); }
+function updateMassCount(){
+  const nivel = document.getElementById('mc-nivel').value; const grado = document.getElementById('mc-grado').value;
+  const list = DB.alumnos.filter(a=> (!nivel||a.nivel===nivel) && (!grado||a.grado===grado));
+  document.getElementById('mc-count').textContent = `${list.length} alumno(s) coinciden con este filtro.`;
+}
+async function massDownload(){
+  const nivel = document.getElementById('mc-nivel').value; const grado = document.getElementById('mc-grado').value;
+  const list = DB.alumnos.filter(a=> (!nivel||a.nivel===nivel) && (!grado||a.grado===grado));
+  if(list.length===0){ showToast('No hay alumnos para este filtro'); return; }
+  showToast('Generando '+list.length+' carnets...');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({orientation:'landscape', unit:'pt', format:[360,220]});
+  for(let i=0;i<list.length;i++){
+    const canvas = await carnetToCanvasPromise(list[i]);
+    if(i>0) pdf.addPage([360,220],'landscape');
+    pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,360,220);
+  }
+  pdf.save(`carnets-${nivel||'todos'}-${grado||'todos'}.pdf`);
+  closeModal('modal-mass-carnet'); showToast('Descarga completada');
+}
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(ov=>{ ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); }); });
+</script>
+</body>
+</html>
