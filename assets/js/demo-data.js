@@ -12,9 +12,10 @@ const APODERADOS = ["María", "José", "Carmen", "Luis", "Rosa", "Jorge", "Ana",
 
 // Cada carrera tiene sus ciclos; el nombre del ciclo lleva la carrera para distinguirlos de un vistazo.
 export const CARRERAS_DEMO = ["MECANICA ELECTRICA", "APSTI"];
+const ciclo = (carrera, c) => `${carrera} · ${c} CICLO`;
 export const GRADOS_DEMO = [
-  ["MECANICA ELECTRICA", "MECANICA ELECTRICA I"], ["MECANICA ELECTRICA", "MECANICA ELECTRICA II"], ["MECANICA ELECTRICA", "MECANICA ELECTRICA III"],
-  ["APSTI", "APSTI I"], ["APSTI", "APSTI II"], ["APSTI", "APSTI III"],
+  ["MECANICA ELECTRICA", ciclo("MECANICA ELECTRICA", "I")], ["MECANICA ELECTRICA", ciclo("MECANICA ELECTRICA", "III")], ["MECANICA ELECTRICA", ciclo("MECANICA ELECTRICA", "V")],
+  ["APSTI", ciclo("APSTI", "II")], ["APSTI", ciclo("APSTI", "IV")], ["APSTI", ciclo("APSTI", "VI")],
 ];
 
 export function buildDemoDB() {

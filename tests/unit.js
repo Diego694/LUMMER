@@ -1,5 +1,5 @@
 // Tests unitarios sin dependencias. Se ejecutan abriendo tests/tests.html (o con scripts/check.py en CI).
-import { addDays, censurarNombre, dateStr, esc, etiquetaCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
+import { CICLOS, addDays, censurarNombre, cicloCorto, compararCiclos, dateStr, esc, etiquetaCiclo, nombreCiclo, parsearCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
 import { bajaAsistencia, esTardanza, normalizarFilasImport, porGrado, resumenAlumno, resumenDia, serieDiaria } from "../assets/js/stats.js";
 
 const results = [];
@@ -46,6 +46,28 @@ test("censurarNombre: apellidos cortos y vacío no fallan", () => {
   assert(!censurarNombre({ nombres: "Eva", apellidos: "Castillo" }).includes("Castillo"));
 });
 
+test("CICLOS son exactamente del I al VI", () => same(CICLOS, ["I", "II", "III", "IV", "V", "VI"]));
+test("nombreCiclo: formato fijo, con y sin salón", () => {
+  same(nombreCiclo("APSTI", "IV"), "APSTI · IV CICLO");
+  same(nombreCiclo("MECANICA ELECTRICA", "III", "A"), "MECANICA ELECTRICA · III CICLO · SECCIÓN A");
+});
+test("parsearCiclo: distingue VI/IV/V/III/II/I y la sección; nombres libres → null", () => {
+  same(["I", "II", "III", "IV", "V", "VI"].map((c) => parsearCiclo(`APSTI · ${c} CICLO`).ciclo), ["I", "II", "III", "IV", "V", "VI"]);
+  same(parsearCiclo("APSTI · IV CICLO · SECCIÓN B"), { ciclo: "IV", seccion: "B" });
+  // formatos antiguos o libres no se interpretan (no se adivina el ciclo)
+  same([parsearCiclo("APSTI 4TO CICLO I").ciclo, parsearCiclo("MECANICA ELECTRICA I").ciclo], [null, null]);
+});
+test("compararCiclos: ordena I→VI, luego salón; lo libre al final", () => {
+  const lista = ["X · VI CICLO", "X · I CICLO · SECCIÓN B", "X · III CICLO", "X · I CICLO · SECCIÓN A", "OTRO NOMBRE", "X · II CICLO"];
+  same([...lista].sort(compararCiclos), ["X · I CICLO · SECCIÓN A", "X · I CICLO · SECCIÓN B", "X · II CICLO", "X · III CICLO", "X · VI CICLO", "OTRO NOMBRE"]);
+});
+test("cicloCorto: quita 'CARRERA · ' solo cuando coincide", () => {
+  same(cicloCorto("APSTI · IV CICLO", "APSTI"), "IV CICLO");
+  same(cicloCorto("apsti · IV CICLO", "APSTI"), "IV CICLO");
+  same(cicloCorto("APSTI · IV CICLO", "MECANICA"), "APSTI · IV CICLO");
+  same(cicloCorto("APSTI · IV CICLO", ""), "APSTI · IV CICLO");
+});
+test("etiquetaCiclo con el nombre canónico no repite la carrera", () => same(etiquetaCiclo("APSTI", "APSTI · IV CICLO"), "APSTI · IV CICLO"));
 test("etiquetaCiclo: no repite la carrera cuando el ciclo ya la incluye", () => {
   same(etiquetaCiclo("MECANICA ELECTRICA", "MECANICA ELECTRICA III"), "MECANICA ELECTRICA III");
   same(etiquetaCiclo("Mecánica Eléctrica", "MECANICA ELECTRICA I"), "MECANICA ELECTRICA I"); // sin tildes ni mayúsculas

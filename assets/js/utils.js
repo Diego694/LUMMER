@@ -77,6 +77,34 @@ export function censurarNombre(alumno) {
   return [nombres, ap].filter(Boolean).join(" ");
 }
 
+/** Ciclos válidos del instituto: del I al VI. */
+export const CICLOS = ["I", "II", "III", "IV", "V", "VI"];
+
+/** Nombre canónico de un ciclo/salón: "APSTI · IV CICLO" o "APSTI · IV CICLO · SECCIÓN A". */
+export function nombreCiclo(carrera, ciclo, seccion = "") {
+  return [carrera, `${ciclo} CICLO`, seccion ? `SECCIÓN ${seccion}` : ""].filter(Boolean).join(" · ");
+}
+
+/** Extrae ciclo (I–VI) y sección de un nombre. Nombres antiguos o libres devuelven ciclo = null. */
+export function parsearCiclo(nombre) {
+  const c = /\b(VI|IV|V|III|II|I)\s+CICLO\b/i.exec(nombre || "");
+  const s = /SECCI[ÓO]N\s+([A-Z0-9]+)/i.exec(nombre || "");
+  return { ciclo: c ? c[1].toUpperCase() : null, seccion: s ? s[1].toUpperCase() : "" };
+}
+
+/** Comparador de nombres de ciclo: I → VI, luego por salón; los nombres libres van al final, por orden alfabético. */
+export function compararCiclos(a, b) {
+  const pa = parsearCiclo(a), pb = parsearCiclo(b);
+  const ia = pa.ciclo ? CICLOS.indexOf(pa.ciclo) : 99, ib = pb.ciclo ? CICLOS.indexOf(pb.ciclo) : 99;
+  return ia - ib || pa.seccion.localeCompare(pb.seccion, "es") || String(a).localeCompare(String(b), "es", { numeric: true });
+}
+
+/** Quita el prefijo "CARRERA · " cuando ya se sabe la carrera (selectores filtrados por carrera). */
+export function cicloCorto(nombre, carrera) {
+  const pre = `${carrera} · `;
+  return carrera && (nombre || "").toUpperCase().startsWith(pre.toUpperCase()) ? nombre.slice(pre.length) : nombre;
+}
+
 /**
  * Etiqueta legible "Carrera · Ciclo". Si el nombre del ciclo ya empieza con la carrera
  * ("MECANICA ELECTRICA" + "MECANICA ELECTRICA I") se muestra solo el ciclo, sin repetirla.

@@ -1,6 +1,6 @@
 // Estado global en memoria de la sesión actual.
 import { api } from "./api.js";
-import { todayStr } from "./utils.js";
+import { cicloCorto, compararCiclos, todayStr } from "./utils.js";
 
 export const DB = {
   cid: null, rol: null, perfil: null,
@@ -30,8 +30,8 @@ export async function asegurarHoy() {
   if (DB.hoyFecha !== todayStr()) await refreshHoy();
 }
 
-export const gradosDe = (nivel) => DB.grados.filter((g) => !nivel || g.nivel === nivel);
+export const gradosDe = (nivel) => DB.grados.filter((g) => !nivel || g.nivel === nivel).sort((a, b) => a.nivel.localeCompare(b.nivel, "es") || compararCiclos(a.nombre, b.nombre));
 export const alumnoPorId = (id) => DB.alumnos.find((a) => a.id === id);
 export const alumnoPorCodigo = (c) => DB.alumnos.find((a) => a.codigo === c);
 export const opcionesNivel = (conTodos) => [...(conTodos ? [{ value: "", label: "Todas las carreras" }] : []), ...DB.niveles.map((n) => ({ value: n, label: n }))];
-export const opcionesGrado = (nivel, conTodos) => [...(conTodos ? [{ value: "", label: "Todos los ciclos" }] : []), ...gradosDe(nivel).map((g) => ({ value: g.nombre, label: g.nombre }))];
+export const opcionesGrado = (nivel, conTodos) => [...(conTodos ? [{ value: "", label: "Todos los ciclos" }] : []), ...gradosDe(nivel).map((g) => ({ value: g.nombre, label: cicloCorto(g.nombre, nivel) }))];

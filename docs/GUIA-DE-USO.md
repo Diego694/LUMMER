@@ -26,12 +26,12 @@
 
 ## Carreras, ciclos y salones
 
-Cada **carrera** (p. ej. `MECANICA ELECTRICA`, `APSTI`) tiene sus **ciclos**, y cada ciclo es independiente: sus propios alumnos, asistencia, reportes y carnets. El nombre del ciclo lleva la carrera para que se distinga de un vistazo en cualquier pantalla (`MECANICA ELECTRICA III`, `APSTI I`).
+Cada **carrera** (p. ej. `MECANICA ELECTRICA`, `APSTI`) tiene sus **ciclos del I al VI**, y cada ciclo es independiente: sus propios alumnos, asistencia, reportes y carnets. El nombre se compone solo con un formato fijo, y lleva la carrera para distinguirlo de un vistazo en cualquier pantalla: `APSTI · IV CICLO`, `MECANICA ELECTRICA · III CICLO` y, si hay salones, `APSTI · IV CICLO · SECCIÓN A`. No se escribe a mano, así todos quedan uniformes.
 
 **Crear ciclos rápido:** *Ciclos y salones → Crear ciclos* (o el botón **Ciclos** en cada carrera).
 1. Elige la carrera, o *➕ Nueva carrera…* y escríbela (se guarda en MAYÚSCULAS).
-2. Escribe los ciclos separados por comas, o un rango: `I, III` · `I-VI` (hay atajos para los más comunes).
-3. *(Opcional)* salones/secciones: `A, B` crea, por ejemplo, `MECANICA ELECTRICA I A` y `… I B`.
+2. Marca los ciclos con los botones **I, II, III, IV, V, VI** (hay atajos: *Todos*, *I, III, V*, *II, IV, VI*).
+3. *(Opcional)* marca los salones **A–E**: `A, B` crea, por ejemplo, `APSTI · I CICLO · SECCIÓN A` y `… SECCIÓN B`.
 4. La vista previa muestra qué se creará; los que ya existen se omiten. Pulsa **Crear**.
 
 ## Código de registro para los estudiantes

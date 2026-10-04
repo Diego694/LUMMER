@@ -4,7 +4,7 @@ import { CONFIG } from "../config.js";
 import { DB, alumnoPorId, loadAll, opcionesGrado, opcionesNivel } from "../state.js";
 import { badge, confirmDialog, emptyState, formModal, icon, openModal, pageHead, registerActions, toast } from "../ui.js";
 import { normalizarFilasImport } from "../stats.js";
-import { debounce, downloadFile, esc, etiquetaCiclo, fmtDate, initials, norm, todayStr } from "../utils.js";
+import { CICLOS, debounce, downloadFile, esc, etiquetaCiclo, fmtDate, initials, nombreCiclo, norm, parsearCiclo, todayStr } from "../utils.js";
 
 const root = () => document.getElementById("page-root");
 const repaint = () => root()._repaint?.();
@@ -38,38 +38,52 @@ export const nivelesPage = {
 };
 
 /* ======================== Ciclos y salones ======================== */
-const porCarreraYCiclo = (a, b) => a.nivel.localeCompare(b.nivel, "es", { numeric: true }) || a.nombre.localeCompare(b.nombre, "es", { numeric: true });
+const NUEVA = "__nueva__";
+const indiceCiclo = (g) => { const i = CICLOS.indexOf(parsearCiclo(g.nombre).ciclo); return i < 0 ? 99 : i; };
+const porCiclo = (a, b) => indiceCiclo(a) - indiceCiclo(b) || parsearCiclo(a.nombre).seccion.localeCompare(parsearCiclo(b.nombre).seccion, "es") || a.nombre.localeCompare(b.nombre, "es", { numeric: true });
 
 export const gradosPage = {
   id: "grados", title: "Ciclos y salones", icon: "book", group: "Gestión",
   render(el) {
-    el.innerHTML = `${pageHead("Ciclos y salones", "Cada ciclo o salón es independiente: tiene sus propios alumnos, asistencia y reportes, y muestra de qué carrera es.",
-      `<button class="btn btn-outline" data-action="grado-new">${icon("plus", 16)} Agregar uno</button><button class="btn btn-primary" data-action="ciclos-new">${icon("layers", 16)} Crear ciclos</button>`)}<div class="card flush" id="tbl"></div>`;
+    el.innerHTML = `${pageHead("Ciclos y salones", "Cada carrera tiene sus ciclos (del I al VI) y, si hace falta, sus salones. Cada uno es independiente: sus propios alumnos, asistencia y reportes.",
+      `<button class="btn btn-primary" data-action="ciclos-new">${icon("plus", 16)} Crear ciclos</button>`)}<div id="carreras-lista"></div>`;
     el._repaint = () => {
-      el.querySelector("#tbl").innerHTML = DB.grados.length ? `<div class="table-wrap"><table><thead><tr><th>Ciclo / salón</th><th>Carrera</th><th>Alumnos</th><th></th></tr></thead><tbody>
-        ${[...DB.grados].sort(porCarreraYCiclo).map((g) => `<tr><td><strong>${esc(g.nombre)}</strong></td><td>${esc(g.nivel)}</td><td>${DB.alumnos.filter((a) => a.nivel === g.nivel && a.grado === g.nombre).length}</td>
-          <td class="t-right"><button class="btn btn-ghost-danger btn-sm" data-action="grado-del" data-id="${g.id}">${icon("trash", 14)} Eliminar</button></td></tr>`).join("")}</tbody></table></div>`
-        : emptyState("Sin ciclos", "Usa «Crear ciclos» para generar de una vez, por ejemplo, MECANICA ELECTRICA I, II y III.", "book");
+      const carreras = [...new Set([...DB.niveles, ...DB.grados.map((g) => g.nivel)])].sort((a, b) => a.localeCompare(b, "es"));
+      el.querySelector("#carreras-lista").innerHTML = carreras.length ? carreras.map((c) => {
+        const lista = DB.grados.filter((g) => g.nivel === c).sort(porCiclo);
+        const alumnos = DB.alumnos.filter((a) => a.nivel === c).length;
+        return `<section class="card flush carrera-card">
+          <header class="card-head"><div><h3>${esc(c)}</h3><small class="muted">${lista.length} ciclo(s)/salón(es) · ${alumnos} alumno(s)</small></div>
+            <button class="btn btn-outline btn-sm" data-action="ciclos-new" data-carrera="${esc(c)}">${icon("plus", 14)} Agregar ciclos</button></header>
+          ${lista.length ? `<div class="table-wrap"><table><thead><tr><th>Ciclo</th><th>Salón</th><th>Alumnos</th><th></th></tr></thead><tbody>
+            ${lista.map((g) => { const p = parsearCiclo(g.nombre);
+              return `<tr><td>${p.ciclo ? `<span class="ciclo-badge">${esc(p.ciclo)}</span> <span class="muted">CICLO</span>` : `<strong>${esc(g.nombre)}</strong>`}</td>
+                <td>${p.seccion ? esc(p.seccion) : '<span class="muted">—</span>'}</td>
+                <td>${DB.alumnos.filter((a) => a.nivel === g.nivel && a.grado === g.nombre).length}</td>
+                <td class="t-right"><button class="btn btn-ghost-danger btn-sm" data-action="grado-del" data-id="${g.id}">${icon("trash", 14)} Eliminar</button></td></tr>`; }).join("")}
+          </tbody></table></div>` : `<p class="muted pad">Aún no tiene ciclos. Usa «Agregar ciclos».</p>`}
+        </section>`; }).join("")
+        : `<div class="card">${emptyState("Sin carreras ni ciclos", "Usa «Crear ciclos» para empezar: elige la carrera y marca los ciclos del I al VI.", "book")}</div>`;
     };
     el._repaint();
   },
 };
 
-const ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
-const NUEVA = "__nueva__";
-
-/** Crea de una vez varios ciclos (y salones) de una carrera: "MECANICA ELECTRICA" + "I, III" → MECANICA ELECTRICA I, MECANICA ELECTRICA III. */
+/** Crea ciclos (I–VI) y, opcionalmente, salones de una carrera. Nombre fijo: "CARRERA · IV CICLO [· SECCIÓN A]". */
 function crearCiclos(carreraInicial = "") {
   const hayCarreras = DB.niveles.length > 0;
+  const ciclosSel = new Set(), seccionesSel = new Set();
   const m = openModal({
     title: "Crear ciclos y salones", wide: true,
-    body: `<p class="muted" style="margin-top:0">Escribe la carrera y los ciclos. El nombre de cada ciclo incluye la carrera para reconocerlo de un vistazo, y cada uno es independiente.</p>
-      <div class="form-grid">
+    body: `<div class="form-grid">
         ${hayCarreras ? `<div class="field half"><label for="cc-sel">Carrera</label><select id="cc-sel">${DB.niveles.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")}<option value="${NUEVA}">➕ Nueva carrera…</option></select></div>` : ""}
-        <div class="field ${hayCarreras ? "half" : ""}" id="cc-nueva-box" ${hayCarreras ? "hidden" : ""}><label for="cc-nueva">${hayCarreras ? "Nombre de la nueva carrera" : "Carrera"}</label><input id="cc-nueva" placeholder="Ej: MECANICA ELECTRICA" autocomplete="off"></div>
-        <div class="field"><label for="cc-ciclos">Ciclos <span class="req">*</span></label><input id="cc-ciclos" placeholder="Ej: I, III   (o I-VI)" autocomplete="off">
-          <div class="chips" id="cc-rapidos"><button type="button" class="pill" data-r="I-VI">I – VI</button><button type="button" class="pill" data-r="I-III">I – III</button><button type="button" class="pill" data-r="I, III, V">I, III, V</button><button type="button" class="pill" data-r="II, IV, VI">II, IV, VI</button></div></div>
-        <div class="field"><label for="cc-sec">Salones / secciones (opcional)</label><input id="cc-sec" placeholder="Ej: A, B   (déjalo vacío si no hay secciones)" autocomplete="off"></div>
+        <div class="field ${hayCarreras ? "half" : ""}" id="cc-nueva-box" ${hayCarreras ? "hidden" : ""}><label for="cc-nueva">${hayCarreras ? "Nombre de la nueva carrera" : "Carrera"}</label><input id="cc-nueva" placeholder="Ej: APSTI" autocomplete="off"></div>
+        <div class="field"><label>Ciclos <span class="req">*</span></label>
+          <div class="pill-select" id="cc-ciclos">${CICLOS.map((c) => `<button type="button" class="pill pill-roman" aria-pressed="false" data-c="${c}">${c}</button>`).join("")}</div>
+          <div class="chips"><button type="button" class="link-btn" data-rapido="todos">Todos (I–VI)</button><button type="button" class="link-btn" data-rapido="impares">I, III, V</button><button type="button" class="link-btn" data-rapido="pares">II, IV, VI</button><button type="button" class="link-btn" data-rapido="ninguno">Limpiar</button></div></div>
+        <div class="field"><label>Salones / secciones <span class="muted">(opcional)</span></label>
+          <div class="pill-select" id="cc-secs">${["A", "B", "C", "D", "E"].map((s) => `<button type="button" class="pill pill-roman" aria-pressed="false" data-s="${s}">${s}</button>`).join("")}</div>
+          <p class="muted" style="margin:6px 0 0">Déjalo vacío si cada ciclo tiene un solo salón.</p></div>
       </div>
       <div class="cc-prev" id="cc-prev" aria-live="polite"></div>
       <p class="err-msg" id="cc-err" role="alert" hidden></p>`,
@@ -81,36 +95,39 @@ function crearCiclos(carreraInicial = "") {
   if (sel && carreraInicial) sel.value = carreraInicial;
 
   const carrera = () => (sel && sel.value !== NUEVA ? sel.value : q("#cc-nueva").value.trim().replace(/\s+/g, " ").toUpperCase());
-  /** "I-VI" → I..VI ; "I, III" → I, III (se normalizan a MAYÚSCULAS). */
-  const ciclos = () => {
-    const out = [];
-    q("#cc-ciclos").value.split(",").map((s) => s.trim()).filter(Boolean).forEach((tok) => {
-      const r = tok.match(/^([IVXivx]+)\s*[-–]\s*([IVXivx]+)$/);
-      if (r) { const a = ROMANOS.indexOf(r[1].toUpperCase()), b = ROMANOS.indexOf(r[2].toUpperCase()); if (a >= 0 && b >= a) { out.push(...ROMANOS.slice(a, b + 1)); return; } }
-      out.push(tok.toUpperCase());
-    });
-    return [...new Set(out)];
-  };
-  const secciones = () => [...new Set(q("#cc-sec").value.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean))];
   const nombres = () => {
     const c = carrera(); if (!c) return [];
-    const sc = secciones();
-    return ciclos().flatMap((ci) => (sc.length ? sc.map((s) => `${c} ${ci} ${s}`) : [`${c} ${ci}`]));
+    const secs = [...seccionesSel].sort();
+    return CICLOS.filter((ci) => ciclosSel.has(ci)).flatMap((ci) => (secs.length ? secs.map((s) => nombreCiclo(c, ci, s)) : [nombreCiclo(c, ci)]));
+  };
+  const pintarPills = () => {
+    m.el.querySelectorAll("[data-c]").forEach((b) => { const on = ciclosSel.has(b.dataset.c); b.classList.toggle("active", on); b.setAttribute("aria-pressed", on); });
+    m.el.querySelectorAll("[data-s]").forEach((b) => { const on = seccionesSel.has(b.dataset.s); b.classList.toggle("active", on); b.setAttribute("aria-pressed", on); });
   };
   const actualizar = () => {
     if (sel) q("#cc-nueva-box").hidden = sel.value !== NUEVA;
+    pintarPills();
     const c = carrera(), lista = nombres();
     const existen = new Set(DB.grados.filter((g) => norm(g.nivel) === norm(c)).map((g) => norm(g.nombre)));
     const nuevos = lista.filter((n) => !existen.has(norm(n)));
     q("#cc-prev").innerHTML = lista.length
       ? `<strong>${nuevos.length}</strong> por crear${lista.length > nuevos.length ? ` · ${lista.length - nuevos.length} ya existen y se omiten` : ""}:
          <div class="chips">${lista.map((n) => `<span class="badge ${existen.has(norm(n)) ? "badge-neutral" : "badge-green"}">${esc(n)}</span>`).join("")}</div>`
-      : '<span class="muted">Escribe la carrera y los ciclos para ver qué se creará.</span>';
+      : `<span class="muted">${c ? "Marca los ciclos que quieres crear." : "Elige o escribe la carrera y marca los ciclos."}</span>`;
     q("#cc-go").disabled = nuevos.length === 0;
   };
   m.el.addEventListener("input", actualizar);
   m.el.addEventListener("change", actualizar);
-  q("#cc-rapidos").addEventListener("click", (e) => { const b = e.target.closest("[data-r]"); if (b) { q("#cc-ciclos").value = b.dataset.r; actualizar(); } });
+  m.el.addEventListener("click", (e) => {
+    const c = e.target.closest("[data-c]"), s = e.target.closest("[data-s]"), r = e.target.closest("[data-rapido]");
+    if (c) { ciclosSel.has(c.dataset.c) ? ciclosSel.delete(c.dataset.c) : ciclosSel.add(c.dataset.c); actualizar(); }
+    if (s) { seccionesSel.has(s.dataset.s) ? seccionesSel.delete(s.dataset.s) : seccionesSel.add(s.dataset.s); actualizar(); }
+    if (r) {
+      ciclosSel.clear();
+      CICLOS.forEach((ci, i) => { if (r.dataset.rapido === "todos" || (r.dataset.rapido === "impares" && i % 2 === 0) || (r.dataset.rapido === "pares" && i % 2 === 1)) ciclosSel.add(ci); });
+      actualizar();
+    }
+  });
   q("#cc-go").addEventListener("click", async (e) => {
     const c = carrera(), lista = nombres();
     const existen = new Set(DB.grados.filter((g) => norm(g.nivel) === norm(c)).map((g) => norm(g.nombre)));
@@ -350,6 +367,7 @@ registerActions({
   "al-page": (el) => { al.page += Number(el.dataset.d); repaint(); window.scrollTo({ top: 0, behavior: "smooth" }); },
   "al-import": importarCSV,
   "ciclos-new": (el) => crearCiclos(el?.dataset?.carrera || ""),
+  "grado-new": () => crearCiclos(),
   "al-codigo": () => { location.hash = "#/codigo"; },
   "al-revisar": (el) => revisarEstudiante(alumnoPorId(el.dataset.id)),
   "do-new": () => docenteForm(),

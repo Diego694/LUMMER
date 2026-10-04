@@ -2,7 +2,7 @@
 import { CONFIG, isDemoMode } from "../config.js";
 import { api } from "./api.js";
 import { bindActions, icon, openModal, registerActions, toast } from "../ui.js";
-import { downloadFile, esc, etiquetaCiclo, initials } from "../utils.js";
+import { cicloCorto, compararCiclos, downloadFile, esc, etiquetaCiclo, initials } from "../utils.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const root = () => $("#est-root");
@@ -168,7 +168,7 @@ function vistaRegistro() {
       return;
     }
     const sel = $("#r-niv"), gra = $("#r-gra");
-    const llenarGrados = () => { gra.innerHTML = info.grados.filter((g) => g.nivel === sel.value).map((g) => `<option>${esc(g.nombre)}</option>`).join(""); };
+    const llenarGrados = () => { gra.innerHTML = info.grados.filter((g) => g.nivel === sel.value).sort((a, b) => compararCiclos(a.nombre, b.nombre)).map((g) => `<option value="${esc(g.nombre)}">${esc(cicloCorto(g.nombre, sel.value))}</option>`).join(""); };
     llenarGrados(); sel.addEventListener("change", llenarGrados);
     $("#f-reg").addEventListener("submit", async (e) => {
       e.preventDefault();

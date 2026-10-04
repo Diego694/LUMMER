@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.1 — 2026-10-04
+
+### Cambiado
+- **Ciclos solo del I al VI.** «Crear ciclos» se hace con botones I–VI (sin texto libre), y el nombre se compone con formato fijo: `APSTI · IV CICLO` / `APSTI · IV CICLO · SECCIÓN A`.
+- **Ciclos y salones**: una tarjeta por carrera con tabla ordenada (ciclo en insignia romana, salón y alumnos).
+- Los selectores de ciclo (docente y estudiante) se ordenan I → VI, luego por salón, y no repiten la carrera cuando ya está elegida.
+- Datos demo con el formato nuevo.
+
 ## 2.3.0 — 2026-10-04
 
 ### Nuevo

@@ -201,6 +201,11 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:var(--hover-
 .revisar{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.datos{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}.datos dt{color:var(--ink-soft);font-size:12px}.datos dd{margin:0;font-weight:600}
 
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.carrera-card{margin-bottom:16px}.carrera-card .card-head{padding:16px 20px;margin:0;border-bottom:1px solid var(--line)}
+.ciclo-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:3px 9px;border-radius:8px;background:var(--navy);color:var(--amber);font:700 13px 'JetBrains Mono',monospace}
+:root[data-theme="dark"] .ciclo-badge{background:var(--amber);color:#2A1B02}
+.pill-roman{min-width:46px;text-align:center;font-weight:700;font-family:'JetBrains Mono',monospace}
+.link-btn{border:0;background:none;color:var(--amber-dark);font-weight:600;font-size:12.5px;padding:2px 4px;text-decoration:underline;cursor:pointer}
 .cc-prev{margin-top:4px;padding:12px 14px;border-radius:12px;background:var(--hover-bg);font-size:13px;min-height:54px}
 .codigo-grande{margin:10px 0 16px;padding:26px 14px}.codigo-grande code{font-size:clamp(26px,6vw,40px)}
 .qr-portal{background:#fff;padding:12px;border-radius:14px;display:inline-flex}
