@@ -18,3 +18,52 @@ export async function activarAvisos(api) {
 export function desactivarAvisos() {
   try { puente()?.detenerAvisos?.(); } catch { /* sin puente */ }
 }
+
+/* ------------------------------ Aprobación del registro del estudiante ------------------------------ */
+let timerAprob = null;
+
+/** Muestra una notificación del sistema (si el usuario dio permiso) además del aviso dentro de la app. */
+function notificarSistema(titulo, cuerpo) {
+  try { if ("Notification" in globalThis && Notification.permission === "granted") new Notification(titulo, { body: cuerpo, icon: "../assets/icons/icon-192.png" }); } catch { /* sin notificaciones */ }
+}
+
+/**
+ * Mientras el registro está pendiente: (1) en la app Android se encarga a la app nativa, que consulta en segundo plano
+ * aunque esté cerrada; (2) con la página abierta se consulta cada 30 s. Al aprobarse llama a `alAprobar()`.
+ * `token` es el token privado del estudiante (solo él lo conoce).
+ */
+export function vigilarAprobacion(api, token, alAprobar) {
+  detenerVigilancia();
+  if (!token || !api.estadoSolicitud) return;
+  try { globalThis.AndroidBridge?.configurarAprobacion?.(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, token); } catch { /* sin puente */ }
+  const revisar = async () => {
+    try {
+      const r = await api.estadoSolicitud(token);
+      if (r?.aprobado === true) {
+        detenerVigilancia();
+        notificarSistema("¡Tu registro fue aprobado!", "Ya puedes usar tu carnet QR para registrar tu asistencia.");
+        alAprobar();
+      }
+    } catch { /* sin red: se reintenta */ }
+  };
+  timerAprob = setInterval(revisar, 30000);
+  document.addEventListener("visibilitychange", alVolver);
+  function alVolver() { if (!document.hidden) revisar(); }
+  vigilarAprobacion._alVolver = alVolver;
+  revisar();
+}
+
+export function detenerVigilancia() {
+  clearInterval(timerAprob); timerAprob = null;
+  if (vigilarAprobacion._alVolver) document.removeEventListener("visibilitychange", vigilarAprobacion._alVolver);
+  vigilarAprobacion._alVolver = null;
+}
+
+/** En la web (no en la app Android): pide permiso para mostrar la notificación. Devuelve true si quedó concedido. */
+export async function pedirPermisoNotificacion() {
+  if (!("Notification" in globalThis)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
+  return (await Notification.requestPermission()) === "granted";
+}
+export const permisoNotificacion = () => ("Notification" in globalThis ? Notification.permission : "unsupported");

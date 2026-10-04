@@ -3,6 +3,8 @@
 ## Solicitudes de ingreso  (*Registro → Solicitudes de ingreso*, administrador)
 Cuando un estudiante se registra con el **código del instituto**, queda **pendiente**: su QR no registra asistencia hasta que lo apruebes. Para que no pase desapercibido, arriba aparece **«🔔 N solicitudes de ingreso»** (y una insignia en el menú); al pulsarlo abres la lista con foto, carrera·ciclo, DNI, apoderado y hora de solicitud, y puedes **Aprobar** o **Rechazar** (elimina el registro). La lista se actualiza sola cada 60 segundos.
 
+**Aviso al estudiante:** al aprobar, el estudiante recibe la notificación «¡Tu registro fue aprobado! Ya puedes usar tu carnet QR». En la app Android llega aunque esté cerrada (la app consulta en segundo plano cada ~15 minutos y, al abrirla, al instante); en el navegador, con la página abierta, se actualiza sola en unos segundos y, si el estudiante activó el aviso, también como notificación del sistema. Funciona con un token privado por alumno (solo lo conoce él) que únicamente permite saber si su registro fue aprobado. Para entrega instantánea con la app cerrada haría falta Firebase Cloud Messaging.
+
 ## Periodos y cambio de ciclo  (*Gestión → Periodos y cambio de ciclo*, administrador)
 - Define el **periodo vigente** (ej. «2026-II») y su inicio: de ahí cuentan los reportes y las alertas.
 - **Cerrar periodo y pasar de ciclo**: cada alumno activo pasa al ciclo siguiente **conservando su salón**; los del **VI egresan** (quedan «EGRESADO», no cuentan como activos y su historial se conserva); los ciclos que no siguen el formato I–VI no se tocan. Muestra una **vista previa** con los números y exige confirmar que ya hiciste un **respaldo**. Se crea el nuevo periodo y queda el historial de cierres.

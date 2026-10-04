@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.9.0 — 2026-10-05
+
+### Añadido
+- **Aviso de aprobación al estudiante**: cuando el administrador aprueba su registro, el estudiante recibe «¡Tu registro fue aprobado!». En la **app Android** llega como notificación aunque la app esté cerrada (consulta en segundo plano, ~15 min); con la **página abierta** se actualiza sola en segundos y, si dio permiso, también como notificación del navegador. Usa un token privado por alumno (migración `009`); sin datos personales.
+
 ## 2.8.3 — 2026-10-05
 
 ### Añadido

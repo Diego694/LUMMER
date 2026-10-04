@@ -4,7 +4,7 @@ import { api } from "./api.js";
 import { bindActions, confirmDialog, icon, openModal, registerActions, toast } from "../ui.js";
 import { ahora, cicloCorto, compararCiclos, downloadFile, esc, etiquetaCiclo, initials, sincronizarReloj } from "../utils.js";
 import { enviarPendientes, iniciarLogErrores } from "../errlog.js";
-import { activarAvisos, desactivarAvisos } from "../notificaciones.js";
+import { activarAvisos, desactivarAvisos, detenerVigilancia, pedirPermisoNotificacion, permisoNotificacion, vigilarAprobacion } from "../notificaciones.js";
 import { VENTANA_MS, generarQR, segundosRestantes } from "../qr-seguro.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -221,7 +221,7 @@ async function vistaCarnet(recienCreado = false) {
       ${dinamico ? '<div class="qr-timer" aria-hidden="true"><i id="qr-bar"></i></div><div class="qr-info" id="qr-info">QR seguro: se actualiza solo</div>' : ""}
       <div class="ce-code">${esc(a.codigo)}</div>
     </section>
-    ${aprobado ? "" : `<div class="aviso">${icon("info", 15)} ${recienCreado ? "¡Listo! Tu carnet fue creado. " : ""}Tu QR empezará a registrar asistencia cuando el instituto apruebe tu registro. Mientras tanto, agrega tu foto.</div>`}
+    ${aprobado ? "" : `<div class="aviso">${icon("info", 15)} ${recienCreado ? "¡Listo! Tu carnet fue creado. " : ""}Tu QR empezará a registrar asistencia cuando el instituto apruebe tu registro. Mientras tanto, agrega tu foto. <b>Te avisaremos cuando lo aprueben.</b>${!globalThis.AndroidBridge && permisoNotificacion() === "default" ? ` <button type="button" class="link-btn" data-action="avisar-aprobacion">Activar aviso en este navegador</button>` : ""}</div>`}
     ${a.foto_path ? "" : `<div class="aviso">${icon("camera", 15)} Agrega tu foto: el docente la verá cuando pases tu QR.</div>`}
     <div class="est-actions">
       <button class="btn btn-primary" data-action="foto">${icon("camera", 16)} ${a.foto_path ? "Cambiar foto" : "Agregar foto"}</button>
@@ -232,6 +232,12 @@ async function vistaCarnet(recienCreado = false) {
       <div class="est-actions"><button class="btn btn-outline" data-action="ap-copiar">Copiar código</button><a class="btn btn-teal" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent("Código para ver mi asistencia: " + a.codigo_apoderado.replace(/(.{4})(?=.)/g, "$1-") + "\n" + new URL("../apoderado/?c=" + a.codigo_apoderado, location.href).href)}">Enviar por WhatsApp</a></div></section>` : ""}
     <p class="muted" style="text-align:center;margin-top:18px">Muestra este QR al docente al ingresar a clases. No lo compartas con otras personas.</p>
     <p class="est-legal muted"><a href="${PRIVACIDAD}" target="_blank" rel="noopener">Política de privacidad</a> · <button type="button" class="link-btn link-peligro" data-action="eliminar-cuenta">Eliminar mi cuenta y mis datos</button></p>`;
+  if (aprobado) detenerVigilancia();
+  else vigilarAprobacion(api, a.notif_token, async () => {
+    try { registro = await api.miRegistro(user); } catch { registro.alumno.aprobado = true; }
+    toast("¡Tu registro fue aprobado! Ya puedes usar tu carnet.", "success");
+    await vistaCarnet();
+  });
   const qr = new QRCode($("#ce-qr"), { text: a.codigo, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
   if (dinamico) iniciarQRDinamico(qr, a);
   cargarFoto(a);
@@ -346,8 +352,9 @@ async function carnetCanvas(a, colegio) {
 
 registerActions({
   theme: () => setTheme(tema === "dark" ? "light" : "dark"),
+  "avisar-aprobacion": async () => { if (await pedirPermisoNotificacion()) { toast("Listo: te avisaremos aquí cuando te aprueben (con esta página abierta).", "success"); await vistaCarnet(); } else toast("No se concedió el permiso de notificaciones.", "error"); },
   "ap-copiar": async () => { try { await navigator.clipboard.writeText(registro.alumno.codigo_apoderado); toast("Código copiado", "success"); } catch { toast("No se pudo copiar", "error"); } },
-  logout: async () => { desactivarAvisos(); await api.signOut(); user = null; registro = null; $("#est-logout").hidden = true; $("#est-instituto").textContent = "Portal del estudiante"; vistaAuth("login"); },
+  logout: async () => { desactivarAvisos(); detenerVigilancia(); await api.signOut(); user = null; registro = null; $("#est-logout").hidden = true; $("#est-instituto").textContent = "Portal del estudiante"; vistaAuth("login"); },
   foto: async (btn) => {
     const blob = await pedirFoto();
     if (!blob) return;

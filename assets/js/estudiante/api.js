@@ -75,6 +75,7 @@ class DemoEstudiante {
   }
   async signOut() { localStorage.removeItem(this.SESSION); }
   async tokenAvisos() { return null; }
+  async estadoSolicitud(token) { const a = this.load().alumnos.find((x) => x.notif_token === token); return a ? { aprobado: a.aprobado !== false, nombre: a.nombre.split(" ")[0] } : null; }
 
   async infoColegio(codigo) {
     const db = this.load();
@@ -91,8 +92,8 @@ class DemoEstudiante {
     const a = {
       id: uid(), colegio_id: db.colegio.id, codigo, nombre: `${f.nombres.trim()} ${f.apellidos.trim()}`, nivel: f.nivel, grado: f.grado,
       apoderado: f.apoderado || "", estado: "ACTIVO", user_id: user.id, nombres: f.nombres.trim(), apellidos: f.apellidos.trim(),
-      dni: f.dni || null, aprobado: false, consentimiento_en: new Date().toISOString(), registrado_en: new Date().toISOString(),
-      apoderado_telefono: f.apoderadoTel || null, apoderado_email: (f.apoderadoEmail || "").toLowerCase() || null, qr_secreto: uid().replace(/-/g, ""),
+      dni: f.dni || null, notif_token: Array.from({ length: 32 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join(""), aprobado: false, consentimiento_en: new Date().toISOString(), registrado_en: new Date().toISOString(),
+      apoderado_telefono: f.apoderadoTel || null, apoderado_email: (f.apoderadoEmail || "").toLowerCase() || null, qr_secreto: uid().replace(/-/g, ""), codigo_apoderado: Array.from({ length: 12 }, () => "0123456789ABCDEF"[Math.floor(Math.random() * 16)]).join(""),
     };
     db.alumnos.push(a);
     this.save(db);
@@ -181,6 +182,7 @@ class SupabaseEstudiante {
   }
   miRegistro() { return this.#rpc("mi_registro", {}); }
   async tokenAvisos() { try { return await this.#rpc("token_avisos", {}); } catch { return null; } }
+  async estadoSolicitud(token) { const { data, error } = await this.sb.rpc("estado_solicitud", { p_token: token }); return error ? null : data; }
   async subirFoto(user, blob) {
     const path = `${user.id}/foto-${Date.now()}.jpg`;
     const { error } = await this.sb.storage.from("fotos-alumnos").upload(path, blob, { contentType: "image/jpeg", upsert: true });

@@ -261,4 +261,24 @@ do $$ declare r json; begin
   perform t.root();
 end $$;
 
+-- ===== 19. Aviso de aprobación al estudiante =====
+do $$ declare tok text; r json; begin
+  update alumnos set aprobado = false where id = '11111111-0000-0000-0000-000000000001';
+  select notif_token into tok from alumnos where id = '11111111-0000-0000-0000-000000000001';
+  perform t.eq(length(tok)::text, '32', 'cada alumno tiene un token de aviso de 32 caracteres');
+  execute 'set local role anon';
+  r := public.estado_solicitud(tok);
+  perform t.eq(r->>'aprobado', 'false', 'con el token se ve que la solicitud sigue pendiente');
+  perform t.eq(((r->>'nombre') is not null and (r->>'nombre') not like '% %')::text, 'true', 'solo expone el primer nombre');
+  perform t.eq((public.estado_solicitud('0123456789abcdef0123456789abcdef') is null)::text, 'true', 'un token inexistente devuelve vacío');
+  perform t.eq((public.estado_solicitud('corto') is null)::text, 'true', 'un token con formato inválido devuelve vacío');
+  perform t.falla($q$select notif_token from alumnos$q$, 'anónimos no leen los tokens directamente');
+  perform t.root();
+  update alumnos set aprobado = true where id = '11111111-0000-0000-0000-000000000001';
+  execute 'set local role anon';
+  perform t.eq(public.estado_solicitud(tok)->>'aprobado', 'true', 'tras aprobar, el token informa «aprobado»');
+  perform t.root();
+  perform t.eq((select count(*) from auditoria where detalle::text like '%' || tok || '%')::text, '0', 'el token no aparece en el historial de cambios');
+end $$;
+
 select 'TODAS LAS PRUEBAS DE SEGURIDAD PASARON' as resultado;

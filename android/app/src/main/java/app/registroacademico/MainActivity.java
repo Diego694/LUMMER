@@ -353,6 +353,17 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
             });
         }
 
+        /** Estudiante pendiente: consulta en segundo plano si ya lo aprobaron y lo avisa con una notificación. */
+        @JavascriptInterface
+        public boolean configurarAprobacion(String url, String key, String token) {
+            boolean ok = Avisos.configurarAprobacion(getApplicationContext(), url, key, token);
+            if (ok) runOnUiThread(() -> {
+                pedirPermisoNotificaciones();
+                new Thread(() -> Avisos.consultarAprobacion(getApplicationContext())).start();
+            });
+            return ok;
+        }
+
         @JavascriptInterface
         public void detenerAvisos() { Avisos.detener(getApplicationContext()); }
 
