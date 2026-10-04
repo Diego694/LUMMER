@@ -10,6 +10,8 @@ const SMOKE = process.argv.includes("--smoke");
 const RAIZ = path.join(__dirname, "app");
 const ORIGEN = "app://local";
 
+// El nombre del programa va en el User-Agent: debe ser ASCII o Headers() rechaza las peticiones del protocolo app://.
+app.userAgentFallback = app.userAgentFallback.replace(/[^ -~]/g, "");
 if (SMOKE) app.setPath("userData", fs.mkdtempSync(path.join(os.tmpdir(), "ra-smoke-")));
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
