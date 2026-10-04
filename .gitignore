@@ -16,3 +16,5 @@ android/local.properties
 *.jks
 *.keystore
 secretos-github.txt
+
+dist/
