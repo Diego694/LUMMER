@@ -1,13 +1,13 @@
-// Portal del estudiante: crear cuenta → registrarse con el código del colegio → subir foto → carnet con QR único.
+// Portal del estudiante: crear cuenta → registrarse con el código del instituto → subir foto → carnet con QR único.
 import { CONFIG, isDemoMode } from "../config.js";
 import { api } from "./api.js";
 import { bindActions, icon, openModal, registerActions, toast } from "../ui.js";
-import { downloadFile, esc, initials } from "../utils.js";
+import { downloadFile, esc, etiquetaCiclo, initials } from "../utils.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const root = () => $("#est-root");
 let user = null;      // sesión
-let registro = null;  // { alumno, colegio }
+let registro = null;  // { alumno, colegio: nombre del instituto }
 let tema = "light";
 
 /* ------------------------------ Tema ------------------------------ */
@@ -42,7 +42,7 @@ function pedirFoto() {
     let stream = null, blob = null, urlPrevia = null, hecho = false;
     const m = openModal({
       title: "Tu foto",
-      body: `<p class="muted" style="margin-top:0">Foto de frente, con buena luz y sin gorra ni lentes oscuros. Solo el personal del colegio la verá.</p>
+      body: `<p class="muted" style="margin-top:0">Foto de frente, con buena luz y sin gorra ni lentes oscuros. Solo el personal del instituto la verá.</p>
         <div class="cam-box espejo" id="cam-box"><video id="cam-video" playsinline muted autoplay></video><div class="cam-guia"></div></div>
         <div class="cam-botones" id="cam-btns">
           <button class="btn btn-primary" id="cam-shot">${icon("camera", 16)} Tomar foto</button>
@@ -104,7 +104,7 @@ function vistaAuth(modo = "login") {
         ${reg ? `<div class="field"><label for="a-pass2">Repite la contraseña</label><input id="a-pass2" type="password" autocomplete="new-password" required></div>` : ""}
         <button class="btn btn-primary btn-block" id="a-go" type="submit">${reg ? "Crear cuenta" : "Ingresar"}</button>
         <p class="err-msg" id="a-err" role="alert" hidden></p>
-        ${isDemoMode() ? `<p class="demo-hint"><strong>Modo demo</strong>: crea una cuenta con cualquier correo. El código del colegio de prueba es <code>DEMO2026</code>.</p>` : ""}
+        ${isDemoMode() ? `<p class="demo-hint"><strong>Modo demo</strong>: crea una cuenta con cualquier correo. El código del instituto de prueba es <code>DEMO2026</code>.</p>` : ""}
       </form>
     </section>`;
   root().querySelectorAll("[data-modo]").forEach((b) => b.addEventListener("click", () => vistaAuth(b.dataset.modo)));
@@ -132,17 +132,17 @@ function vistaRegistro() {
     root().innerHTML = `
       <section class="est-card">
         <div class="steps"><span class="on"></span><span class="${info ? "on" : ""}"></span><span></span></div>
-        <h1>${info ? "Tus datos" : "Código del colegio"}</h1>
-        <p class="est-sub">${info ? "Paso 2 de 3 · Completa tu información." : "Paso 2 de 3 · Pídele a tu colegio el código de registro."}</p>
+        <h1>${info ? "Tus datos" : "Código del instituto"}</h1>
+        <p class="est-sub">${info ? "Paso 2 de 3 · Completa tu información." : "Paso 2 de 3 · Pídele a tu instituto el código de registro."}</p>
         ${info ? `<div class="school-ok">${icon("check", 18)} ${esc(info.nombre)}</div>
         <form id="f-reg" class="est-form" novalidate>
           <div class="row2"><div class="field"><label for="r-nom">Nombres <span class="req">*</span></label><input id="r-nom" autocomplete="given-name" required></div>
           <div class="field"><label for="r-ape">Apellidos <span class="req">*</span></label><input id="r-ape" autocomplete="family-name" required></div></div>
-          <div class="row2"><div class="field"><label for="r-niv">Nivel <span class="req">*</span></label><select id="r-niv">${info.niveles.map((n) => `<option>${esc(n)}</option>`).join("")}</select></div>
-          <div class="field"><label for="r-gra">Grado <span class="req">*</span></label><select id="r-gra"></select></div></div>
+          <div class="row2"><div class="field"><label for="r-niv">Carrera <span class="req">*</span></label><select id="r-niv">${info.niveles.map((n) => `<option>${esc(n)}</option>`).join("")}</select></div>
+          <div class="field"><label for="r-gra">Ciclo / salón <span class="req">*</span></label><select id="r-gra"></select></div></div>
           <div class="field"><label for="r-dni">DNI (opcional)</label><input id="r-dni" inputmode="numeric" maxlength="12" autocomplete="off"></div>
           <div class="field"><label for="r-apo">Apoderado (opcional)</label><input id="r-apo" autocomplete="off"></div>
-          <label class="consent"><input type="checkbox" id="r-ok"><span>Autorizo el tratamiento de mis datos personales y de mi foto para el control de asistencia escolar. Si soy menor de edad, mi padre, madre o apoderado lo autoriza.</span></label>
+          <label class="consent"><input type="checkbox" id="r-ok"><span>Autorizo el tratamiento de mis datos personales y de mi foto para el control de asistencia institucional. Si soy menor de edad, mi padre, madre o apoderado lo autoriza.</span></label>
           <button class="btn btn-primary btn-block" id="r-go" type="submit">Crear mi carnet</button>
           <p class="err-msg" id="r-err" role="alert" hidden></p>
         </form>`
@@ -161,7 +161,7 @@ function vistaRegistro() {
         btn.disabled = true;
         try {
           info = await api.infoColegio(codigo);
-          if (!info) { err.textContent = "Código inválido. Revísalo con tu colegio."; err.hidden = false; btn.disabled = false; return; }
+          if (!info) { err.textContent = "Código inválido. Revísalo con tu instituto."; err.hidden = false; btn.disabled = false; return; }
           pintar();
         } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.disabled = false; }
       });
@@ -175,7 +175,7 @@ function vistaRegistro() {
       const err = $("#r-err"), btn = $("#r-go"); err.hidden = true;
       const f = { codigoColegio: codigo, nombres: $("#r-nom").value.trim(), apellidos: $("#r-ape").value.trim(), nivel: sel.value, grado: gra.value, dni: $("#r-dni").value.trim(), apoderado: $("#r-apo").value.trim() };
       if (f.nombres.length < 2 || f.apellidos.length < 2) { err.textContent = "Escribe tus nombres y apellidos."; err.hidden = false; return; }
-      if (!f.grado) { err.textContent = "Elige tu grado."; err.hidden = false; return; }
+      if (!f.grado) { err.textContent = "Elige tu ciclo."; err.hidden = false; return; }
       if (f.dni && !/^\d{6,12}$/.test(f.dni)) { err.textContent = "El DNI solo debe tener números."; err.hidden = false; return; }
       if (!$("#r-ok").checked) { err.textContent = "Debes aceptar la autorización para continuar."; err.hidden = false; return; }
       btn.disabled = true;
@@ -189,19 +189,19 @@ function vistaRegistro() {
 async function vistaCarnet(recienCreado = false) {
   const { alumno: a, colegio } = registro;
   const aprobado = a.aprobado !== false;
-  $("#est-colegio").textContent = colegio;
+  $("#est-instituto").textContent = colegio;
   root().innerHTML = `
-    <section class="carnet-est" aria-label="Mi carnet escolar">
-      <div class="ce-head">${esc(colegio)} · Carnet escolar</div>
+    <section class="carnet-est" aria-label="Mi carnet institucional">
+      <div class="ce-head">${esc(colegio)} · Carnet institucional</div>
       <div class="ce-id">
         <div class="ce-foto" id="ce-foto"><span>${esc(initials(a.nombre))}</span></div>
-        <div><div class="ce-name">${esc(a.nombre)}</div><div class="ce-meta">${esc(a.nivel)} · ${esc(a.grado)}</div>
+        <div><div class="ce-name">${esc(a.nombre)}</div><div class="ce-meta">${esc(etiquetaCiclo(a.nivel, a.grado))}</div>
           <span class="estado-chip ${aprobado ? "estado-ok" : "estado-pend"}">${icon(aprobado ? "check" : "clock", 13)} ${aprobado ? "Registro aprobado" : "Pendiente de aprobación"}</span></div>
       </div>
       <div class="ce-qr" id="ce-qr" aria-label="Código QR de asistencia"></div>
       <div class="ce-code">${esc(a.codigo)}</div>
     </section>
-    ${aprobado ? "" : `<div class="aviso">${icon("info", 15)} ${recienCreado ? "¡Listo! Tu carnet fue creado. " : ""}Tu QR empezará a registrar asistencia cuando el colegio apruebe tu registro. Mientras tanto, agrega tu foto.</div>`}
+    ${aprobado ? "" : `<div class="aviso">${icon("info", 15)} ${recienCreado ? "¡Listo! Tu carnet fue creado. " : ""}Tu QR empezará a registrar asistencia cuando el instituto apruebe tu registro. Mientras tanto, agrega tu foto.</div>`}
     ${a.foto_path ? "" : `<div class="aviso">${icon("camera", 15)} Agrega tu foto: el docente la verá cuando pases tu QR.</div>`}
     <div class="est-actions">
       <button class="btn btn-primary" data-action="foto">${icon("camera", 16)} ${a.foto_path ? "Cambiar foto" : "Agregar foto"}</button>
@@ -230,9 +230,9 @@ async function carnetCanvas(a, colegio) {
   const g = x.createLinearGradient(0, 0, 560, 340); g.addColorStop(0, "#16223D"); g.addColorStop(1, "#22335A");
   x.fillStyle = "#fff"; x.fillRect(0, 0, 560, 340);
   x.fillStyle = g; x.beginPath(); x.roundRect(0, 0, 560, 340, 24); x.fill();
-  x.fillStyle = "#E8A33D"; x.font = "bold 14px Arial"; x.fillText(`${colegio} · CARNET ESCOLAR`.toUpperCase().slice(0, 60), 28, 40);
+  x.fillStyle = "#E8A33D"; x.font = "bold 14px Arial"; x.fillText(`${colegio} · CARNET INSTITUCIONAL`.toUpperCase().slice(0, 60), 28, 40);
   x.fillStyle = "#fff"; x.font = "bold 24px Arial"; x.fillText(a.nombre.slice(0, 30), 168, 100);
-  x.fillStyle = "#CFD7EA"; x.font = "15px Arial"; x.fillText(`${a.nivel} · ${a.grado}`, 168, 128);
+  x.fillStyle = "#CFD7EA"; x.font = "15px Arial"; x.fillText(etiquetaCiclo(a.nivel, a.grado), 168, 128);
   x.fillStyle = "#B8C2DC"; x.font = "14px monospace"; x.fillText(a.codigo, 168, 154);
   // foto circular o iniciales
   x.save(); x.beginPath(); x.arc(94, 112, 54, 0, Math.PI * 2); x.clip();
@@ -256,7 +256,7 @@ async function carnetCanvas(a, colegio) {
 
 registerActions({
   theme: () => setTheme(tema === "dark" ? "light" : "dark"),
-  logout: async () => { await api.signOut(); user = null; registro = null; $("#est-logout").hidden = true; $("#est-colegio").textContent = "Portal del estudiante"; vistaAuth("login"); },
+  logout: async () => { await api.signOut(); user = null; registro = null; $("#est-logout").hidden = true; $("#est-instituto").textContent = "Portal del estudiante"; vistaAuth("login"); },
   foto: async (btn) => {
     const blob = await pedirFoto();
     if (!blob) return;

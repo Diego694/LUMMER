@@ -200,6 +200,12 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:var(--hover-
 .codigo-box code{font:700 30px 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--ink)}
 .revisar{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.datos{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}.datos dt{color:var(--ink-soft);font-size:12px}.datos dd{margin:0;font-weight:600}
 
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cc-prev{margin-top:4px;padding:12px 14px;border-radius:12px;background:var(--hover-bg);font-size:13px;min-height:54px}
+.codigo-grande{margin:10px 0 16px;padding:26px 14px}.codigo-grande code{font-size:clamp(26px,6vw,40px)}
+.qr-portal{background:#fff;padding:12px;border-radius:14px;display:inline-flex}
+.cd-propio{margin-top:14px;font-size:13px}.cd-propio summary{cursor:pointer;color:var(--ink-soft);font-weight:600}
+
 /* ---------- Responsive ---------- */
 @media(max-width:1180px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.dash-grid{grid-template-columns:1fr 1fr}.span-3{grid-column:span 2}}
 @media(max-width:960px){

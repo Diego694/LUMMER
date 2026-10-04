@@ -73,6 +73,6 @@ Para actualizar el **APK** en el futuro, instala el nuevo encima: funciona solo 
 | “No se pudo abrir la aplicación” | Sin internet la primera vez, o `APP_URL` incorrecta (compila de nuevo con la URL correcta). |
 | “La app no se instaló / conflicto de paquete” | El APK nuevo está firmado con otra clave. Desinstala el anterior (se pierde solo lo local) o usa siempre la clave del proyecto. |
 | No se descarga un PDF/CSV | La descarga va a la carpeta *Descargas*; aparece un aviso “Guardado en Descargas”. |
-| El escáner no abre la cámara | Permiso de cámara denegado: Ajustes → Apps → Asistencia Escolar → Permisos. |
+| El escáner no abre la cámara | Permiso de cámara denegado: Ajustes → Apps → Asistencia Institucional → Permisos. |
 | NFC “desactivado” | Activa NFC en los ajustes del teléfono y vuelve a la pantalla. |
 | Veo una versión vieja | Cierra la app desde recientes y ábrela; confirma la versión en el pie del menú. |

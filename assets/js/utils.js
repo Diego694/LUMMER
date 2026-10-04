@@ -77,6 +77,16 @@ export function censurarNombre(alumno) {
   return [nombres, ap].filter(Boolean).join(" ");
 }
 
+/**
+ * Etiqueta legible "Carrera · Ciclo". Si el nombre del ciclo ya empieza con la carrera
+ * ("MECANICA ELECTRICA" + "MECANICA ELECTRICA I") se muestra solo el ciclo, sin repetirla.
+ */
+export function etiquetaCiclo(carrera, ciclo) {
+  if (!carrera) return ciclo || "";
+  if (!ciclo) return carrera;
+  return norm(ciclo).startsWith(norm(carrera)) ? ciclo : `${carrera} · ${ciclo}`;
+}
+
 /** Normaliza texto para búsqueda sin tildes ni mayúsculas. */
 export function norm(s) {
   return (s ?? "").toString().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

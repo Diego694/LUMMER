@@ -1,10 +1,10 @@
-// Mantenimiento (CRUD): niveles, grados, alumnos (con importación CSV), docentes y comunicados.
+// Mantenimiento (CRUD): carreras, ciclos y salones, alumnos (con importación CSV), docentes y comunicados.
 import { api } from "../api.js";
 import { CONFIG } from "../config.js";
 import { DB, alumnoPorId, loadAll, opcionesGrado, opcionesNivel } from "../state.js";
 import { badge, confirmDialog, emptyState, formModal, icon, openModal, pageHead, registerActions, toast } from "../ui.js";
 import { normalizarFilasImport } from "../stats.js";
-import { debounce, downloadFile, esc, fmtDate, initials, norm, todayStr } from "../utils.js";
+import { debounce, downloadFile, esc, etiquetaCiclo, fmtDate, initials, norm, todayStr } from "../utils.js";
 
 const root = () => document.getElementById("page-root");
 const repaint = () => root()._repaint?.();
@@ -21,35 +21,116 @@ async function eliminar(tabla, id, mensaje, exito) {
   catch (e) { toast("No se pudo eliminar: " + e.message, "error"); }
 }
 
-/* ============================ Niveles ============================ */
+/* ============================ Carreras ============================ */
 export const nivelesPage = {
-  id: "niveles", title: "Niveles", icon: "layers", group: "Gestión",
+  id: "niveles", title: "Carreras", icon: "layers", group: "Gestión",
   render(el) {
-    el.innerHTML = `${pageHead("Niveles", "Niveles educativos de la institución.", `<button class="btn btn-primary" data-action="nivel-new">${icon("plus", 16)} Agregar nivel</button>`)}<div class="card flush" id="tbl"></div>`;
+    el.innerHTML = `${pageHead("Carreras", "Carreras o programas de estudio del instituto. Cada una tiene sus propios ciclos y salones.", `<button class="btn btn-primary" data-action="nivel-new">${icon("plus", 16)} Agregar carrera</button>`)}<div class="card flush" id="tbl"></div>`;
     el._repaint = () => {
-      el.querySelector("#tbl").innerHTML = DB.niveles.length ? `<div class="table-wrap"><table><thead><tr><th>Nivel</th><th>Grados</th><th>Alumnos</th><th></th></tr></thead><tbody>
+      el.querySelector("#tbl").innerHTML = DB.niveles.length ? `<div class="table-wrap"><table><thead><tr><th>Carrera</th><th>Ciclos</th><th>Alumnos</th><th></th></tr></thead><tbody>
         ${DB.nivelesRaw.map((n) => `<tr><td><strong>${esc(n.nombre)}</strong></td><td>${DB.grados.filter((g) => g.nivel === n.nombre).length}</td><td>${DB.alumnos.filter((a) => a.nivel === n.nombre).length}</td>
-          <td class="t-right"><button class="btn btn-ghost-danger btn-sm" data-action="nivel-del" data-id="${n.id}">${icon("trash", 14)} Eliminar</button></td></tr>`).join("")}</tbody></table></div>`
-        : emptyState("Sin niveles", "Crea el primer nivel (por ejemplo Primaria).", "layers");
+          <td class="t-right nowrap"><button class="btn btn-outline btn-sm" data-action="ciclos-new" data-carrera="${esc(n.nombre)}">${icon("plus", 14)} Ciclos</button>
+          <button class="btn btn-ghost-danger btn-sm" data-action="nivel-del" data-id="${n.id}">${icon("trash", 14)} Eliminar</button></td></tr>`).join("")}</tbody></table></div>`
+        : emptyState("Sin carreras", "Crea la primera carrera (por ejemplo MECANICA ELECTRICA) o usa «Crear ciclos» en Ciclos y salones.", "layers");
     };
     el._repaint();
   },
 };
 
-/* ============================= Grados ============================= */
+/* ======================== Ciclos y salones ======================== */
+const porCarreraYCiclo = (a, b) => a.nivel.localeCompare(b.nivel, "es", { numeric: true }) || a.nombre.localeCompare(b.nombre, "es", { numeric: true });
+
 export const gradosPage = {
-  id: "grados", title: "Grados", icon: "book", group: "Gestión",
+  id: "grados", title: "Ciclos y salones", icon: "book", group: "Gestión",
   render(el) {
-    el.innerHTML = `${pageHead("Grados", "Grados y secciones por nivel.", `<button class="btn btn-primary" data-action="grado-new">${icon("plus", 16)} Agregar grado</button>`)}<div class="card flush" id="tbl"></div>`;
+    el.innerHTML = `${pageHead("Ciclos y salones", "Cada ciclo o salón es independiente: tiene sus propios alumnos, asistencia y reportes, y muestra de qué carrera es.",
+      `<button class="btn btn-outline" data-action="grado-new">${icon("plus", 16)} Agregar uno</button><button class="btn btn-primary" data-action="ciclos-new">${icon("layers", 16)} Crear ciclos</button>`)}<div class="card flush" id="tbl"></div>`;
     el._repaint = () => {
-      el.querySelector("#tbl").innerHTML = DB.grados.length ? `<div class="table-wrap"><table><thead><tr><th>Grado</th><th>Nivel</th><th>Alumnos</th><th></th></tr></thead><tbody>
-        ${DB.grados.map((g) => `<tr><td><strong>${esc(g.nombre)}</strong></td><td>${esc(g.nivel)}</td><td>${DB.alumnos.filter((a) => a.nivel === g.nivel && a.grado === g.nombre).length}</td>
+      el.querySelector("#tbl").innerHTML = DB.grados.length ? `<div class="table-wrap"><table><thead><tr><th>Ciclo / salón</th><th>Carrera</th><th>Alumnos</th><th></th></tr></thead><tbody>
+        ${[...DB.grados].sort(porCarreraYCiclo).map((g) => `<tr><td><strong>${esc(g.nombre)}</strong></td><td>${esc(g.nivel)}</td><td>${DB.alumnos.filter((a) => a.nivel === g.nivel && a.grado === g.nombre).length}</td>
           <td class="t-right"><button class="btn btn-ghost-danger btn-sm" data-action="grado-del" data-id="${g.id}">${icon("trash", 14)} Eliminar</button></td></tr>`).join("")}</tbody></table></div>`
-        : emptyState("Sin grados", "Agrega los grados de cada nivel.", "book");
+        : emptyState("Sin ciclos", "Usa «Crear ciclos» para generar de una vez, por ejemplo, MECANICA ELECTRICA I, II y III.", "book");
     };
     el._repaint();
   },
 };
+
+const ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+const NUEVA = "__nueva__";
+
+/** Crea de una vez varios ciclos (y salones) de una carrera: "MECANICA ELECTRICA" + "I, III" → MECANICA ELECTRICA I, MECANICA ELECTRICA III. */
+function crearCiclos(carreraInicial = "") {
+  const hayCarreras = DB.niveles.length > 0;
+  const m = openModal({
+    title: "Crear ciclos y salones", wide: true,
+    body: `<p class="muted" style="margin-top:0">Escribe la carrera y los ciclos. El nombre de cada ciclo incluye la carrera para reconocerlo de un vistazo, y cada uno es independiente.</p>
+      <div class="form-grid">
+        ${hayCarreras ? `<div class="field half"><label for="cc-sel">Carrera</label><select id="cc-sel">${DB.niveles.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")}<option value="${NUEVA}">➕ Nueva carrera…</option></select></div>` : ""}
+        <div class="field ${hayCarreras ? "half" : ""}" id="cc-nueva-box" ${hayCarreras ? "hidden" : ""}><label for="cc-nueva">${hayCarreras ? "Nombre de la nueva carrera" : "Carrera"}</label><input id="cc-nueva" placeholder="Ej: MECANICA ELECTRICA" autocomplete="off"></div>
+        <div class="field"><label for="cc-ciclos">Ciclos <span class="req">*</span></label><input id="cc-ciclos" placeholder="Ej: I, III   (o I-VI)" autocomplete="off">
+          <div class="chips" id="cc-rapidos"><button type="button" class="pill" data-r="I-VI">I – VI</button><button type="button" class="pill" data-r="I-III">I – III</button><button type="button" class="pill" data-r="I, III, V">I, III, V</button><button type="button" class="pill" data-r="II, IV, VI">II, IV, VI</button></div></div>
+        <div class="field"><label for="cc-sec">Salones / secciones (opcional)</label><input id="cc-sec" placeholder="Ej: A, B   (déjalo vacío si no hay secciones)" autocomplete="off"></div>
+      </div>
+      <div class="cc-prev" id="cc-prev" aria-live="polite"></div>
+      <p class="err-msg" id="cc-err" role="alert" hidden></p>`,
+    footer: `<button class="btn btn-outline" data-close2>Cancelar</button><button class="btn btn-primary" id="cc-go" disabled>Crear</button>`,
+  });
+  const q = (s) => m.el.querySelector(s);
+  m.el.querySelector("[data-close2]").addEventListener("click", m.close);
+  const sel = q("#cc-sel");
+  if (sel && carreraInicial) sel.value = carreraInicial;
+
+  const carrera = () => (sel && sel.value !== NUEVA ? sel.value : q("#cc-nueva").value.trim().replace(/\s+/g, " ").toUpperCase());
+  /** "I-VI" → I..VI ; "I, III" → I, III (se normalizan a MAYÚSCULAS). */
+  const ciclos = () => {
+    const out = [];
+    q("#cc-ciclos").value.split(",").map((s) => s.trim()).filter(Boolean).forEach((tok) => {
+      const r = tok.match(/^([IVXivx]+)\s*[-–]\s*([IVXivx]+)$/);
+      if (r) { const a = ROMANOS.indexOf(r[1].toUpperCase()), b = ROMANOS.indexOf(r[2].toUpperCase()); if (a >= 0 && b >= a) { out.push(...ROMANOS.slice(a, b + 1)); return; } }
+      out.push(tok.toUpperCase());
+    });
+    return [...new Set(out)];
+  };
+  const secciones = () => [...new Set(q("#cc-sec").value.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean))];
+  const nombres = () => {
+    const c = carrera(); if (!c) return [];
+    const sc = secciones();
+    return ciclos().flatMap((ci) => (sc.length ? sc.map((s) => `${c} ${ci} ${s}`) : [`${c} ${ci}`]));
+  };
+  const actualizar = () => {
+    if (sel) q("#cc-nueva-box").hidden = sel.value !== NUEVA;
+    const c = carrera(), lista = nombres();
+    const existen = new Set(DB.grados.filter((g) => norm(g.nivel) === norm(c)).map((g) => norm(g.nombre)));
+    const nuevos = lista.filter((n) => !existen.has(norm(n)));
+    q("#cc-prev").innerHTML = lista.length
+      ? `<strong>${nuevos.length}</strong> por crear${lista.length > nuevos.length ? ` · ${lista.length - nuevos.length} ya existen y se omiten` : ""}:
+         <div class="chips">${lista.map((n) => `<span class="badge ${existen.has(norm(n)) ? "badge-neutral" : "badge-green"}">${esc(n)}</span>`).join("")}</div>`
+      : '<span class="muted">Escribe la carrera y los ciclos para ver qué se creará.</span>';
+    q("#cc-go").disabled = nuevos.length === 0;
+  };
+  m.el.addEventListener("input", actualizar);
+  m.el.addEventListener("change", actualizar);
+  q("#cc-rapidos").addEventListener("click", (e) => { const b = e.target.closest("[data-r]"); if (b) { q("#cc-ciclos").value = b.dataset.r; actualizar(); } });
+  q("#cc-go").addEventListener("click", async (e) => {
+    const c = carrera(), lista = nombres();
+    const existen = new Set(DB.grados.filter((g) => norm(g.nivel) === norm(c)).map((g) => norm(g.nombre)));
+    const nuevos = lista.filter((n) => !existen.has(norm(n)));
+    e.target.disabled = true; e.target.textContent = "Creando…";
+    try {
+      const carreraExistente = DB.niveles.find((n) => norm(n) === norm(c));
+      const nombreCarrera = carreraExistente || c;
+      if (!carreraExistente) await api.save("niveles", { colegio_id: DB.cid, nombre: nombreCarrera });
+      for (const nombre of nuevos) await api.save("grados", { colegio_id: DB.cid, nivel: nombreCarrera, nombre });
+      await loadAll(); m.close(); repaint();
+      toast(`${nuevos.length} ciclo(s) creados en ${nombreCarrera}`, "success");
+    } catch (ex) {
+      await loadAll();  // refleja lo que sí alcanzó a crearse
+      const er = q("#cc-err"); er.textContent = "No se pudo crear todo: " + ex.message; er.hidden = false;
+      e.target.textContent = "Crear"; actualizar(); repaint();
+    }
+  });
+  actualizar();
+}
 
 /* ============================ Alumnos ============================ */
 let al = { q: "", nivel: "", grado: "", est: "", page: 1 };
@@ -57,11 +138,12 @@ let al = { q: "", nivel: "", grado: "", est: "", page: 1 };
 export const alumnosPage = {
   id: "alumnos", title: "Alumnos", icon: "cap", group: "Gestión",
   render(el) {
+    try { if (sessionStorage.getItem("ra-alumnos-filtro") === "pend") { al.est = "pend"; al.page = 1; sessionStorage.removeItem("ra-alumnos-filtro"); } } catch { /* sin storage */ }
     el.innerHTML = `${pageHead("Alumnos", "Padrón de alumnos con su código único de acceso.",
       `<button class="btn btn-outline" data-action="al-codigo">${icon("qr", 16)} Código de registro</button><button class="btn btn-outline" data-action="al-import">${icon("upload", 16)} Importar CSV</button><button class="btn btn-primary" data-action="al-new">${icon("plus", 16)} Agregar</button>`)}
       <div class="toolbar"><div class="search"><span class="search-ic">${icon("search", 16)}</span><input class="input" id="al-q" placeholder="Buscar por nombre, código, apoderado…" value="${esc(al.q)}" aria-label="Buscar"></div>
-        <select class="filter" id="al-nivel" aria-label="Nivel">${options(opcionesNivel(true), al.nivel)}</select>
-        <select class="filter" id="al-grado" aria-label="Grado">${options(opcionesGrado(al.nivel, true), al.grado)}</select>
+        <select class="filter" id="al-nivel" aria-label="Carrera">${options(opcionesNivel(true), al.nivel)}</select>
+        <select class="filter" id="al-grado" aria-label="Ciclo">${options(opcionesGrado(al.nivel, true), al.grado)}</select>
         <select class="filter" id="al-est" aria-label="Estado de registro"><option value="">Todos</option><option value="pend">Pendientes de aprobación (${DB.alumnos.filter((a) => a.aprobado === false).length})</option></select></div>
       <div class="card flush" id="tbl"></div><div class="pager" id="pager"></div>`;
     el.querySelector("#al-q").addEventListener("input", debounce((e) => { al.q = e.target.value; al.page = 1; el._repaint(); }, 150));
@@ -75,9 +157,9 @@ export const alumnosPage = {
       const tot = Math.max(1, Math.ceil(l.length / CONFIG.ALUMNOS_POR_PAGINA));
       al.page = Math.min(al.page, tot);
       const pag = l.slice((al.page - 1) * CONFIG.ALUMNOS_POR_PAGINA, al.page * CONFIG.ALUMNOS_POR_PAGINA);
-      el.querySelector("#tbl").innerHTML = pag.length ? `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Código</th><th>Nivel · Grado</th><th>Apoderado</th><th>Estado</th><th></th></tr></thead><tbody>
+      el.querySelector("#tbl").innerHTML = pag.length ? `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Código</th><th>Carrera · Ciclo</th><th>Apoderado</th><th>Estado</th><th></th></tr></thead><tbody>
         ${pag.map((a) => `<tr><td><div class="person"><span class="avatar">${esc(initials(a.nombre))}</span><span>${esc(a.nombre)}</span></div></td>
-          <td class="mono">${esc(a.codigo)}</td><td>${esc(a.nivel)} · ${esc(a.grado)}</td><td>${a.apoderado ? esc(a.apoderado) : '<span class="muted">—</span>'}</td>
+          <td class="mono">${esc(a.codigo)}</td><td>${esc(etiquetaCiclo(a.nivel, a.grado))}</td><td>${a.apoderado ? esc(a.apoderado) : '<span class="muted">—</span>'}</td>
           <td>${a.aprobado === false ? badge("Pendiente", "amber") : badge(a.estado === "ACTIVO" ? "Activo" : "Inactivo", a.estado === "ACTIVO" ? "green" : "neutral")}</td>
           <td class="t-right nowrap">
             ${a.aprobado === false ? `<button class="btn btn-teal btn-sm" data-action="al-revisar" data-id="${a.id}">${icon("userCheck", 14)} Revisar</button>` : ""}
@@ -94,7 +176,7 @@ export const alumnosPage = {
 };
 
 function alumnoForm(a) {
-  if (!DB.niveles.length) { toast("Primero crea al menos un nivel y un grado.", "error"); location.hash = "#/niveles"; return; }
+  if (!DB.niveles.length) { toast("Primero crea al menos una carrera y un ciclo.", "error"); location.hash = "#/niveles"; return; }
   const nivel = a?.nivel || DB.niveles[0];
   const sig = DB.alumnos.reduce((m, x) => Math.max(m, parseInt(x.codigo.replace(/\D/g, ""), 10) || 0), 1000) + 1;
   formModal({
@@ -102,8 +184,8 @@ function alumnoForm(a) {
     fields: [
       { name: "nombre", label: "Nombre completo", required: true, value: a?.nombre },
       { name: "codigo", label: "Código único de acceso", required: true, value: a?.codigo ?? `a${sig}` },
-      { name: "nivel", label: "Nivel", type: "select", half: true, options: opcionesNivel(), value: nivel, onChange: (v, c) => c.setOptions("grado", opcionesGrado(v)) },
-      { name: "grado", label: "Grado", type: "select", half: true, options: opcionesGrado(nivel), value: a?.grado },
+      { name: "nivel", label: "Carrera", type: "select", half: true, options: opcionesNivel(), value: nivel, onChange: (v, c) => c.setOptions("grado", opcionesGrado(v)) },
+      { name: "grado", label: "Ciclo / salón", type: "select", half: true, options: opcionesGrado(nivel), value: a?.grado },
       { name: "apoderado", label: "Apoderado", value: a?.apoderado },
       { name: "estado", label: "Estado", type: "pills", options: [{ value: "ACTIVO", label: "Activo" }, { value: "INACTIVO", label: "Inactivo" }], value: a?.estado || "ACTIVO" },
     ],
@@ -116,44 +198,12 @@ function alumnoForm(a) {
   });
 }
 
-/** Código que los estudiantes necesitan para registrarse en su portal. Se puede generar y regenerar. */
-async function codigoRegistro() {
-  const actual = await api.getCodigoRegistro(DB.cid);
-  const url = new URL("estudiante/", location.href.split("#")[0]).href;
-  const m = openModal({
-    title: "Código de registro de estudiantes",
-    body: `<p class="muted">Entrégalo a los estudiantes. Lo escriben una sola vez en su portal para registrarse; luego tú apruebas cada registro. Si lo regeneras, el código anterior deja de funcionar.</p>
-      <div class="codigo-box"><code id="cr-code">${actual ? esc(actual) : "— sin código —"}</code></div>
-      <p class="muted">Portal para estudiantes: <a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a></p>
-      <p class="err-msg" id="cr-err" role="alert" hidden></p>`,
-    footer: `<button class="btn btn-outline" data-close2>Cerrar</button><button class="btn btn-primary" id="cr-gen">${actual ? "Regenerar código" : "Generar código"}</button>`,
-  });
-  m.el.querySelector("[data-close2]").addEventListener("click", m.close);
-  m.el.querySelector("#cr-gen").addEventListener("click", async (e) => {
-    const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";  // sin caracteres ambiguos (0/O, 1/I)
-    const bytes = crypto.getRandomValues(new Uint8Array(8));
-    const nuevo = [...bytes].map((b) => alfabeto[b % alfabeto.length]).join("");
-    e.target.disabled = true;
-    try {
-      await api.setCodigoRegistro(DB.cid, nuevo);
-      m.el.querySelector("#cr-code").textContent = nuevo;
-      e.target.textContent = "Regenerar código";
-      toast("Código generado", "success");
-    } catch (ex) {
-      const er = m.el.querySelector("#cr-err");
-      er.textContent = /codigo_registro|column/i.test(ex.message) ? "Falta aplicar la migración del portal de estudiantes (supabase/migrations/002_estudiantes.sql)." : ex.message;
-      er.hidden = false;
-    }
-    e.target.disabled = false;
-  });
-}
-
 /** Revisión de un estudiante auto‑registrado: ver su foto y datos, aprobar o rechazar. */
 async function revisarEstudiante(a) {
   const m = openModal({
     title: "Revisar registro de estudiante",
     body: `<div class="revisar"><div class="alert-photo big" id="rv-foto"><span>${esc(initials(a.nombre))}</span></div>
-      <dl class="datos"><dt>Nombre</dt><dd>${esc(a.nombre)}</dd><dt>Nivel · Grado</dt><dd>${esc(a.nivel)} · ${esc(a.grado)}</dd>
+      <dl class="datos"><dt>Nombre</dt><dd>${esc(a.nombre)}</dd><dt>Carrera · Ciclo</dt><dd>${esc(etiquetaCiclo(a.nivel, a.grado))}</dd>
       ${a.dni ? `<dt>DNI</dt><dd>${esc(a.dni)}</dd>` : ""}${a.apoderado ? `<dt>Apoderado</dt><dd>${esc(a.apoderado)}</dd>` : ""}
       <dt>Código QR</dt><dd class="mono">${esc(a.codigo)}</dd>${a.registrado_en ? `<dt>Registrado</dt><dd>${esc(new Date(a.registrado_en).toLocaleString("es-PE"))}</dd>` : ""}</dl></div>
       <p class="muted">Al aprobar, su QR podrá registrar asistencia. Al rechazar, se elimina el registro.</p>`,
@@ -180,14 +230,14 @@ function importarCSV() {
   let filas = [];
   const m = openModal({
     title: "Importar alumnos desde CSV", wide: true,
-    body: `<p class="muted">Columnas (primera fila): <b>nombre, codigo, nivel, grado, apoderado, estado</b>. Solo <b>nombre</b> y <b>codigo</b> son obligatorias; si falta <b>estado</b> se asigna ACTIVO. Si el código ya existe, el alumno se actualiza.</p>
+    body: `<p class="muted">Columnas (primera fila): <b>nombre, codigo, carrera, ciclo, apoderado, estado</b> (también valen <i>nivel</i> y <i>grado</i>). Solo <b>nombre</b> y <b>codigo</b> son obligatorias; si falta <b>estado</b> se asigna ACTIVO. Si el código ya existe, el alumno se actualiza.</p>
       <button class="btn btn-outline btn-sm" id="imp-tpl">${icon("download", 14)} Descargar plantilla</button>
       <div class="field" style="margin-top:14px"><label for="imp-file">Archivo CSV</label><input type="file" id="imp-file" accept=".csv,text/csv"></div><div id="imp-prev"></div>`,
     footer: `<button class="btn btn-outline" data-close2>Cancelar</button><button class="btn btn-primary" id="imp-go" hidden>Importar alumnos</button>`,
   });
   const $ = (s) => m.el.querySelector(s);
   $("[data-close2]").addEventListener("click", m.close);
-  $("#imp-tpl").addEventListener("click", () => downloadFile("plantilla-alumnos.csv", "﻿nombre,codigo,nivel,grado,apoderado,estado\r\nJuan Perez Rios,a2001,Primaria,1er grado,Maria Rios,ACTIVO\r\nAna Torres Vega,a2002,Secundaria,1er año,,ACTIVO\r\n"));
+  $("#imp-tpl").addEventListener("click", () => downloadFile("plantilla-alumnos.csv", "﻿nombre,codigo,carrera,ciclo,apoderado,estado\r\nJuan Perez Rios,a2001,MECANICA ELECTRICA,MECANICA ELECTRICA I,Maria Rios,ACTIVO\r\nAna Torres Vega,a2002,APSTI,APSTI III,,ACTIVO\r\n"));
   $("#imp-file").addEventListener("change", (e) => {
     const f = e.target.files[0]; if (!f) return;
     Papa.parse(f, { header: true, skipEmptyLines: true, complete: (res) => {
@@ -198,8 +248,8 @@ function importarCSV() {
       const avisos = filas.filter((x) => x.aviso.length);
       $("#imp-prev").innerHTML = `<p class="ok-msg">${filas.length} alumno(s) listos para importar.</p>
         ${r.errores.length ? `<p class="err-msg">${r.errores.length} fila(s) omitidas: ${r.errores.slice(0, 5).map((x) => `línea ${x.linea} (${esc(x.motivo)})`).join("; ")}${r.errores.length > 5 ? "…" : ""}</p>` : ""}
-        ${avisos.length ? `<p class="warn-msg">${avisos.length} fila(s) con nivel/grado inexistente; se importarán igualmente.</p>` : ""}
-        <div class="table-wrap" style="max-height:220px"><table><thead><tr><th>Nombre</th><th>Código</th><th>Nivel</th><th>Grado</th></tr></thead><tbody>
+        ${avisos.length ? `<p class="warn-msg">${avisos.length} fila(s) con carrera/ciclo inexistente; se importarán igualmente.</p>` : ""}
+        <div class="table-wrap" style="max-height:220px"><table><thead><tr><th>Nombre</th><th>Código</th><th>Carrera</th><th>Ciclo</th></tr></thead><tbody>
         ${filas.slice(0, 50).map((x) => `<tr><td>${esc(x.nombre)}</td><td class="mono">${esc(x.codigo)}</td><td>${esc(x.nivel)}</td><td>${esc(x.grado)}</td></tr>`).join("")}</tbody></table></div>
         ${filas.length > 50 ? `<p class="muted">Mostrando 50 de ${filas.length}.</p>` : ""}`;
       $("#imp-go").hidden = !filas.length;
@@ -265,32 +315,32 @@ export const comunicadosPage = {
 
 /* ============================= Acciones ============================= */
 registerActions({
-  "nivel-new": () => formModal({ title: "Agregar nivel", fields: [{ name: "nombre", label: "Nombre del nivel", required: true, placeholder: "Ej: Primaria" }],
+  "nivel-new": () => formModal({ title: "Agregar carrera", fields: [{ name: "nombre", label: "Nombre de la carrera", required: true, placeholder: "Ej: MECANICA ELECTRICA" }],
     onSubmit: async ({ nombre }) => {
-      if (DB.niveles.some((n) => norm(n) === norm(nombre))) throw new Error("Ese nivel ya existe.");
-      await guardar("niveles", { nombre }); repaint(); toast("Nivel agregado", "success");
+      if (DB.niveles.some((n) => norm(n) === norm(nombre))) throw new Error("Esa carrera ya existe.");
+      await guardar("niveles", { nombre: nombre.trim().replace(/\s+/g, " ").toUpperCase() }); repaint(); toast("Carrera agregada", "success");
     } }),
   "nivel-del": (el) => {
     const n = DB.nivelesRaw.find((x) => x.id === el.dataset.id);
     const gr = DB.grados.filter((g) => g.nivel === n.nombre).length, alu = DB.alumnos.filter((a) => a.nivel === n.nombre).length;
-    if (gr || alu) { toast(`No se puede eliminar "${n.nombre}": tiene ${gr} grado(s) y ${alu} alumno(s) asociados.`, "error"); return; }
-    eliminar("niveles", n.id, `¿Eliminar el nivel <b>${esc(n.nombre)}</b>?`, "Nivel eliminado");
+    if (gr || alu) { toast(`No se puede eliminar "${n.nombre}": tiene ${gr} ciclo(s) y ${alu} alumno(s) asociados.`, "error"); return; }
+    eliminar("niveles", n.id, `¿Eliminar la carrera <b>${esc(n.nombre)}</b>?`, "Carrera eliminada");
   },
   "grado-new": () => {
-    if (!DB.niveles.length) { toast("Primero crea un nivel.", "error"); return; }
-    formModal({ title: "Agregar grado", fields: [
-      { name: "nivel", label: "Nivel", type: "select", options: opcionesNivel(), value: DB.niveles[0] },
-      { name: "nombre", label: "Nombre del grado", required: true, placeholder: 'Ej: 1er "A"' }],
+    if (!DB.niveles.length) { toast("Primero crea una carrera.", "error"); return; }
+    formModal({ title: "Agregar ciclo o salón", fields: [
+      { name: "nivel", label: "Carrera", type: "select", options: opcionesNivel(), value: DB.niveles[0] },
+      { name: "nombre", label: "Nombre del ciclo / salón", required: true, placeholder: "Ej: MECANICA ELECTRICA I" }],
     onSubmit: async ({ nivel, nombre }) => {
-      if (DB.grados.some((g) => g.nivel === nivel && norm(g.nombre) === norm(nombre))) throw new Error("Ese grado ya existe en el nivel.");
-      await guardar("grados", { nivel, nombre }); repaint(); toast("Grado agregado", "success");
+      if (DB.grados.some((g) => g.nivel === nivel && norm(g.nombre) === norm(nombre))) throw new Error("Ese ciclo ya existe en la carrera.");
+      await guardar("grados", { nivel, nombre }); repaint(); toast("Ciclo agregado", "success");
     } });
   },
   "grado-del": (el) => {
     const g = DB.grados.find((x) => x.id === el.dataset.id);
     const alu = DB.alumnos.filter((a) => a.nivel === g.nivel && a.grado === g.nombre).length;
     if (alu) { toast(`No se puede eliminar "${g.nombre}": tiene ${alu} alumno(s).`, "error"); return; }
-    eliminar("grados", g.id, `¿Eliminar el grado <b>${esc(g.nombre)}</b>?`, "Grado eliminado");
+    eliminar("grados", g.id, `¿Eliminar el ciclo <b>${esc(g.nombre)}</b>?`, "Ciclo eliminado");
   },
   "al-new": () => alumnoForm(),
   "al-edit": (el) => alumnoForm(alumnoPorId(el.dataset.id)),
@@ -299,7 +349,8 @@ registerActions({
   "al-hist": (el) => (location.hash = `#/asist-alumno?id=${el.dataset.id}`),
   "al-page": (el) => { al.page += Number(el.dataset.d); repaint(); window.scrollTo({ top: 0, behavior: "smooth" }); },
   "al-import": importarCSV,
-  "al-codigo": codigoRegistro,
+  "ciclos-new": (el) => crearCiclos(el?.dataset?.carrera || ""),
+  "al-codigo": () => { location.hash = "#/codigo"; },
   "al-revisar": (el) => revisarEstudiante(alumnoPorId(el.dataset.id)),
   "do-new": () => docenteForm(),
   "do-edit": (el) => docenteForm(DB.docentes.find((x) => x.id === el.dataset.id)),

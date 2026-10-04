@@ -8,6 +8,11 @@ import { uid } from "../utils.js";
 
 const err = (message, code) => Object.assign(new Error(message), { code });
 
+/** Los mensajes de las funciones SQL usan "colegio"/"nivel o grado"; aquí se presentan como instituto/carrera/ciclo. */
+export function vocabulario(msg = "") {
+  return String(msg).replace(/Nivel o grado/g, "Carrera o ciclo").replace(/\bcolegio\b/g, "instituto").replace(/\bColegio\b/g, "Instituto");
+}
+
 function blobADataUrl(blob) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
 }
@@ -57,8 +62,8 @@ class DemoEstudiante {
   async registrar(user, f) {
     const db = this.load();
     if (db.alumnos.some((a) => a.user_id === user.id)) throw err("Ya tienes un registro");
-    if (!(await this.infoColegio(f.codigoColegio))) throw err("Código de colegio inválido");
-    if (!db.grados.some((g) => g.nivel === f.nivel && g.nombre === f.grado)) throw err("Nivel o grado inválido");
+    if (!(await this.infoColegio(f.codigoColegio))) throw err("Código de instituto inválido");
+    if (!db.grados.some((g) => g.nivel === f.nivel && g.nombre === f.grado)) throw err("Carrera o ciclo inválido");
     let codigo;
     do { codigo = "e" + uid().replace(/-/g, "").slice(0, 10); } while (db.alumnos.some((a) => a.codigo === codigo));
     const a = {
@@ -112,7 +117,7 @@ class SupabaseEstudiante {
 
   async #rpc(nombre, args) {
     const { data, error } = await this.sb.rpc(nombre, args);
-    if (error) throw err(error.message, error.code);
+    if (error) throw err(vocabulario(error.message), error.code);
     return data;
   }
   infoColegio(codigo) { return this.#rpc("info_colegio", { p_codigo: codigo }); }

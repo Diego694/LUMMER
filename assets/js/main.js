@@ -8,10 +8,11 @@ import { dashboardPage } from "./pages/dashboard.js";
 import { registroAlumnoPage, registroMasivoPage, registroQrPage } from "./pages/registro.js";
 import { asistAlumnoPage, asistGradoPage } from "./pages/consultas.js";
 import { carnetPage } from "./pages/carnet.js";
+import { codigoPage } from "./pages/codigo.js";
 import { alumnosPage, comunicadosPage, docentesPage, gradosPage, nivelesPage } from "./pages/mantenimiento.js";
 
 const PAGES = [dashboardPage, registroQrPage, registroAlumnoPage, registroMasivoPage, asistGradoPage, asistAlumnoPage,
-  carnetPage, alumnosPage, docentesPage, nivelesPage, gradosPage, comunicadosPage];
+  carnetPage, codigoPage, alumnosPage, docentesPage, nivelesPage, gradosPage, comunicadosPage];
 const $ = (s) => document.querySelector(s);
 let actual = null;
 let logged = false;

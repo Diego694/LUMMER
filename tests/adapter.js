@@ -125,7 +125,10 @@ await check("Estudiante: subirFoto sube a <uid>/foto-*.jpg, registra la ruta y b
 
 await check("Estudiante: errores de las funciones SQL llegan como mensaje legible", async () => {
   const { api } = await estudianteCon({ data: null, error: { message: "Código de colegio inválido", code: "P0001" } });
-  try { await api.infoColegio("x"); assert(false, "debía lanzar"); } catch (e) { assert(e.message === "Código de colegio inválido"); }
+  // El servidor responde con "colegio"; el portal lo muestra con el vocabulario del instituto.
+  try { await api.infoColegio("x"); assert(false, "debía lanzar"); } catch (e) { assert(e.message === "Código de instituto inválido", e.message); }
+  const { vocabulario } = await import("../assets/js/estudiante/api.js");
+  assert(vocabulario("Nivel o grado inválido") === "Carrera o ciclo inválido" && vocabulario("Esta cuenta pertenece al personal del colegio") === "Esta cuenta pertenece al personal del instituto");
 });
 
 await check("Docente: fotoUrl pide URL firmada de 1 h, la cachea y devuelve null sin foto", async () => {

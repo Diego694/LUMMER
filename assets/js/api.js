@@ -109,7 +109,7 @@ class SupabaseBackend {
   async userId() { return (await this.sb.auth.getUser()).data.user?.id; }
   async getProfile(user) {
     const { data, error } = await this.sb.from("perfiles").select("*, colegios(nombre)").eq("id", user.id).single();
-    if (error || !data) throw err("No se encontró un perfil de colegio para esta cuenta.", "profile");
+    if (error || !data) throw err("No se encontró un perfil de instituto para esta cuenta.", "profile");
     return { colegio_id: data.colegio_id, rol: data.rol, nombre: data.nombre, colegio: data.colegios?.nombre ?? "" };
   }
 

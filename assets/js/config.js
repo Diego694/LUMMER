@@ -7,6 +7,8 @@ export const CONFIG = {
   SUPABASE_ANON_KEY: "sb_publishable_V0wt4JdNVXHc20_0tJWBHA_D47gcmbf",
 
   APP_NAME: "Sistema de Registro Académico",
+  // Enlace de descarga del APK "Mi Carnet Institucional" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.
+  APK_ESTUDIANTE_URL: "https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/download/apk-latest/carnet-estudiante.apk",
   // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
   APP_VERSION: "2.1.0",
   // Hora límite de ingreso (HH:MM, 24 h). Registros posteriores se marcan como "tardanza".
@@ -31,4 +33,4 @@ export const isDemoMode = () =>
 
 export const DEMO_SCHOOL_CODE = "DEMO2026";
 
-export const DEMO_USER = { email: "demo@colegio.pe", password: "demo1234" };
+export const DEMO_USER = { email: "demo@instituto.pe", password: "demo1234" };

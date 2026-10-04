@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.3.0 — 2026-10-04
+
+### Nuevo
+- **Página «Código de registro»**: generar, copiar, compartir por WhatsApp (con enlace del APK), QR del portal y código propio; acceso desde el dashboard y desde «registros por aprobar».
+- **Carreras y ciclos**: «Niveles/Grados» pasan a **Carreras** y **Ciclos y salones**. Nuevo **Crear ciclos** (varios a la vez, rangos `I-VI` y salones `A, B`), con vista previa y sin duplicar. Cada ciclo es independiente y muestra su carrera (`MECANICA ELECTRICA III`) sin repetirla.
+- El CSV de alumnos acepta las columnas `carrera` y `ciclo` (`nivel` y `grado` siguen valiendo).
+
+### Cambiado
+- Todo el texto visible pasa de «colegio» a **instituto**; el portal y su APK se llaman **Mi Carnet Institucional** y el APK del docente **Asistencia Institucional**. Los nombres técnicos de la base (`colegios`, `colegio_id`, `niveles`, `grados`) no cambian.
+- Los datos de demostración usan carreras de ejemplo (MECANICA ELECTRICA y APSTI).
+
+### Corregido
+- El acceso directo a «registros por aprobar» no navegaba (la delegación de eventos cancelaba el clic).
+
 ## 2.2.0 — 2026-10-04
 
 ### Nuevo

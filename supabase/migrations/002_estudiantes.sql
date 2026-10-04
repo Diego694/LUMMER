@@ -51,14 +51,14 @@ declare c uuid; v_codigo text; a public.alumnos;
 begin
   if auth.uid() is null then raise exception 'No autenticado'; end if;
   if exists (select 1 from public.alumnos where user_id = auth.uid()) then raise exception 'Ya tienes un registro'; end if;
-  if exists (select 1 from public.perfiles where id = auth.uid()) then raise exception 'Esta cuenta pertenece al personal del colegio'; end if;
+  if exists (select 1 from public.perfiles where id = auth.uid()) then raise exception 'Esta cuenta pertenece al personal del instituto'; end if;
   select id into c from public.colegios where upper(codigo_registro) = upper(trim(p_codigo_colegio));
-  if c is null then raise exception 'Código de colegio inválido'; end if;
+  if c is null then raise exception 'Código de instituto inválido'; end if;
   if length(trim(coalesce(p_nombres, ''))) < 2 or length(trim(coalesce(p_apellidos, ''))) < 2 then
     raise exception 'Nombres y apellidos son obligatorios';
   end if;
   if not exists (select 1 from public.grados where colegio_id = c and nivel = p_nivel and nombre = p_grado) then
-    raise exception 'Nivel o grado inválido';
+    raise exception 'Carrera o ciclo inválido';
   end if;
   loop  -- código QR único y no adivinable
     v_codigo := 'e' || substr(md5(gen_random_uuid()::text), 1, 10);
@@ -106,8 +106,8 @@ create policy "fotos: estudiante gestiona su carpeta" on storage.objects for all
   using (bucket_id = 'fotos-alumnos' and (storage.foldername(name))[1] = auth.uid()::text)
   with check (bucket_id = 'fotos-alumnos' and (storage.foldername(name))[1] = auth.uid()::text);
 
-drop policy if exists "fotos: personal del colegio ve fotos" on storage.objects;
-create policy "fotos: personal del colegio ve fotos" on storage.objects for select to authenticated
+drop policy if exists "fotos: personal del instituto ve fotos" on storage.objects;
+create policy "fotos: personal del instituto ve fotos" on storage.objects for select to authenticated
   using (bucket_id = 'fotos-alumnos' and exists (
     select 1 from public.alumnos a join public.perfiles p on p.colegio_id = a.colegio_id
     where p.id = auth.uid() and a.user_id::text = (storage.foldername(name))[1]));

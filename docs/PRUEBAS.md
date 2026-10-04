@@ -62,7 +62,7 @@ Resultados de la verificación realizada sobre esta versión (4 de octubre de 20
 | 5 | La hora se guardaba con `toLocaleTimeString('es-PE')` (p. ej. “08:05 a. m.”) → no ordenable ni comparable | `HH:MM` 24 h; tardanza configurable |
 | 6 | `onclick="deleteNivel('${esc(n)}')"`: ids/nombres interpolados en atributos (se rompe con comillas y es superficie de inyección) | Delegación de eventos con `data-action` |
 | 7 | PostgREST limita a 1000 filas: padrones grandes y rangos de asistencia se truncaban en silencio | Lectura paginada |
-| 8 | Carnet descargable con la marca fija “CAMPUS VIRTUAL” | Usa el nombre del colegio |
+| 8 | Carnet descargable con la marca fija “CAMPUS VIRTUAL” | Usa el nombre del instituto |
 | 9 | Gráficos en `<canvas>` manual con colores fijos (ilegibles en tema oscuro, sin tooltips ni accesibilidad) | Chart.js con colores por tema, tooltips y `aria-label` |
 | 10 | Importar CSV sin informar filas descartadas ni duplicados internos | Informe por número de línea |
 | 11 | Modales sin foco, sin `Esc`, sin etiquetas ARIA | Modal accesible con trampa de foco |

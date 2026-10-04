@@ -1,5 +1,5 @@
 // Lógica de negocio pura: estadísticas de asistencia e importación CSV. Sin DOM ni red.
-import { pct } from "./utils.js";
+import { etiquetaCiclo, pct } from "./utils.js";
 
 /** ¿El ingreso es tardanza? Compara HH:MM (24 h) contra el límite. */
 export function esTardanza(hora, limite) {
@@ -38,7 +38,7 @@ export function porGrado(alumnos, asistencias) {
   const presentes = new Set(asistencias.map((a) => a.alumno_id));
   const map = new Map();
   alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false).forEach((a) => {
-    const key = `${a.nivel} · ${a.grado}`;
+    const key = etiquetaCiclo(a.nivel, a.grado);
     const g = map.get(key) || { key, nivel: a.nivel, grado: a.grado, total: 0, presentes: 0 };
     g.total++;
     if (presentes.has(a.id)) g.presentes++;
@@ -88,13 +88,15 @@ export function normalizarFilasImport(rows, niveles = [], grados = []) {
   rows.forEach((row, i) => {
     const n = {};
     Object.keys(row).forEach((k) => (n[k.trim().toLowerCase()] = (row[k] ?? "").toString().trim()));
+    if (!n.nivel && n.carrera) n.nivel = n.carrera; // la plantilla usa "carrera" y "ciclo"; "nivel" y "grado" también valen
+    if (!n.grado && n.ciclo) n.grado = n.ciclo;
     const linea = i + 2; // +1 por la cabecera, +1 por base 1
     if (!n.nombre || !n.codigo) { errores.push({ linea, motivo: "Falta nombre o código" }); return; }
     if (vistos.has(n.codigo)) { errores.push({ linea, motivo: `Código repetido en el archivo: ${n.codigo}` }); return; }
     vistos.add(n.codigo);
     const aviso = [];
-    if (n.nivel && niveles.length && !niveles.includes(n.nivel)) aviso.push(`Nivel "${n.nivel}" no existe`);
-    if (n.grado && grados.length && !grados.some((g) => g.nombre === n.grado && (!n.nivel || g.nivel === n.nivel))) aviso.push(`Grado "${n.grado}" no existe`);
+    if (n.nivel && niveles.length && !niveles.includes(n.nivel)) aviso.push(`Carrera "${n.nivel}" no existe`);
+    if (n.grado && grados.length && !grados.some((g) => g.nombre === n.grado && (!n.nivel || g.nivel === n.nivel))) aviso.push(`Ciclo "${n.grado}" no existe`);
     validas.push({
       nombre: n.nombre, codigo: n.codigo, nivel: n.nivel || "", grado: n.grado || "", apoderado: n.apoderado || "",
       estado: (n.estado || "ACTIVO").toUpperCase() === "INACTIVO" ? "INACTIVO" : "ACTIVO", aviso,

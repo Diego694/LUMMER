@@ -1,7 +1,7 @@
 {
   "name": "Sistema de Registro Académico",
   "short_name": "Asistencia",
-  "description": "Control de asistencia escolar con carnets QR/NFC, dashboard y reportes.",
+  "description": "Control de asistencia institucional con carnets QR/NFC, dashboard y reportes.",
   "lang": "es",
   "start_url": "./index.html#/dashboard",
   "scope": "./",

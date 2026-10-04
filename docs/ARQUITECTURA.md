@@ -6,7 +6,7 @@
 ┌────────────── Navegador ──────────────┐        ┌──────────── Supabase ────────────┐
 │ index.html                            │        │ Auth (correo + contraseña)       │
 │  └ main.js (router, sesión, tema)     │  HTTPS │ PostgreSQL + Row Level Security  │
-│     ├ pages/*  (vistas)               │◄──────►│  colegios · perfiles · niveles   │
+│     ├ pages/*  (vistas)               │◄──────►│  colegios · perfiles · niveles     │
 │     ├ ui.js    (componentes)          │        │  grados · alumnos · docentes     │
 │     ├ stats.js (lógica pura)          │        │  comunicados · asistencias       │
 │     └ api.js ── SupabaseBackend       │        └──────────────────────────────────┘
@@ -40,7 +40,7 @@ No hay servidor propio: el cliente habla directo con Supabase y **la seguridad l
 
 | Tabla | Clave / restricciones |
 |---|---|
-| `colegios` | `id` |
+| `colegios` (= el instituto) | `id` |
 | `perfiles` | `id` → `auth.users`; `colegio_id`; `rol` ∈ admin/docente/auxiliar |
 | `niveles` | único `(colegio_id, nombre)` |
 | `grados` | único `(colegio_id, nivel, nombre)` |
@@ -54,7 +54,7 @@ No hay servidor propio: el cliente habla directo con Supabase y **la seguridad l
 ## Seguridad
 
 - **RLS en las 8 tablas** (verificado por `scripts/check.py`). `mi_colegio()` y `es_admin()` son `SECURITY DEFINER` para evitar recursión sobre `perfiles`.
-- Lectura: cualquier usuario del colegio. Escritura de catálogos/padrón: solo `admin`. Registrar asistencia: cualquier usuario del colegio, con `registrado_por = auth.uid()` obligatorio. Corregir/borrar asistencia: solo `admin`.
+- Lectura: cualquier usuario del instituto. Escritura de catálogos/padrón: solo `admin`. Registrar asistencia: cualquier usuario del instituto, con `registrado_por = auth.uid()` obligatorio. Corregir/borrar asistencia: solo `admin`.
 - **CSP** (en `nginx.conf` y replicada por `scripts/serve.py`): scripts solo de `'self'` y los CDN usados; `connect-src` solo a `*.supabase.co`; `frame-ancestors 'none'`; `object-src 'none'`.
 - Salida HTML siempre escapada con `esc()`.
 - La anon key en el cliente es normal en Supabase; `check.py` decodifica los JWT de `config.js` y falla si alguno tiene `role: service_role` (o una `sb_secret_…`).

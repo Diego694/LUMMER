@@ -9,7 +9,7 @@ const SHELL = [
   "assets/js/theme-init.js", "assets/js/main.js", "assets/js/config.js", "assets/js/api.js", "assets/js/demo-data.js",
   "assets/js/state.js", "assets/js/stats.js", "assets/js/ui.js", "assets/js/utils.js",
   "assets/js/pages/dashboard.js", "assets/js/pages/registro.js", "assets/js/pages/consultas.js",
-  "assets/js/pages/carnet.js", "assets/js/pages/mantenimiento.js", "assets/js/alerta.js",
+  "assets/js/pages/carnet.js", "assets/js/pages/mantenimiento.js", "assets/js/alerta.js", "assets/js/pages/codigo.js",
   // Portal del estudiante
   "estudiante/", "estudiante/manifest.webmanifest", "assets/css/estudiante.css",
   "assets/js/estudiante/main.js", "assets/js/estudiante/api.js",

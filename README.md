@@ -2,7 +2,7 @@
 
 > Proyecto escolar que busca mejorar el control de asistencia de alumnos en sitios remotos del Perú, con mejoras continuas.
 
-Aplicación web para el **control de asistencia escolar**: registro por carnet **QR**, **NFC** o código manual, dashboard con indicadores y alertas, carnets imprimibles, importación de alumnos por CSV y comunicados. Interfaz responsiva con tema claro/oscuro.
+Aplicación web para el **control de asistencia institucional**: registro por carnet **QR**, **NFC** o código manual, dashboard con indicadores y alertas, carnets imprimibles, importación de alumnos por CSV y comunicados. Interfaz responsiva con tema claro/oscuro.
 
 > Sin build ni dependencias de Node: HTML + CSS + JavaScript (módulos ES) en el cliente, **Supabase** (PostgreSQL + Auth + RLS) como backend, **Docker/nginx** para servirlo y **GitHub Actions** para CI y despliegue.
 
@@ -15,7 +15,7 @@ Aplicación web para el **control de asistencia escolar**: registro por carnet *
 | **Consultas** | Asistencia por grado y fecha (con KPIs y CSV) e historial por alumno con % de asistencia. |
 | **Gestión** | CRUD de alumnos (paginado, búsqueda sin tildes, importación CSV validada), docentes, niveles, grados y comunicados. Protege contra borrados que dejarían datos huérfanos. |
 | **Carnets** | Vista previa, PNG, PDF individual y PDF masivo por nivel/grado, con QR. |
-| **Calidad** | Tema claro/oscuro, accesibilidad (foco, ARIA, `Esc`, trampa de foco en modales), CSP estricta, RLS por colegio y roles. |
+| **Calidad** | Tema claro/oscuro, accesibilidad (foco, ARIA, `Esc`, trampa de foco en modales), CSP estricta, RLS por instituto y roles. |
 
 ## Inicio rápido (modo demo, sin servidor)
 
@@ -25,19 +25,19 @@ Requiere solo Python 3 (o cualquier servidor estático; los módulos ES no funci
 python scripts/serve.py 8080
 ```
 
-Abre <http://127.0.0.1:8080>. Mientras `assets/js/config.js` tenga los placeholders de Supabase, la app corre en **modo demo** con ~65 alumnos y 30 días de asistencia generados localmente (se guardan solo en tu navegador). Acceso demo: `demo@colegio.pe` / `demo1234`. El botón *Restablecer datos demo* regenera todo.
+Abre <http://127.0.0.1:8080>. Mientras `assets/js/config.js` tenga los placeholders de Supabase, la app corre en **modo demo** con ~65 alumnos y 30 días de asistencia generados localmente (se guardan solo en tu navegador). Acceso demo: `demo@instituto.pe` / `demo1234`. El botón *Restablecer datos demo* regenera todo.
 
 ## Puesta en producción con Supabase
 
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. En **SQL Editor** ejecuta [`supabase/schema.sql`](supabase/schema.sql) (tablas, índices, RLS).
-3. En **Authentication → Users** crea el usuario administrador y ejecuta el bloque *Alta de un colegio* que está al final del `schema.sql` (con el UUID de ese usuario).
+3. En **Authentication → Users** crea el usuario administrador y ejecuta el bloque *Alta de un instituto* que está al final del `schema.sql` (con el UUID de ese usuario).
 4. Edita `assets/js/config.js` con tu `SUPABASE_URL` y `SUPABASE_ANON_KEY` (Settings → API). La *anon key* es pública por diseño; **nunca** pongas la `service_role`.
 5. Sirve el sitio (Docker o GitHub Pages) — ver [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 
 ## Portal del estudiante
 
-Segunda app (web + APK **Mi Carnet Escolar**): el estudiante se registra con el código del colegio, sube su foto y obtiene su **carnet con QR único**. Al escanearlo, el docente ve una **alerta con la foto y los apellidos parcialmente censurados**. El colegio aprueba cada registro. Guía y reglas de privacidad en [docs/ESTUDIANTES.md](docs/ESTUDIANTES.md).
+Segunda app (web + APK **Mi Carnet Institucional**): el estudiante se registra con el código del instituto, sube su foto y obtiene su **carnet con QR único**. Al escanearlo, el docente ve una **alerta con la foto y los apellidos parcialmente censurados**. El instituto aprueba cada registro. Guía y reglas de privacidad en [docs/ESTUDIANTES.md](docs/ESTUDIANTES.md).
 
 ## App Android (APK) y PWA
 

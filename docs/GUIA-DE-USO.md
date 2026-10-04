@@ -2,10 +2,10 @@
 
 ## Flujo diario recomendado
 
-1. **Ingreso de alumnos:** abre **Registro por QR** en una tablet o teléfono en la puerta, pulsa *Iniciar cámara* y cada alumno muestra su carnet. Verás su nombre, grado, hora y si llegó **puntual** o con **tardanza**.
+1. **Ingreso de alumnos:** abre **Registro por QR** en una tablet o teléfono en la puerta, pulsa *Iniciar cámara* y cada alumno muestra su carnet. Verás su foto, nombre (apellidos parcialmente censurados), carrera y ciclo, hora y si llegó **puntual** o con **tardanza**.
 2. **Sin carnet / sin cámara:** escribe el código en el campo manual, o usa **Registro por Alumno** (búsqueda por nombre).
-3. **Salones completos:** **Registro Masivo por Grado** marca todo un grupo; los ya registrados aparecen bloqueados.
-4. **Seguimiento:** el **Dashboard** muestra el % del día, la tendencia, los grados rezagados y los alumnos que *requieren atención*.
+3. **Salones completos:** **Registro Masivo por Ciclo** marca todo un ciclo o salón; los ya registrados aparecen bloqueados.
+4. **Seguimiento:** el **Dashboard** muestra el % del día, la tendencia, los ciclos rezagados y los alumnos que *requieren atención*.
 
 ## Pantallas
 
@@ -14,24 +14,41 @@
 | Dashboard | Indicadores del día y tendencia. Selector 7/14/30 días hábiles; *Exportar CSV* descarga el periodo. |
 | Registro por QR | Cámara (con botón *Voltear*), NFC en Android/Chrome y código manual. Muestra el historial de la sesión. |
 | Registro por Alumno | Filtro: todos / pendientes de hoy / ya registrados. |
-| Registro Masivo por Grado | Elige nivel, grado y fecha (hasta hoy). En fechas pasadas la hora guardada es la hora límite. |
-| Asistencia por Grado | Presentes/ausentes/tardanzas por fecha, con KPIs y CSV. |
+| Registro Masivo por Ciclo | Elige carrera, ciclo y fecha (hasta hoy). En fechas pasadas la hora guardada es la hora límite. |
+| Asistencia por Ciclo | Presentes/ausentes/tardanzas por fecha, con KPIs y CSV. |
 | Asistencia por Alumno | Historial de 30 días hábiles, % de asistencia y CSV. |
-| Carnet | Vista previa; PNG; PDF; *Descarga masiva* por nivel/grado. |
+| Carnet | Vista previa; PNG; PDF; *Descarga masiva* por carrera/ciclo. |
 | Alumnos | Alta/edición/baja, búsqueda sin tildes, paginación e **Importar CSV**. Accesos directos a carnet e historial. |
-| Docentes · Niveles · Grados · Comunicados | Mantenimiento de catálogos y avisos. |
+| **Código de registro** | Genera, copia y comparte (WhatsApp, QR del portal) el código que los estudiantes usan en *Mi Carnet Institucional*. También puedes escribir un código propio. |
+| **Carreras** | Carreras o programas de estudio (por ejemplo MECANICA ELECTRICA, APSTI). |
+| **Ciclos y salones** | Cada ciclo/salón es independiente. **Crear ciclos** genera varios de una vez (ver abajo). |
+| Docentes · Comunicados | Mantenimiento de personal y avisos. |
+
+## Carreras, ciclos y salones
+
+Cada **carrera** (p. ej. `MECANICA ELECTRICA`, `APSTI`) tiene sus **ciclos**, y cada ciclo es independiente: sus propios alumnos, asistencia, reportes y carnets. El nombre del ciclo lleva la carrera para que se distinga de un vistazo en cualquier pantalla (`MECANICA ELECTRICA III`, `APSTI I`).
+
+**Crear ciclos rápido:** *Ciclos y salones → Crear ciclos* (o el botón **Ciclos** en cada carrera).
+1. Elige la carrera, o *➕ Nueva carrera…* y escríbela (se guarda en MAYÚSCULAS).
+2. Escribe los ciclos separados por comas, o un rango: `I, III` · `I-VI` (hay atajos para los más comunes).
+3. *(Opcional)* salones/secciones: `A, B` crea, por ejemplo, `MECANICA ELECTRICA I A` y `… I B`.
+4. La vista previa muestra qué se creará; los que ya existen se omiten. Pulsa **Crear**.
+
+## Código de registro para los estudiantes
+
+En *Código de registro* generas el código del instituto con un clic, lo **copias** o lo **compartes por WhatsApp** (el mensaje ya incluye el enlace del APK y las instrucciones), y muestras el **QR del portal** para que lo abran con la cámara. *Regenerar* invalida el anterior. Cada estudiante que se registre aparece como *Pendiente* en *Alumnos* hasta que lo apruebes. Detalle en [ESTUDIANTES.md](ESTUDIANTES.md).
 
 ## Importar alumnos por CSV
 
-Columnas en la primera fila: `nombre, codigo, nivel, grado, apoderado, estado`. Obligatorias: **nombre** y **codigo**. Si falta `estado` se asigna ACTIVO. Si el código ya existe, el alumno **se actualiza**.
-El modal muestra una vista previa, las filas omitidas con su número de línea (sin nombre/código, o código repetido en el archivo) y avisa si el nivel/grado no existe. Descarga la plantilla desde el mismo modal.
+Columnas en la primera fila: `nombre, codigo, carrera, ciclo, apoderado, estado` (también valen `nivel` y `grado`). Obligatorias: **nombre** y **codigo**. Si falta `estado` se asigna ACTIVO. Si el código ya existe, el alumno **se actualiza**.
+El modal muestra una vista previa, las filas omitidas con su número de línea (sin nombre/código, o código repetido en el archivo) y avisa si la carrera/ciclo no existe. Descarga la plantilla desde el mismo modal.
 
 ## Reglas del sistema
 
 - Un alumno **solo puede registrar una asistencia por día**; un segundo intento se informa como duplicado.
 - Los alumnos **inactivos no registran asistencia** y no cuentan en los porcentajes.
 - **Tardanza** = hora de ingreso posterior a `HORA_LIMITE` (por defecto 08:00).
-- No se puede eliminar un **nivel** con grados/alumnos ni un **grado** con alumnos.
+- No se puede eliminar una **carrera** con ciclos/alumnos ni un **ciclo** con alumnos.
 - Eliminar un alumno borra también su historial de asistencia.
 
 ## Carnets y NFC
@@ -40,7 +57,7 @@ El QR del carnet contiene el **código único** del alumno. Para NFC, escribe es
 
 ## Modo demo
 
-Con los placeholders de Supabase la app corre localmente con datos de ejemplo (`demo@colegio.pe` / `demo1234`). *Restablecer datos demo* (barra lateral) regenera todo. Los datos viven solo en ese navegador.
+Con los placeholders de Supabase la app corre localmente con datos de ejemplo (`demo@instituto.pe` / `demo1234`). *Restablecer datos demo* (barra lateral) regenera todo. Los datos viven solo en ese navegador.
 
 ## Atajos y accesibilidad
 

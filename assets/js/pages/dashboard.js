@@ -71,10 +71,11 @@ function pintar() {
       `<label class="sr-only" for="dash-rango">Periodo</label>
        <select class="filter" id="dash-rango" aria-label="Periodo">${[7, 14, 30].map((n) => `<option value="${n}" ${n === rango ? "selected" : ""}>Últimos ${n} días hábiles</option>`).join("")}</select>
        <button class="btn btn-outline" data-action="dash-export">${icon("download", 16)} Exportar CSV</button>
+       <a class="btn btn-outline" href="#/codigo">${icon("qr", 16)} Código de registro</a>
        <a class="btn btn-primary" href="#/registro-qr">${icon("qr", 16)} Registrar asistencia</a>`)}
 
     <section class="kpi-grid" aria-label="Indicadores del día">
-      ${kpi({ label: "Alumnos activos", value: r.activos, hint: `${inactivos} inactivo(s) · ${DB.grados.length} grados`, ic: "users", tone: "navy" })}
+      ${kpi({ label: "Alumnos activos", value: r.activos, hint: `${inactivos} inactivo(s) · ${DB.grados.length} ciclos`, ic: "users", tone: "navy" })}
       ${kpi({ label: "Presentes hoy", value: r.presentes, hint: `${r.puntuales} puntuales · ${r.tardes} tardanzas`, ic: "userCheck", tone: "teal" })}
       ${kpi({ label: "Ausentes hoy", value: finde && !r.presentes ? "—" : r.ausentes, hint: finde && !r.presentes ? "Fin de semana: sin clases" : r.ausentes ? "Sin registro de ingreso" : "¡Asistencia completa!", ic: "userX", tone: r.ausentes && !(finde && !r.presentes) ? "red" : "teal" })}
       ${kpi({ label: "% de asistencia hoy", value: r.pct + "%", hint: deltaTxt, ic: "percent", tone: "amber" })}
@@ -86,13 +87,13 @@ function pintar() {
       <article class="card"><header class="card-head"><h3>Estado de hoy</h3></header>
         <div class="chart-box chart-sm"><canvas id="chart-hoy" role="img" aria-label="Distribución de presentes, tardanzas y ausentes de hoy"></canvas></div></article>
 
-      <article class="card span-2"><header class="card-head"><h3>Asistencia de hoy por grado</h3><span class="muted">Meta: ${CONFIG.UMBRAL_ASISTENCIA}%</span></header>
-        <div class="chart-box chart-grados"><canvas id="chart-grados" role="img" aria-label="Porcentaje de asistencia de hoy por grado"></canvas></div></article>
-      <article class="card"><header class="card-head"><h3>Alumnos por nivel</h3></header>
-        <div class="chart-box chart-sm"><canvas id="chart-niveles" role="img" aria-label="Alumnos activos por nivel educativo"></canvas></div></article>
+      <article class="card span-2"><header class="card-head"><h3>Asistencia de hoy por ciclo</h3><span class="muted">Meta: ${CONFIG.UMBRAL_ASISTENCIA}%</span></header>
+        <div class="chart-box chart-grados"><canvas id="chart-grados" role="img" aria-label="Porcentaje de asistencia de hoy por ciclo"></canvas></div></article>
+      <article class="card"><header class="card-head"><h3>Alumnos por carrera</h3></header>
+        <div class="chart-box chart-sm"><canvas id="chart-niveles" role="img" aria-label="Alumnos activos por carrera"></canvas></div></article>
 
-      <article class="card span-2"><header class="card-head"><h3>Últimos ingresos</h3><a class="link" href="#/asist-grado">Ver asistencia por grado →</a></header>
-        ${recientes.length ? `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Grado</th><th>Hora</th><th>Estado</th></tr></thead><tbody>
+      <article class="card span-2"><header class="card-head"><h3>Últimos ingresos</h3><a class="link" href="#/asist-grado">Ver asistencia por ciclo →</a></header>
+        ${recientes.length ? `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Ciclo</th><th>Hora</th><th>Estado</th></tr></thead><tbody>
           ${recientes.map((x) => { const a = alum.get(x.alumno_id); const t = esTardanza(x.hora, L); return `<tr>
             <td><div class="person"><span class="avatar">${esc(initials(a?.nombre))}</span><span>${esc(a?.nombre ?? "—")}</span></div></td>
             <td>${esc(a ? a.grado : "—")}</td><td class="mono">${esc(x.hora.slice(0, 5))}</td><td>${t ? badge("Tardanza", "amber") : badge("Puntual", "green")}</td></tr>`; }).join("")}
@@ -176,7 +177,7 @@ registerActions({
     downloadFile(`asistencia_${cache.dias[0]}_a_${todayStr()}.csv`, toCSV(rows, [
       { label: "Fecha", key: "fecha" }, { label: "Hora", value: (r) => r.hora.slice(0, 5) },
       { label: "Código", value: (r) => alum.get(r.alumno_id)?.codigo }, { label: "Alumno", value: (r) => alum.get(r.alumno_id)?.nombre },
-      { label: "Nivel", value: (r) => alum.get(r.alumno_id)?.nivel }, { label: "Grado", value: (r) => alum.get(r.alumno_id)?.grado },
+      { label: "Carrera", value: (r) => alum.get(r.alumno_id)?.nivel }, { label: "Ciclo", value: (r) => alum.get(r.alumno_id)?.grado },
       { label: "Estado", value: (r) => (esTardanza(r.hora, L) ? "Tardanza" : "Puntual") },
     ]));
     toast(`${rows.length} registros exportados`, "success");

@@ -2,7 +2,7 @@
 import { api } from "./api.js";
 import { CONFIG } from "./config.js";
 import { esTardanza } from "./stats.js";
-import { censurarNombre, esc, initials } from "./utils.js";
+import { censurarNombre, esc, etiquetaCiclo, initials } from "./utils.js";
 import { icon } from "./ui.js";
 
 const TIPOS = {
@@ -34,7 +34,7 @@ export async function mostrarAlertaAsistencia(alumno, { tipo = "ok", hora = "" }
     <div class="alert-body">
       <span class="alert-title">${icon(t.ic, 15)} ${esc(t.titulo)}</span>
       <strong>${esc(censurarNombre(alumno))}</strong>
-      <small>${esc(alumno.nivel)} · ${esc(alumno.grado)}${hora ? " · " + esc(hora.slice(0, 5)) : ""}${tipo === "ok" ? (tarde ? " · Tardanza" : " · Puntual") : ""}</small>
+      <small>${esc(etiquetaCiclo(alumno.nivel, alumno.grado))}${hora ? " · " + esc(hora.slice(0, 5)) : ""}${tipo === "ok" ? (tarde ? " · Tardanza" : " · Puntual") : ""}</small>
     </div>`;
   clearTimeout(timer);
   timer = setTimeout(() => el.classList.remove("show"), 5000);

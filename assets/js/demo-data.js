@@ -10,10 +10,11 @@ const NOMBRES = ["Lucía", "Mateo", "Valentina", "Santiago", "Camila", "Sebasti�
 const APELLIDOS = ["Quispe", "Flores", "Huamán", "Rojas", "Mendoza", "Vargas", "Castillo", "Ramos", "Torres", "Chávez", "Gutiérrez", "Salazar", "Paredes", "Cárdenas", "Delgado", "Ríos"];
 const APODERADOS = ["María", "José", "Carmen", "Luis", "Rosa", "Jorge", "Ana", "Pedro"];
 
+// Cada carrera tiene sus ciclos; el nombre del ciclo lleva la carrera para distinguirlos de un vistazo.
+export const CARRERAS_DEMO = ["MECANICA ELECTRICA", "APSTI"];
 export const GRADOS_DEMO = [
-  ["Inicial", "3 años A"], ["Inicial", "4 años A"], ["Inicial", "5 años A"],
-  ["Primaria", "1er grado"], ["Primaria", "2do grado"], ["Primaria", "3er grado"],
-  ["Secundaria", "1er año"], ["Secundaria", "2do año"],
+  ["MECANICA ELECTRICA", "MECANICA ELECTRICA I"], ["MECANICA ELECTRICA", "MECANICA ELECTRICA II"], ["MECANICA ELECTRICA", "MECANICA ELECTRICA III"],
+  ["APSTI", "APSTI I"], ["APSTI", "APSTI II"], ["APSTI", "APSTI III"],
 ];
 
 export function buildDemoDB() {
@@ -21,15 +22,15 @@ export function buildDemoDB() {
   const pick = (a) => a[Math.floor(r() * a.length)];
   const colegioId = "demo-colegio";
   const db = {
-    colegio: { id: colegioId, nombre: "I.E. Demo San Martín", codigo_registro: "DEMO2026" },
-    niveles: ["Inicial", "Primaria", "Secundaria"].map((nombre) => ({ id: uid(), colegio_id: colegioId, nombre })),
+    colegio: { id: colegioId, nombre: "Instituto Demo San Martín", codigo_registro: "DEMO2026" },
+    niveles: CARRERAS_DEMO.map((nombre) => ({ id: uid(), colegio_id: colegioId, nombre })),
     grados: GRADOS_DEMO.map(([nivel, nombre]) => ({ id: uid(), colegio_id: colegioId, nivel, nombre })),
     alumnos: [], asistencias: [], docentes: [], comunicados: [],
   };
 
   let n = 1000;
   GRADOS_DEMO.forEach(([nivel, grado]) => {
-    const cantidad = 7 + Math.floor(r() * 4);
+    const cantidad = 9 + Math.floor(r() * 5);
     for (let i = 0; i < cantidad; i++) {
       const ap1 = pick(APELLIDOS), ap2 = pick(APELLIDOS);
       db.alumnos.push({
@@ -58,7 +59,7 @@ export function buildDemoDB() {
   db.docentes = [
     ["Rosa Mendoza Ruiz", "Profesora de Comunicación", "Docente"],
     ["Carlos Ortega Pinto", "Licenciado en Matemática", "Coordinador"],
-    ["Elena Vidal Soto", "Psicóloga escolar", "Administrativo"],
+    ["Elena Vidal Soto", "Psicóloga institucional", "Administrativo"],
     ["Jorge Paz Lara", "Auxiliar de educación", "Auxiliar"],
   ].map(([nombre, profesion, rol]) => ({ id: uid(), colegio_id: colegioId, nombre, profesion, rol, estado: "ACTIVO" }));
 

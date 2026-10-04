@@ -2,8 +2,8 @@
 --  Sistema de Registro Académico — esquema de base de datos (PostgreSQL / Supabase)
 --  Ejecutar completo en: Supabase → SQL Editor → New query → Run.
 --  Es idempotente: se puede volver a ejecutar sin perder datos.
---  Modelo multi-colegio: cada usuario pertenece a un colegio (tabla perfiles) y las
---  políticas RLS solo le dejan ver/modificar filas de SU colegio.
+--  Modelo multi-instituto: cada usuario pertenece a un instituto (tabla perfiles) y las
+--  políticas RLS solo le dejan ver/modificar filas de SU instituto.
 -- =====================================================================
 
 create extension if not exists pgcrypto;
@@ -142,11 +142,11 @@ grant select on public.colegios, public.perfiles to authenticated;
 grant select, insert, update, delete on public.niveles, public.grados, public.alumnos, public.docentes, public.comunicados, public.asistencias to authenticated;
 
 -- =====================================================================
---  ALTA DE UN COLEGIO Y SU PRIMER ADMINISTRADOR (ejecutar UNA vez, tras crear el usuario)
+--  ALTA DE UN INSTITUTO Y SU PRIMER ADMINISTRADOR (ejecutar UNA vez, tras crear el usuario)
 --  1) Supabase → Authentication → Users → Add user (correo + contraseña).
 --  2) Copia el UUID del usuario y reemplázalo abajo; luego ejecuta este bloque:
 --
---  with c as (insert into public.colegios (nombre) values ('Mi Colegio') returning id)
+--  with c as (insert into public.colegios (nombre) values ('Mi Instituto') returning id)
 --  insert into public.perfiles (id, colegio_id, rol, nombre)
 --  select 'UUID-DEL-USUARIO', c.id, 'admin', 'Administrador' from c;
 --

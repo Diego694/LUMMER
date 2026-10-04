@@ -28,13 +28,13 @@ android {
         docente {
             dimension 'rol'
             applicationId 'app.registroacademico'   // se conserva: así las instalaciones existentes se actualizan
-            resValue 'string', 'app_name', 'Asistencia Escolar'
+            resValue 'string', 'app_name', 'Asistencia Institucional'
             buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
         }
         estudiante {
             dimension 'rol'
             applicationId 'app.registroacademico.estudiante'
-            resValue 'string', 'app_name', 'Mi Carnet Escolar'
+            resValue 'string', 'app_name', 'Mi Carnet Institucional'
             buildConfigField 'String', 'APP_URL', "\"${appUrl}estudiante/\""
         }
     }

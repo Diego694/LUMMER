@@ -33,5 +33,5 @@ export async function asegurarHoy() {
 export const gradosDe = (nivel) => DB.grados.filter((g) => !nivel || g.nivel === nivel);
 export const alumnoPorId = (id) => DB.alumnos.find((a) => a.id === id);
 export const alumnoPorCodigo = (c) => DB.alumnos.find((a) => a.codigo === c);
-export const opcionesNivel = (conTodos) => [...(conTodos ? [{ value: "", label: "Todos los niveles" }] : []), ...DB.niveles.map((n) => ({ value: n, label: n }))];
-export const opcionesGrado = (nivel, conTodos) => [...(conTodos ? [{ value: "", label: "Todos los grados" }] : []), ...gradosDe(nivel).map((g) => ({ value: g.nombre, label: g.nombre }))];
+export const opcionesNivel = (conTodos) => [...(conTodos ? [{ value: "", label: "Todas las carreras" }] : []), ...DB.niveles.map((n) => ({ value: n, label: n }))];
+export const opcionesGrado = (nivel, conTodos) => [...(conTodos ? [{ value: "", label: "Todos los ciclos" }] : []), ...gradosDe(nivel).map((g) => ({ value: g.nombre, label: g.nombre }))];

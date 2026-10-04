@@ -1,5 +1,5 @@
 // Tests unitarios sin dependencias. Se ejecutan abriendo tests/tests.html (o con scripts/check.py en CI).
-import { addDays, censurarNombre, dateStr, esc, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
+import { addDays, censurarNombre, dateStr, esc, etiquetaCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
 import { bajaAsistencia, esTardanza, normalizarFilasImport, porGrado, resumenAlumno, resumenDia, serieDiaria } from "../assets/js/stats.js";
 
 const results = [];
@@ -46,6 +46,13 @@ test("censurarNombre: apellidos cortos y vacío no fallan", () => {
   assert(!censurarNombre({ nombres: "Eva", apellidos: "Castillo" }).includes("Castillo"));
 });
 
+test("etiquetaCiclo: no repite la carrera cuando el ciclo ya la incluye", () => {
+  same(etiquetaCiclo("MECANICA ELECTRICA", "MECANICA ELECTRICA III"), "MECANICA ELECTRICA III");
+  same(etiquetaCiclo("Mecánica Eléctrica", "MECANICA ELECTRICA I"), "MECANICA ELECTRICA I"); // sin tildes ni mayúsculas
+  same(etiquetaCiclo("APSTI", "III"), "APSTI · III");
+  same([etiquetaCiclo("", "I"), etiquetaCiclo("APSTI", "")], ["I", "APSTI"]);
+});
+
 /* stats */
 test("esTardanza compara HH:MM contra el límite", () => same([esTardanza("08:00", "08:00"), esTardanza("08:01", "08:00"), esTardanza("07:59:30", "08:00"), esTardanza("", "08:00")], [false, true, false, false]));
 test("resumenDia ignora inactivos y cuenta tardanzas", () => {
@@ -71,6 +78,10 @@ test("bajaAsistencia usa días con registros como días de clase", () => {
 });
 test("bajaAsistencia sin registros devuelve vacío", () => same(bajaAsistencia([A(1)], [], 85), []));
 test("resumenAlumno calcula ausencias", () => same(resumenAlumno([X(1, "a"), X(1, "b", "08:30")], 5, "08:00"), { presentes: 2, tardes: 1, ausentes: 3, pct: 40 }));
+test("normalizarFilasImport acepta las columnas carrera y ciclo", () => {
+  const r = normalizarFilasImport([{ nombre: "Ana", codigo: "a1", carrera: "APSTI", ciclo: "APSTI III" }], ["APSTI"], [{ nivel: "APSTI", nombre: "APSTI III" }]);
+  same(r.validas.map((v) => [v.nivel, v.grado, v.aviso.length]), [["APSTI", "APSTI III", 0]]);
+});
 test("normalizarFilasImport valida, deduplica y avisa", () => {
   const rows = [
     { Nombre: " Ana ", CODIGO: "a1", nivel: "Primaria", grado: "1er grado", estado: "inactivo" },

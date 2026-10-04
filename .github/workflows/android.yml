@@ -80,4 +80,4 @@ jobs:
           gh release delete apk-latest --cleanup-tag --yes || true
           gh release create apk-latest asistencia-escolar.apk carnet-estudiante.apk \
             --title "APK Android (última versión)" \
-            --notes "**asistencia-escolar.apk** → app del docente (registro de asistencia, QR/NFC, dashboard). **carnet-estudiante.apk** → app del estudiante (registro, foto y carnet con QR). Ambas abren ${APP_URL} y se actualizan solas: no hace falta reinstalar cuando cambia la web. Compilación #${{ github.run_number }} · commit ${GITHUB_SHA::7}."
+            --notes "**asistencia-escolar.apk** → app del docente (registro de asistencia, QR/NFC, dashboard). **carnet-estudiante.apk** → app «Mi Carnet Institucional» del estudiante (registro, foto y carnet con QR). Ambas abren ${APP_URL} y se actualizan solas: no hace falta reinstalar cuando cambia la web. Compilación #${{ github.run_number }} · commit ${GITHUB_SHA::7}."

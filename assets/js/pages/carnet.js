@@ -1,8 +1,8 @@
-// Carnets escolares con QR: vista previa, descarga PNG/PDF y descarga masiva.
+// Carnets institucionales con QR: vista previa, descarga PNG/PDF y descarga masiva.
 import { CONFIG } from "../config.js";
 import { DB, alumnoPorId, opcionesGrado, opcionesNivel } from "../state.js";
 import { emptyState, formModal, icon, pageHead, registerActions, toast } from "../ui.js";
-import { debounce, downloadFile, esc, initials, norm } from "../utils.js";
+import { debounce, downloadFile, esc, etiquetaCiclo, initials, norm } from "../utils.js";
 
 let cq = { q: "", sel: null };
 
@@ -29,9 +29,9 @@ export const carnetPage = {
       const holder = root.querySelector("#carnet-preview"), actions = root.querySelector("#carnet-actions");
       if (!cq.sel) { holder.innerHTML = emptyState("Selecciona un alumno", "Aquí verás la vista previa del carnet.", "idCard"); actions.hidden = true; return; }
       const a = cq.sel;
-      holder.innerHTML = `<div class="carnet-preview"><div class="c-head">${esc(DB.perfil?.colegio || CONFIG.APP_NAME)} · Carnet escolar</div>
+      holder.innerHTML = `<div class="carnet-preview"><div class="c-head">${esc(DB.perfil?.colegio || CONFIG.APP_NAME)} · Carnet institucional</div>
         <div class="c-name">${esc(a.nombre)}</div><div class="c-code">${esc(a.codigo)}</div>
-        <div class="c-info"><span>${esc(a.nivel)}</span><span>${esc(a.grado)}</span></div><div class="c-qr" id="carnet-qr"></div></div>`;
+        <div class="c-info"><span>${esc(etiquetaCiclo(a.nivel, a.grado))}</span></div><div class="c-qr" id="carnet-qr"></div></div>`;
       new QRCode(holder.querySelector("#carnet-qr"), { text: a.codigo, width: 112, height: 112, correctLevel: QRCode.CorrectLevel.M });
       actions.hidden = false;
     }
@@ -54,10 +54,10 @@ export function carnetCanvas(a, { opaque = false } = {}) {
     ctx.fillStyle = g; roundRect(ctx, 0, 0, 560, 340, 24); ctx.fill();
     ctx.fillStyle = "rgba(232,163,61,.16)"; ctx.beginPath(); ctx.arc(540, 20, 110, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#E8A33D"; ctx.font = "bold 15px Arial";
-    ctx.fillText(`${(DB.perfil?.colegio || CONFIG.APP_NAME).toUpperCase()} · CARNET ESCOLAR`.slice(0, 54), 30, 44);
+    ctx.fillText(`${(DB.perfil?.colegio || CONFIG.APP_NAME).toUpperCase()} · CARNET INSTITUCIONAL`.slice(0, 54), 30, 44);
     ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 26px Arial"; ctx.fillText(a.nombre.slice(0, 32), 30, 100);
     ctx.fillStyle = "#B8C2DC"; ctx.font = "16px monospace"; ctx.fillText(a.codigo, 30, 128);
-    ctx.fillStyle = "#CFD7EA"; ctx.font = "14px Arial"; ctx.fillText(`${a.nivel}  ·  ${a.grado}`, 30, 160);
+    ctx.fillStyle = "#CFD7EA"; ctx.font = "14px Arial"; ctx.fillText(etiquetaCiclo(a.nivel, a.grado), 30, 160);
     const tmp = document.createElement("div"); tmp.style.cssText = "position:absolute;left:-9999px";
     document.body.appendChild(tmp);
     new QRCode(tmp, { text: a.codigo, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });
@@ -89,9 +89,9 @@ registerActions({
     const m = formModal({
       title: "Descarga masiva de carnets", submitLabel: "Generar PDF",
       fields: [
-        { name: "nivel", label: "Nivel", type: "select", half: true, options: opcionesNivel(true), value: "",
+        { name: "nivel", label: "Carrera", type: "select", half: true, options: opcionesNivel(true), value: "",
           onChange: (v, ctl) => { ctl.setOptions("grado", opcionesGrado(v, true), ""); actualiza(); } },
-        { name: "grado", label: "Grado", type: "select", half: true, options: opcionesGrado("", true), value: "", onChange: () => actualiza() },
+        { name: "grado", label: "Ciclo", type: "select", half: true, options: opcionesGrado("", true), value: "", onChange: () => actualiza() },
       ],
       onSubmit: async ({ nivel, grado }) => {
         const l = cuenta(nivel, grado);

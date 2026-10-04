@@ -5,12 +5,12 @@ import { DB, alumnoPorCodigo, asegurarHoy, opcionesGrado, opcionesNivel, refresh
 import { badge, emptyState, icon, pageHead, registerActions, toast } from "../ui.js";
 import { esTardanza } from "../stats.js";
 import { mostrarAlertaAsistencia } from "../alerta.js";
-import { censurarNombre, debounce, esc, initials, norm, nowHHMM, todayStr } from "../utils.js";
+import { censurarNombre, debounce, esc, etiquetaCiclo, initials, norm, nowHHMM, todayStr } from "../utils.js";
 
 /** Registra la asistencia de hoy. Devuelve 'ok' | 'dup' | 'inactivo' | 'pendiente'. Muestra errores reales (no los traga). */
 export async function registrarHoy(alumno) {
   if (alumno.estado !== "ACTIVO") return "inactivo";
-  if (alumno.aprobado === false) return "pendiente"; // auto‑registrado: el colegio aún no aprobó su QR
+  if (alumno.aprobado === false) return "pendiente"; // auto‑registrado: el instituto aún no aprobó su QR
   await asegurarHoy();
   if (DB.hoy.some((x) => x.alumno_id === alumno.id)) return "dup";
   const hora = nowHHMM();
@@ -83,7 +83,7 @@ async function procesarCodigo(codigo, avisarSiNoExiste) {
   if (box) {
     const tipo = { ok: ["ok", "Asistencia registrada"], dup: ["warn", "Ya estaba registrado hoy"], pendiente: ["warn", "Registro pendiente de aprobación"], inactivo: ["err", "Alumno inactivo — no se registra"] }[estado];
     box.hidden = false; box.className = `scan-result scan-${tipo[0]}`;
-    box.innerHTML = `<span class="avatar">${esc(initials(a.nombre))}</span><div><strong>${esc(censurarNombre(a))}</strong><small>${esc(a.nivel)} · ${esc(a.grado)}${entrada.hora ? " · " + esc(entrada.hora) : ""}</small><em>${tipo[1]}${estado === "ok" && esTardanza(entrada.hora, CONFIG.HORA_LIMITE) ? " (tardanza)" : ""}</em></div>`;
+    box.innerHTML = `<span class="avatar">${esc(initials(a.nombre))}</span><div><strong>${esc(censurarNombre(a))}</strong><small>${esc(etiquetaCiclo(a.nivel, a.grado))}${entrada.hora ? " · " + esc(entrada.hora) : ""}</small><em>${tipo[1]}${estado === "ok" && esTardanza(entrada.hora, CONFIG.HORA_LIMITE) ? " (tardanza)" : ""}</em></div>`;
   }
   mostrarAlertaAsistencia(a, { tipo: estado, hora: entrada.hora });
   pintarLog();
@@ -214,10 +214,10 @@ export const registroAlumnoPage = {
         && (ra.solo === "todos" || (ra.solo === "presentes") === ya.has(a.id)));
       const el = root.querySelector("#ra-list");
       if (!list.length) { el.innerHTML = emptyState("Sin resultados", "Prueba con otro nombre o cambia el filtro.", "search"); return; }
-      el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Código</th><th>Grado</th><th>Hoy</th><th></th></tr></thead><tbody>
+      el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Código</th><th>Ciclo</th><th>Hoy</th><th></th></tr></thead><tbody>
         ${list.slice(0, 100).map((a) => { const h = DB.hoy.find((x) => x.alumno_id === a.id); return `<tr>
           <td><div class="person"><span class="avatar">${esc(initials(a.nombre))}</span><span>${esc(a.nombre)}</span></div></td>
-          <td class="mono">${esc(a.codigo)}</td><td>${esc(a.nivel)} · ${esc(a.grado)}</td>
+          <td class="mono">${esc(a.codigo)}</td><td>${esc(etiquetaCiclo(a.nivel, a.grado))}</td>
           <td>${h ? badge(`Asistió ${h.hora.slice(0, 5)}`, "green") : badge("Pendiente", "neutral")}</td>
           <td class="t-right"><button class="btn btn-teal btn-sm" data-action="reg-alumno" data-id="${a.id}" ${h ? "disabled" : ""}>${icon("check", 14)} Registrar</button></td></tr>`; }).join("")}
         </tbody></table></div>${list.length > 100 ? `<p class="muted pad">Mostrando 100 de ${list.length}. Refina la búsqueda.</p>` : ""}`;
@@ -229,14 +229,14 @@ export const registroAlumnoPage = {
 /* ============================ Masivo ============================ */
 let rm = { nivel: "", grado: "", fecha: "" };
 export const registroMasivoPage = {
-  id: "registro-masivo", title: "Registro Masivo por Grado", icon: "listCheck", group: "Registro",
+  id: "registro-masivo", title: "Registro Masivo por Ciclo", icon: "listCheck", group: "Registro",
   async render(root) {
     rm.fecha = rm.fecha || todayStr();
     root.innerHTML = `
-      ${pageHead("Registro Masivo por Grado", "Marca la asistencia de un grupo completo en un solo paso.")}
+      ${pageHead("Registro Masivo por Ciclo", "Marca la asistencia de un ciclo o salón completo en un solo paso.")}
       <div class="toolbar">
-        <select class="filter" id="rm-nivel" aria-label="Nivel">${options(opcionesNivel(true), rm.nivel)}</select>
-        <select class="filter" id="rm-grado" aria-label="Grado">${options(opcionesGrado(rm.nivel, true), rm.grado)}</select>
+        <select class="filter" id="rm-nivel" aria-label="Carrera">${options(opcionesNivel(true), rm.nivel)}</select>
+        <select class="filter" id="rm-grado" aria-label="Ciclo">${options(opcionesGrado(rm.nivel, true), rm.grado)}</select>
         <input class="filter" type="date" id="rm-fecha" max="${todayStr()}" value="${rm.fecha}" aria-label="Fecha"></div>
       <div class="card"><div class="card-head"><span class="muted" id="rm-count"></span>
         <div class="btn-row"><button class="btn btn-outline btn-sm" data-action="rm-all" data-v="1">Marcar todos</button><button class="btn btn-outline btn-sm" data-action="rm-all" data-v="0">Desmarcar todos</button></div></div>
@@ -251,7 +251,7 @@ export const registroMasivoPage = {
       const list = DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false && (!rm.nivel || a.nivel === rm.nivel) && (!rm.grado || a.grado === rm.grado));
       root.querySelector("#rm-count").textContent = `${list.length} alumno(s) activos en este grupo`;
       const el = root.querySelector("#rm-list");
-      if (!list.length) { el.innerHTML = emptyState("Sin alumnos", "Elige un nivel y grado con alumnos activos.", "users"); return; }
+      if (!list.length) { el.innerHTML = emptyState("Sin alumnos", "Elige una carrera y ciclo con alumnos activos.", "users"); return; }
       let dia = [];
       try { dia = rm.fecha === todayStr() ? DB.hoy : await api.asistenciasPorFecha(DB.cid, rm.fecha); } catch (e) { toast("No se pudo leer la asistencia: " + e.message, "error"); }
       if (!el.isConnected) return;
