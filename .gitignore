@@ -18,3 +18,6 @@ android/local.properties
 secretos-github.txt
 
 dist/
+desktop/node_modules/
+desktop/dist/
+desktop/app/

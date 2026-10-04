@@ -2,7 +2,7 @@
 // (Sistema → Errores) sin que nadie tenga que explicarlo. No bloquea nada, limita el volumen y no envía datos personales.
 import { esErrorRed } from "./utils.js";
 
-const COLA = "ra-errq";
+const COLA = "ra-errq" + (() => { try { return globalThis.escritorio && localStorage.getItem("ra-modo") === "local" ? "L" : ""; } catch { return ""; } })();
 const MAX_POR_SESION = 15;
 let enviadosSesion = 0, activo = false, apiRef = null;
 const vistos = new Set();

@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Simulador del programa de PC</title></head>
+<body>
+<!-- Simula el preload del .exe (window.escritorio) y carga la web real, para probar el selector de modo en un navegador.
+     Uso: http://localhost:8080/tests/escritorio.html  (el modo se guarda en localStorage "ra-modo"). -->
+<script>
+  window.escritorio = { plataforma: "simulada" };
+  fetch("../index.html").then((r) => r.text()).then((h) => {
+    document.open(); document.write(h.replace("<head>", '<head><base href="../">')); document.close();
+  });
+</script>
+</body></html>

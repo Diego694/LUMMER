@@ -7,6 +7,7 @@ import { alNecesitarSesion, alSincronizar, estadoSync, iniciarSync, onEstado, re
 import { bindActions, confirmDialog, emptyState, icon, registerActions, setAutorizador, toast } from "./ui.js";
 import { ETIQUETA_ROL, aplicarPermisos, esAdmin, instalarEstiloPermisos, puede, rolActual } from "./permisos.js";
 import { enviarPendientes, iniciarLogErrores } from "./errlog.js";
+import { iniciarSelectorModo } from "./modo.js";
 import { esErrorRed, esc, fmtDate, initials, todayStr } from "./utils.js";
 import { dashboardPage } from "./pages/dashboard.js";
 import { registroAlumnoPage, registroMasivoPage, registroQrPage } from "./pages/registro.js";
@@ -99,7 +100,8 @@ async function entrar(user, guardado = null) {
   enviarPendientes();
   $("#user-avatar").textContent = initials(perfil.nombre || perfil.rol);
   $("#topbar-date").textContent = fmtDate(todayStr(), { weekday: "short", day: "2-digit", month: "short" });
-  $("#mode-badge").hidden = api.mode !== "demo";
+  $("#mode-badge").hidden = api.mode !== "demo" && api.mode !== "local";
+  $("#mode-badge").textContent = api.mode === "local" ? "Modo local" : "Modo demo";
   $("#demo-reset").hidden = api.mode !== "demo";
   pintarChip(estadoSync());
   sincronizar();
@@ -175,7 +177,8 @@ async function boot() {
   $("#backdrop").addEventListener("click", () => toggleSidebar(false));
   addEventListener("hashchange", route);
   initLogin();
-  $("#app-version").textContent = `v${CONFIG.APP_VERSION} · ${globalThis.AndroidBridge ? "app Android" : "web"}`;
+  iniciarSelectorModo();
+  $("#app-version").textContent = `v${CONFIG.APP_VERSION} · ${globalThis.AndroidBridge ? "app Android" : globalThis.escritorio ? "programa PC" : "web"}`;
   // PWA: instalable y con arranque sin conexión. El SW pide siempre la versión nueva primero (ver sw.js).
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker no registrado:", e.message));

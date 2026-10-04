@@ -2,7 +2,7 @@
 //  - SupabaseBackend: producción (Postgres + Auth + RLS).
 //  - DemoBackend:     localStorage, para probar sin servidor.
 // El resto de la app solo habla con `api`.
-import { CONFIG, DEMO_USER, isDemoMode } from "./config.js";
+import { CONFIG, DEMO_USER, isDemoMode, modoLocal } from "./config.js";
 import { buildDemoDB } from "./demo-data.js";
 import { extrasDemo, extrasSupabase } from "./api-extra.js";
 import { uid } from "./utils.js";
@@ -17,11 +17,13 @@ class DemoBackend {
   SESSION = "ra-demo-session";
 
   constructor() {
+    if (this.constructor.KEY) this.KEY = this.constructor.KEY;
     try { this.db = JSON.parse(localStorage.getItem(this.KEY)); } catch { this.db = null; }
-    if (!this.db) { this.db = buildDemoDB(); this.persist(); }
+    if (!this.db) { this.db = this.nuevaDB(); this.persist(); }
   }
+  nuevaDB() { return buildDemoDB(); }
   persist() { try { localStorage.setItem(this.KEY, JSON.stringify(this.db)); } catch { /* cuota llena: se ignora */ } }
-  reset() { this.db = buildDemoDB(); this.persist(); }
+  reset() { this.db = this.nuevaDB(); this.persist(); }
 
   async init() { return localStorage.getItem(this.SESSION) ? { id: "demo-user", email: DEMO_USER.email } : null; }
   async signIn(email, password) {
@@ -235,8 +237,28 @@ Object.assign(SupabaseBackend.prototype, extrasSupabase);
   };
 });
 
+/* ----------------------------- LOCAL (programa de escritorio) -----------------------------
+   Base de datos propia del equipo, sin internet ni servidor. Reutiliza el motor del demo pero parte VACÍA, no pide
+   cuenta y guarda en otra clave: cambiar entre modo local y online nunca mezcla ni borra los datos de ninguno. */
+class LocalBackend extends DemoBackend {
+  static KEY = "ra-local-db-v1";
+  mode = "local";
+  nuevaDB() {
+    const id = "local-instituto";
+    return {
+      colegio: { id, nombre: "Mi instituto (modo local)", codigo_registro: "LOCAL" },
+      niveles: [], grados: [], alumnos: [], asistencias: [], docentes: [], comunicados: [], cursos: [],
+    };
+  }
+  async init() { return { id: "local-user", email: "local@este-equipo" }; }
+  async signIn() { return { id: "local-user", email: "local@este-equipo" }; }
+  async signOut() { /* sin cuentas: nada que cerrar */ }
+  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: "Administrador (local)", carrera: null, colegio: this.db.colegio.nombre }; }
+  async userId() { return "local-user"; }
+}
+
 function crearBackend() {
-  try { return isDemoMode() ? new DemoBackend() : new SupabaseBackend(); }
+  try { return modoLocal() ? new LocalBackend() : isDemoMode() ? new DemoBackend() : new SupabaseBackend(); }
   catch (error) { return { mode: "error", error, init: async () => { throw error; } }; }
 }
 export const api = crearBackend();

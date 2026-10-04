@@ -3,7 +3,8 @@
 // `clave` evita encolar dos veces lo mismo (p. ej. misma asistencia del mismo alumno y día).
 import { uid } from "./utils.js";
 
-const KEY = "ra-cola-v1";
+// En el .exe, el modo local usa su propia cola (nunca mezcla envíos del modo online con la base local).
+const KEY = "ra-cola-v1" + (() => { try { return globalThis.escritorio && localStorage.getItem("ra-modo") === "local" ? "L" : ""; } catch { return ""; } })();
 
 function leer() {
   try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; }

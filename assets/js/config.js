@@ -24,7 +24,7 @@ export const CONFIG = {
   // Enlace de descarga del APK "Mi Carnet Institucional" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.
   APK_ESTUDIANTE_URL: "https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/download/apk-latest/carnet-estudiante.apk",
   // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
-  APP_VERSION: "2.4.0",
+  APP_VERSION: "2.5.0",
   // QR del carnet: "off" = QR estático (el código del alumno) · "opcional" = el estudiante muestra un QR firmado que cambia
   // cada 30 s y el docente acepta ambos · "obligatorio" = la cámara solo acepta QR dinámicos (NFC y código manual siguen valiendo).
   QR_MODO: "off",
@@ -55,5 +55,13 @@ export const isDemoMode = () =>
   CONFIG.SUPABASE_URL.includes("TU-PROYECTO") || CONFIG.SUPABASE_ANON_KEY.includes("TU-ANON-KEY") || demoForzado();
 
 export const DEMO_SCHOOL_CODE = "DEMO2026";
+
+// Programa de escritorio (.exe): el preload de Electron expone `escritorio`. Solo allí existe el modo local.
+export const esEscritorio = () => !!globalThis.escritorio;
+/** "online" (Supabase) o "local" (base en este equipo). Fuera del .exe siempre es "online". */
+export function modoActual() {
+  try { return esEscritorio() && localStorage.getItem("ra-modo") === "local" ? "local" : "online"; } catch { return "online"; }
+}
+export const modoLocal = () => modoActual() === "local";
 
 export const DEMO_USER = { email: "demo@instituto.pe", password: "demo1234" };

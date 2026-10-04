@@ -1,0 +1,28 @@
+{
+  "name": "registro-academico-pc",
+  "productName": "Registro Académico",
+  "version": "2.5.0",
+  "description": "Programa de escritorio (Windows) con modo online y modo local sin internet.",
+  "main": "main.js",
+  "private": true,
+  "author": "Registro Académico",
+  "scripts": {
+    "preparar": "node scripts/preparar.mjs",
+    "start": "electron .",
+    "smoke": "electron . --smoke",
+    "dist": "node scripts/preparar.mjs && electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "pe.instituto.registroacademico",
+    "productName": "Registro Academico",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "app/**/*", "package.json"],
+    "win": { "target": ["portable", "nsis"], "icon": "build/icon.png" },
+    "portable": { "artifactName": "Registro-Academico-PC-Portable.exe" },
+    "nsis": { "artifactName": "Registro-Academico-PC-Instalador.exe", "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false, "deleteAppDataOnUninstall": false }
+  }
+}

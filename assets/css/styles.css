@@ -239,3 +239,9 @@ body.rol-limitado [data-admin-link]{display:none!important}
 @media(max-width:480px){.kpi-grid{grid-template-columns:1fr}.carnet-preview{width:100%}.actions .btn{flex:1}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{.sidebar,.topbar,.actions,.toolbar{display:none!important}.content{margin:0}}
+
+/* Selector de modo online/local (programa de escritorio) */
+.modo-switch{display:flex;gap:4px;background:var(--muted-bg);border-radius:10px;padding:4px;margin:18px 0 6px}
+.modo-switch button{flex:1;border:0;background:transparent;color:var(--ink-soft);font:600 13px inherit;font-family:inherit;padding:9px 8px;border-radius:7px;cursor:pointer}
+.modo-switch button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(22,34,61,.15)}
+.modo-nota{font-size:12.5px;color:var(--ink-soft);margin:0 0 4px}

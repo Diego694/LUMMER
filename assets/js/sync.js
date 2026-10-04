@@ -4,7 +4,8 @@ import { cola } from "./cola.js";
 import { esErrorRed, esErrorSesion, sincronizarReloj } from "./utils.js";
 
 /** ¿Hay conexión? (`__simOffline` permite simular la falta de red en pruebas.) */
-export const red = { online: () => !globalThis.__simOffline && globalThis.navigator?.onLine !== false };
+// En modo local (.exe) los datos están en el propio equipo: siempre "hay conexión" y nunca se encola ni se sincroniza.
+export const red = { online: () => api.mode === "local" || (!globalThis.__simOffline && globalThis.navigator?.onLine !== false) };
 
 const oyentes = new Set();
 const estado = { enCurso: false, error: null };

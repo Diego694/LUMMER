@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.0 — 2026-10-04
+
+### Añadido
+- **Programa de PC (.exe) para Windows** (`desktop/`, Electron): portable e instalador, con todas las librerías incluidas; abre y funciona sin internet.
+- **Modo online / modo local** (solo en el .exe): el modo local usa una base de datos propia del equipo, sin cuenta ni internet; el online usa Supabase con usuario y contraseña. Selector en el inicio de sesión y en el menú lateral, siempre con confirmación. Cada modo guarda sus datos aparte y se conservan al cambiar.
+- Workflow `windows.yml`: compila, prueba el .exe sin red (cambio de modo y datos conservados) y lo publica en la release `pc-latest`.
 ## 2.4.0 — 2026-10-04
 
 ### Añadido (preparación para uso real)
