@@ -42,7 +42,7 @@ def main():
     try:
         subprocess.run([bin_ / f"initdb{exe}", "-D", datos, "-U", "postgres", "-A", "trust", "-E", "UTF8"], check=True, capture_output=True)
         # stdout/stderr a DEVNULL: si se capturan, el servidor hereda las tuberías y subprocess.run espera para siempre.
-        subprocess.run([bin_ / f"pg_ctl{exe}", "-D", datos, "-o", f"-p {PUERTO} -c listen_addresses=127.0.0.1", "-l", datos / "log.txt", "-w", "start"],
+        subprocess.run([bin_ / f"pg_ctl{exe}", "-D", datos, "-o", f"-p {PUERTO} -c listen_addresses=127.0.0.1" + ("" if os.name == "nt" else f" -c unix_socket_directories={datos}"), "-l", datos / "log.txt", "-w", "start"],
                        check=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=90)
 
         def psql(*archivos, db="postgres"):
