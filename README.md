@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-2.8.2-E8A33D">
+  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-2.8.3-E8A33D">
   <img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-16223D">
 </p>
 

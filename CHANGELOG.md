@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.8.3 — 2026-10-05
+
+### Añadido
+- **Solicitudes de ingreso**: aviso visible arriba («🔔 N solicitudes de ingreso», con insignia en el menú) cuando estudiantes se registran con el código del instituto y esperan aprobación, y una página **Registro → Solicitudes de ingreso** para aprobar o rechazar con foto, carrera, ciclo, DNI y apoderado. El administrador ve las nuevas sin recargar (se revisa cada 60 s).
+
 ## 2.8.2 — 2026-10-05
 
 ### Añadido

@@ -290,3 +290,8 @@ body.quiosco-activo{overflow:hidden}
 .q-btn:hover,.q-btn:focus-visible{background:#22335A;outline:2px solid #E8A33D}
 .q-salir{font-size:20px;opacity:.7}
 @media (max-width:820px){.q-btn{padding:8px 10px;font-size:13px}}
+
+.sol-chip{cursor:pointer;font-weight:700;border:0;animation:solpulso 2.4s ease-in-out infinite}
+@keyframes solpulso{0%,100%{box-shadow:0 0 0 0 rgba(232,163,61,.55)}50%{box-shadow:0 0 0 7px rgba(232,163,61,0)}}
+@media (prefers-reduced-motion:reduce){.sol-chip{animation:none}}
+.nav-badge{margin-left:auto;background:var(--amber);color:#2A1B02;font-size:11px;font-weight:700;border-radius:99px;padding:1px 8px}

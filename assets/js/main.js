@@ -2,7 +2,7 @@
 import { api } from "./api.js";
 import { CONFIG, DEMO_USER, isDemoMode } from "./config.js";
 import { borrarPerfil, guardarPerfil, leerPerfil } from "./cola.js";
-import { DB, loadAll, refreshHoy } from "./state.js";
+import { DB, alCargarDatos, loadAll, refreshHoy } from "./state.js";
 import { alNecesitarSesion, alSincronizar, estadoSync, iniciarSync, onEstado, red, sincronizar, sincronizarRelojServidor } from "./sync.js";
 import { bindActions, confirmDialog, emptyState, icon, registerActions, setAutorizador, toast } from "./ui.js";
 import { ETIQUETA_ROL, aplicarPermisos, esAdmin, instalarEstiloPermisos, puede, rolActual } from "./permisos.js";
@@ -17,6 +17,7 @@ import { alertasPage } from "./pages/alertas.js";
 import { historialPage } from "./pages/historial.js";
 import { migrarPage } from "./pages/migrar.js";
 import { quioscoPage, reanudarQuiosco } from "./pages/quiosco.js";
+import { pendientes, solicitudesPage } from "./pages/solicitudes.js";
 import { esErrorRed, esc, fmtDate, initials, todayStr } from "./utils.js";
 import { dashboardPage } from "./pages/dashboard.js";
 import { registroAlumnoPage, registroMasivoPage, registroQrPage } from "./pages/registro.js";
@@ -31,7 +32,7 @@ import { alumnosPage, comunicadosPage, docentesPage, gradosPage, nivelesPage } f
 
 const PAGES = [
   dashboardPage, perfilPage,
-  registroQrPage, quioscoPage, registroAlumnoPage, registroMasivoPage,
+  registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, alertasPage, avisosPage,
   carnetPage, codigoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
   diagnosticoPage, respaldoPage, historialPage, migrarPage, erroresPage,
@@ -48,6 +49,27 @@ function setTheme(t, persistir = true) {
   actual?.onTheme?.();
 }
 const temaActual = () => document.documentElement.getAttribute("data-theme") || "light";
+
+/* ------------------- Aviso de solicitudes de ingreso (administrador) ------------------- */
+let solPrevias = null;
+function pintarSolicitudes() {
+  const chip = $("#sol-chip");
+  const n = esAdmin() ? pendientes().length : 0;
+  if (chip) {
+    chip.hidden = n === 0;
+    chip.textContent = `🔔 ${n} solicitud${n === 1 ? "" : "es"} de ingreso`;
+    chip.title = "Estudiantes esperando aprobación";
+  }
+  document.querySelectorAll('#nav a[data-page="solicitudes"]').forEach((a) => {
+    a.querySelector(".nav-badge")?.remove();
+    if (n) a.insertAdjacentHTML("beforeend", `<span class="nav-badge">${n}</span>`);
+  });
+  if (solPrevias !== null && n > solPrevias) toast(`Nueva solicitud de ingreso (${n} pendiente${n === 1 ? "" : "s"})`, "info");
+  solPrevias = n;
+}
+alCargarDatos(pintarSolicitudes);
+// El administrador ve las solicitudes nuevas sin recargar: se revisa cada 60 s mientras la pestaña está visible.
+setInterval(() => { if (logged && esAdmin() && !document.hidden && api.mode !== "local") loadAll().catch(() => {}); }, 60000);
 
 /* ---------------------------- Navegación ---------------------------- */
 const visibles = () => PAGES.filter((p) => !p.soloAdmin || esAdmin());
@@ -105,6 +127,7 @@ async function entrar(user, guardado = null) {
   $("#user-name").textContent = perfil.nombre || perfil.rol;
   aplicarPermisos();
   buildNav();
+  pintarSolicitudes();
   $("#user-role").textContent = `${ETIQUETA_ROL[rolActual()]}${perfil.carrera ? " de " + perfil.carrera : ""}${perfil.colegio ? " · " + perfil.colegio : ""}`;
   enviarPendientes();
   activarAvisos(api);

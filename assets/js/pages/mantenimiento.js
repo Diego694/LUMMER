@@ -217,7 +217,7 @@ function alumnoForm(a) {
 }
 
 /** Revisión de un estudiante auto‑registrado: ver su foto y datos, aprobar o rechazar. */
-async function revisarEstudiante(a) {
+export async function revisarEstudiante(a, alTerminar = () => {}) {
   const m = openModal({
     title: "Revisar registro de estudiante",
     body: `<div class="revisar"><div class="alert-photo big" id="rv-foto"><span>${esc(initials(a.nombre))}</span></div>
@@ -235,12 +235,13 @@ async function revisarEstudiante(a) {
     img.src = url;
   }).catch(() => {});
   m.el.querySelector("#rv-ok").addEventListener("click", async () => {
-    try { await guardar("alumnos", { aprobado: true }, a.id); m.close(); repaint(); toast("Estudiante aprobado: su QR ya registra asistencia", "success"); }
+    try { await guardar("alumnos", { aprobado: true }, a.id); m.close(); repaint(); alTerminar(); toast("Estudiante aprobado: su QR ya registra asistencia", "success"); }
     catch (e) { toast("No se pudo aprobar: " + e.message, "error"); }
   });
   m.el.querySelector("#rv-no").addEventListener("click", async () => {
     m.close();
     await eliminar("alumnos", a.id, `¿Rechazar y eliminar el registro de <b>${esc(a.nombre)}</b>?`, "Registro rechazado");
+    alTerminar();
   });
 }
 

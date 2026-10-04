@@ -1,7 +1,7 @@
 {
   "name": "registro-academico-pc",
   "productName": "Registro Academico",
-  "version": "2.8.2",
+  "version": "2.8.3",
   "description": "Programa de escritorio (Windows) con modo online y modo local sin internet.",
   "main": "main.js",
   "private": true,

@@ -6,6 +6,10 @@ import { mapaNoLectivos, tablaLimites } from "./calendario.js";
 import { configurarLimites } from "./stats.js";
 import { cicloCorto, compararCiclos, esErrorRed, todayStr } from "./utils.js";
 
+let alCargar = null;
+/** Registra una función que se ejecuta cada vez que se cargan los datos (p. ej. para el aviso de solicitudes). */
+export const alCargarDatos = (f) => { alCargar = f; };
+
 export const DB = {
   cid: null, rol: null, perfil: null, userId: null,
   alumnos: [], niveles: [], nivelesRaw: [], grados: [], comunicados: [], docentes: [], cursos: [],
@@ -46,6 +50,7 @@ export async function loadAll() {
     DB.sinConexion = true;
   }
   await refreshHoy();
+  try { alCargar?.(); } catch { /* el aviso nunca bloquea la carga */ }
 }
 
 /** Asistencias de hoy: las del servidor + las guardadas sin conexión aún por enviar (así el duplicado se detecta igual). */
