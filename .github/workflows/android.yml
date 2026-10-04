@@ -25,7 +25,13 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
+      # El runner ya trae el SDK de Android; solo se asegura la plataforma y las build-tools que usa el proyecto.
+      # (android-actions/setup-android@v3 falla con la imagen actual: "Failed to find package 'tools'".)
+      - name: Asegurar SDK de Android (plataforma 34 + build-tools 34.0.0)
+        run: |
+          SDKM=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1)
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-34" "build-tools;34.0.0"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
