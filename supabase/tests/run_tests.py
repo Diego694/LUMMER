@@ -69,6 +69,17 @@ def main():
             print(("✔ re-ejecución idempotente: " if r.returncode == 0 else "✘ re-ejecución falló: ") + f.name)
             if r.returncode != 0:
                 print(r.stderr.strip()); return 1
+        # Instalación NUEVA: setup_completo.sql sobre una base vacía debe dar el mismo resultado de seguridad
+        subprocess.run([bin_ / f"createdb{exe}", "-h", "127.0.0.1", "-p", PUERTO, "-U", "postgres", "limpia"], check=True, capture_output=True)
+        for f in [AQUI / "stub_supabase.sql", RAIZ / "setup_completo.sql"]:
+            r = psql(f, db="limpia")
+            print(("✔ instalación limpia: " if r.returncode == 0 else "✘ instalación limpia falló: ") + f.name)
+            if r.returncode != 0:
+                print(r.stderr.strip()); return 1
+        r = psql(AQUI / "rls_test.sql", db="limpia")
+        if r.returncode != 0:
+            print("✘ PRUEBAS DE SEGURIDAD FALLARON (instalación limpia):\n" + r.stderr.strip()); return 1
+        print("✔ instalación limpia: pruebas de seguridad correctas")
         estado = 0
     finally:
         subprocess.run([bin_ / f"pg_ctl{exe}", "-D", datos, "-m", "immediate", "stop"],

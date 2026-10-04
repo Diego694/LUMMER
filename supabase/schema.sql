@@ -18,7 +18,8 @@ create table if not exists public.colegios (
 create table if not exists public.perfiles (
   id          uuid primary key references auth.users(id) on delete cascade,
   colegio_id  uuid not null references public.colegios(id) on delete cascade,
-  rol         text not null default 'admin' check (rol in ('admin', 'docente', 'auxiliar')),
+  rol         text not null default 'Administrador' check (lower(rol) in ('admin', 'administrador', 'docente', 'coordinador', 'auxiliar')),
+  carrera     text,                                   -- solo para el rol coordinador (ver migración 004)
   nombre      text
 );
 
@@ -89,7 +90,7 @@ $$;
 
 create or replace function public.es_admin() returns boolean
 language sql stable security definer set search_path = public as $$
-  select coalesce((select rol = 'admin' from public.perfiles where id = auth.uid()), false)
+  select coalesce((select lower(trim(rol)) in ('admin', 'administrador') from public.perfiles where id = auth.uid()), false)
 $$;
 
 revoke all on function public.mi_colegio(), public.es_admin() from public, anon;
@@ -107,6 +108,9 @@ alter table public.asistencias  enable row level security;
 
 drop policy if exists colegios_select on public.colegios;
 create policy colegios_select on public.colegios for select to authenticated using (id = public.mi_colegio());
+
+drop policy if exists colegios_update on public.colegios;
+create policy colegios_update on public.colegios for update to authenticated using (id = public.mi_colegio() and public.es_admin()) with check (id = public.mi_colegio());
 
 drop policy if exists perfiles_select on public.perfiles;
 create policy perfiles_select on public.perfiles for select to authenticated using (id = auth.uid());
@@ -139,6 +143,7 @@ create policy asistencias_delete on public.asistencias for delete to authenticat
 -- ---------- Permisos ----------
 grant usage on schema public to authenticated;
 grant select on public.colegios, public.perfiles to authenticated;
+grant update on public.colegios to authenticated;
 grant select, insert, update, delete on public.niveles, public.grados, public.alumnos, public.docentes, public.comunicados, public.asistencias to authenticated;
 
 -- =====================================================================
@@ -148,9 +153,9 @@ grant select, insert, update, delete on public.niveles, public.grados, public.al
 --
 --  with c as (insert into public.colegios (nombre) values ('Mi Instituto') returning id)
 --  insert into public.perfiles (id, colegio_id, rol, nombre)
---  select 'UUID-DEL-USUARIO', c.id, 'admin', 'Administrador' from c;
+--  select 'UUID-DEL-USUARIO', c.id, 'Administrador', 'Administrador' from c;
 --
 --  insert into public.niveles (colegio_id, nombre)
---  select colegio_id, n from public.perfiles, unnest(array['Inicial','Primaria','Secundaria']) n
+--  select colegio_id, n from public.perfiles, unnest(array['MI CARRERA']) n
 --  where id = 'UUID-DEL-USUARIO';
 -- =====================================================================

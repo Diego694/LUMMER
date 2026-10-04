@@ -18,6 +18,12 @@ jobs:
           node-version: 20
       - name: Verificaciones estáticas (imports, referencias, secretos, RLS)
         run: python scripts/check.py
+      - name: setup_completo.sql al día (generado desde schema + migraciones)
+        run: |
+          python scripts/build_setup.py
+          git diff --exit-code supabase/setup_completo.sql
+      - name: Pruebas SQL de seguridad (RLS, roles, instalación limpia) en PostgreSQL desechable
+        run: python supabase/tests/run_tests.py
       - name: Tests unitarios (lógica pura)
         run: npm test
       - name: Construir imagen Docker

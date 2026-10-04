@@ -1,94 +1,50 @@
-# Sistema de Registro Académico
+<p align="center"><img src="assets/brand/banner.svg" alt="Registro Académico" width="100%"></p>
 
-> Proyecto escolar que busca mejorar el control de asistencia de alumnos en sitios remotos del Perú, con mejoras continuas.
+<p align="center">
+  <a href="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-2.5.0-E8A33D">
+  <img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-16223D">
+</p>
 
-Aplicación web para el **control de asistencia institucional**: registro por carnet **QR**, **NFC** o código manual, dashboard con indicadores y alertas, carnets imprimibles, importación de alumnos por CSV y comunicados. Interfaz responsiva con tema claro/oscuro.
+<p align="center">
+  Sistema de <b>control de asistencia</b> para institutos y escuelas, pensado para zonas con conexión limitada.<br>
+  Funciona en el navegador, en el teléfono y en la PC, <b>con o sin internet</b>.
+</p>
 
-> Sin build ni dependencias de Node: HTML + CSS + JavaScript (módulos ES) en el cliente, **Supabase** (PostgreSQL + Auth + RLS) como backend, **Docker/nginx** para servirlo y **GitHub Actions** para CI y despliegue.
+<p align="center">
+  <a href="https://diego694.github.io/Sistema-de-control-de-asistencia/"><b>Abrir la aplicación</b></a> ·
+  <a href="docs/GUIA-DE-USO.md">Guía de uso</a> ·
+  <a href="docs/README.md">Documentación</a>
+</p>
 
-## Características
+---
 
-| Área | Qué incluye |
+## Qué ofrece
+
+|  |  |
 |---|---|
-| **Dashboard** | KPIs del día (activos, presentes, ausentes, % asistencia vs. promedio), tendencia por día (puntuales / tardanzas / %), estado de hoy, asistencia por grado, alumnos por nivel, últimos ingresos, alumnos que *requieren atención*, comunicados. Periodo 7/14/30 días hábiles, auto‑refresco cada 60 s y exportación a CSV. |
-| **Registro** | Escáner QR con cámara (frontal/trasera), lector NFC (Android + Chrome), código manual, registro por alumno y registro masivo por grado/fecha. Detecta duplicados, alumnos inactivos y tardanzas (hora límite configurable). |
-| **Consultas** | Asistencia por grado y fecha (con KPIs y CSV) e historial por alumno con % de asistencia. |
-| **Gestión** | CRUD de alumnos (paginado, búsqueda sin tildes, importación CSV validada), docentes, niveles, grados y comunicados. Protege contra borrados que dejarían datos huérfanos. |
-| **Carnets** | Vista previa, PNG, PDF individual y PDF masivo por nivel/grado, con QR. |
-| **Calidad** | Tema claro/oscuro, accesibilidad (foco, ARIA, `Esc`, trampa de foco en modales), CSP estricta, RLS por instituto y roles. |
+| **Registro ágil** | Carnet con QR (que cambia cada 30 s), NFC o código manual. Alerta con foto y apellidos protegidos. |
+| **Siempre disponible** | Si se cae internet, registra igual y sincroniza después. La PC puede trabajar con su propia base local. |
+| **Visión clara** | Dashboard, reportes mensuales, justificaciones y avisos a apoderados. |
+| **Seguro y privado** | Roles por carrera, datos protegidos en la base y derecho del estudiante a eliminar su cuenta. |
 
-## Inicio rápido (modo demo, sin servidor)
+## Aplicaciones
 
-Requiere solo Python 3 (o cualquier servidor estático; los módulos ES no funcionan con `file://`).
+| Para quién | Dónde |
+|---|---|
+| Docentes y administradores | [Web / PWA](https://diego694.github.io/Sistema-de-control-de-asistencia/) · [App Android](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) · [Programa de PC](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/pc-latest) |
+| Estudiantes (*Mi Carnet Institucional*) | [Portal web](https://diego694.github.io/Sistema-de-control-de-asistencia/estudiante/) · [App Android](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) |
 
-```bash
-python scripts/serve.py 8080
-```
-
-Abre <http://127.0.0.1:8080>. Mientras `assets/js/config.js` tenga los placeholders de Supabase, la app corre en **modo demo** con ~65 alumnos y 30 días de asistencia generados localmente (se guardan solo en tu navegador). Acceso demo: `demo@instituto.pe` / `demo1234`. El botón *Restablecer datos demo* regenera todo.
-
-## Puesta en producción con Supabase
-
-1. Crea un proyecto en [supabase.com](https://supabase.com).
-2. En **SQL Editor** ejecuta [`supabase/schema.sql`](supabase/schema.sql) (tablas, índices, RLS).
-3. En **Authentication → Users** crea el usuario administrador y ejecuta el bloque *Alta de un instituto* que está al final del `schema.sql` (con el UUID de ese usuario).
-4. Edita `assets/js/config.js` con tu `SUPABASE_URL` y `SUPABASE_ANON_KEY` (Settings → API). La *anon key* es pública por diseño; **nunca** pongas la `service_role`.
-5. Sirve el sitio (Docker o GitHub Pages) — ver [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
-
-## Portal del estudiante
-
-Segunda app (web + APK **Mi Carnet Institucional**): el estudiante se registra con el código del instituto, sube su foto y obtiene su **carnet con QR único**. Al escanearlo, el docente ve una **alerta con la foto y los apellidos parcialmente censurados**. El instituto aprueba cada registro. Guía y reglas de privacidad en [docs/ESTUDIANTES.md](docs/ESTUDIANTES.md).
-
-## App Android (APK) y PWA
-
-La misma web funciona en el navegador, como **PWA instalable** y como **APK**. El APK es un envoltorio nativo mínimo que abre tu web publicada, así que **cada cambio que publiques —incluida la conexión a la base de datos— llega solo, sin reinstalar el APK**. Añade lo que un WebView no trae: permiso de cámara, descargas a *Descargas*, selector de archivos y lectura NFC nativa. Detalle, compilación y firma en [docs/ANDROID.md](docs/ANDROID.md).
-
-## Estructura
-
-```
-index.html                  Shell de la aplicación (login + layout)
-assets/css/styles.css       Sistema de diseño (tokens, claro/oscuro, responsivo)
-assets/js/
-  config.js                 Configuración (Supabase, hora límite, umbrales)
-  main.js                   Arranque, sesión, router por hash, tema
-  api.js                    Capa de datos: SupabaseBackend | DemoBackend (misma interfaz)
-  state.js · ui.js          Estado en memoria · componentes (modales, formularios, toasts)
-  stats.js · utils.js       Lógica pura (estadísticas, CSV, fechas) — con tests
-  demo-data.js              Generador de datos demo
-  pages/                    dashboard · registro · consultas · carnet · mantenimiento
-sw.js · manifest.webmanifest  PWA: arranque sin conexión, actualización "red primero"
-estudiante/                 Portal del estudiante (registro, foto, carnet QR)
-android/                    Envoltorio nativo (WebView): 2 APK (docente y estudiante)
-supabase/schema.sql         Esquema PostgreSQL + políticas RLS
-supabase/migrations/        002_estudiantes.sql (portal del estudiante: columnas, funciones, fotos)
-tests/                      Tests: lógica, adaptador Supabase, service worker y puente Android (tests/tests.html)
-scripts/                    serve.py (servidor con CSP) · check.py · make_icons.py · make_keystore.py
-Dockerfile · nginx.conf · security-headers.conf · docker-compose.yml
-.github/workflows/          ci.yml · pages.yml · android.yml
-docs/                       Arquitectura, despliegue, Android, guía de uso, pruebas
-```
-
-## Desarrollo y pruebas
+## Probarlo en un minuto
 
 ```bash
-python scripts/serve.py 8080     # servidor local con las mismas cabeceras que producción
-python scripts/check.py          # imports, referencias, secretos y RLS
-npm test                         # tests unitarios con Node 20 (opcional)
-# o abre http://127.0.0.1:8080/tests/tests.html  → tests unitarios + adaptador Supabase simulado
+python scripts/serve.py 8080     # abre http://127.0.0.1:8080/?demo=1
 ```
 
-Detalle de lo verificado y lo que no: [docs/PRUEBAS.md](docs/PRUEBAS.md).
+Entra con `demo@instituto.pe` / `demo1234`. El modo demo guarda los datos solo en tu navegador.
 
-## Docker
+## Más información
 
-```bash
-docker compose up --build        # http://localhost:8080
-```
+Toda la documentación técnica (arquitectura, despliegue, seguridad, privacidad, operación, pruebas) está en el [índice de documentación](docs/README.md). El historial de cambios, en el [Changelog](CHANGELOG.md).
 
-## Documentación
-
-- [Arquitectura](docs/ARQUITECTURA.md) · [Despliegue](docs/DESPLIEGUE.md) · [App Android](docs/ANDROID.md) · [Portal del estudiante](docs/ESTUDIANTES.md) · [Guía de uso](docs/GUIA-DE-USO.md) · [Pruebas y auditoría](docs/PRUEBAS.md) · [Programa de PC](docs/PC.md) · [Piloto](docs/PILOTO.md) · [Operación](docs/OPERACION.md) · [Privacidad](docs/PRIVACIDAD.md) · [Seguridad](docs/SEGURIDAD.md) · [Entornos](docs/ENTORNOS.md) · [Changelog](CHANGELOG.md)
-
-## Licencia
-
-MIT — ver [LICENSE](LICENSE).
+<sub>Hecho con HTML, CSS y JavaScript sin dependencias de compilación · Supabase · Electron · Android WebView · Licencia [MIT](LICENSE)</sub>
