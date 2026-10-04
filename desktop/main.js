@@ -1,11 +1,10 @@
 // Programa de escritorio "Registro Académico" (Windows). Abre la web empaquetada (app/) con todas sus librerías
 // incluidas, así que arranca sin internet. El modo online/local lo decide la propia web (assets/js/modo.js);
 // los datos de cada modo viven en el perfil del programa (%APPDATA%) y no se borran al actualizar.
-const { app, BrowserWindow, Menu, protocol, net, session, shell } = require("electron");
+const { app, BrowserWindow, Menu, protocol, session, shell } = require("electron");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { pathToFileURL } = require("node:url");
 
 const SMOKE = process.argv.includes("--smoke");
 const RAIZ = path.join(__dirname, "app");
@@ -27,6 +26,12 @@ function htmlOffline(texto) {
     .replace(/<link[^>]+(fonts\.googleapis\.com|fonts\.gstatic\.com)[^>]*>/g, "");
 }
 
+const MIME = {
+  ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".json": "application/json", ".webmanifest": "application/manifest+json", ".png": "image/png", ".svg": "image/svg+xml",
+  ".ico": "image/x-icon", ".jpg": "image/jpeg", ".woff2": "font/woff2", ".map": "application/json",
+};
+
 function servir(req) {
   const url = new URL(req.url);
   let rel = decodeURIComponent(url.pathname);
@@ -36,7 +41,9 @@ function servir(req) {
   if (archivo.endsWith(".html")) {
     return new Response(htmlOffline(fs.readFileSync(archivo, "utf8")), { headers: { "content-type": "text/html; charset=utf-8" } });
   }
-  return net.fetch(pathToFileURL(archivo).toString());
+  // Se lee del disco directamente (net.fetch de file:// pasaría por la red y fallaría con la red simulada caída).
+  const tipo = MIME[path.extname(archivo).toLowerCase()] || "application/octet-stream";
+  return new Response(fs.readFileSync(archivo), { headers: { "content-type": tipo } });
 }
 
 function crearVentana() {
@@ -50,6 +57,10 @@ function crearVentana() {
   // Enlaces externos (WhatsApp, GitHub…) al navegador del sistema; la app nunca navega fuera de sí misma.
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: "deny" }; });
   win.webContents.on("will-navigate", (e, url) => { if (!url.startsWith(ORIGEN)) { e.preventDefault(); if (/^https?:/.test(url)) shell.openExternal(url); } });
+  if (SMOKE) {
+    win.webContents.on("console-message", (_e, nivel, msg) => { if (nivel >= 2) console.log("RENDERER", msg); });
+    win.webContents.on("did-fail-load", (_e, code, desc, url) => console.log("FALLO CARGA", code, desc, url));
+  }
   win.loadURL(`${ORIGEN}/index.html`);
   return win;
 }
