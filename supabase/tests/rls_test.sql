@@ -281,4 +281,15 @@ do $$ declare tok text; r json; begin
   perform t.eq((select count(*) from auditoria where detalle::text like '%' || tok || '%')::text, '0', 'el token no aparece en el historial de cambios');
 end $$;
 
+-- ===== 20. Horario tarde/noche: ventana de ingreso y permanencia mínima =====
+do $$ begin
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform t.eq(t.dml($q$insert into horarios (colegio_id, nivel, hora_ingreso, tolerancia_min, hora_salida, ingreso_desde, ingreso_hasta, permanencia_min) values ('aaaaaaaa-0000-0000-0000-000000000001','MECANICA','14:00',10,'20:00','13:00','19:00',120)$q$)::text, '1', 'admin define horario de tarde con ventana y permanencia');
+  perform t.falla($q$insert into horarios (colegio_id, nivel, hora_ingreso, permanencia_min) values ('aaaaaaaa-0000-0000-0000-000000000001','OTRA','14:00',9999)$q$, 'la permanencia mínima tiene tope');
+  perform t.falla($q$insert into horarios (colegio_id, nivel, hora_ingreso, ingreso_desde) values ('aaaaaaaa-0000-0000-0000-000000000001','OTRA2','14:00','25:99')$q$, 'una hora de apertura inválida se rechaza');
+  perform t.root();
+  perform t.eq((select permanencia_min::text from horarios where nivel = 'APSTI'), '120', 'por defecto la salida se habilita 2 horas después del ingreso');
+  perform t.eq(public.limite_ingreso('aaaaaaaa-0000-0000-0000-000000000001', 'MECANICA'), '14:10', 'tardanza desde 14:10 (14:00 + 10 min)');
+end $$;
+
 select 'TODAS LAS PRUEBAS DE SEGURIDAD PASARON' as resultado;

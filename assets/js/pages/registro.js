@@ -4,6 +4,7 @@ import { cola } from "../cola.js";
 import { CONFIG } from "../config.js";
 import { DB, alumnoPorCodigo, asegurarHoy, opcionesGrado, opcionesNivel, refreshHoy } from "../state.js";
 import { badge, emptyState, icon, pageHead, registerActions, toast } from "../ui.js";
+import { horarioDe } from "../calendario.js";
 import { decidirAccion, esTardanza } from "../stats.js";
 import { emitir, guardarAsistencias, red, registrarEnvio } from "../sync.js";
 import { verificarQR } from "../qr-seguro.js";
@@ -77,7 +78,7 @@ export async function registrarSalida(alumno, origen = "manual") {
 /** Qué corresponde hacer con un alumno que se presenta en la puerta: ingreso, salida o nada (ver stats.decidirAccion). */
 export async function accionParaAlumno(alumno) {
   await asegurarHoy();
-  return decidirAccion(DB.hoy.find((x) => x.alumno_id === alumno.id), nowHHMM(), CONFIG.MIN_PERMANENCIA_MIN);
+  return decidirAccion(DB.hoy.find((x) => x.alumno_id === alumno.id), nowHHMM(), horarioDe(DB.horarios, alumno.nivel, { limite: CONFIG.HORA_LIMITE, permanencia: CONFIG.MIN_PERMANENCIA_MIN }).permanencia);
 }
 
 const options = (list, sel) => list.map((o) => `<option value="${esc(o.value)}" ${o.value === sel ? "selected" : ""}>${esc(o.label)}</option>`).join("");

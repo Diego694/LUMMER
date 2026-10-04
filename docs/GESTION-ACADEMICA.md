@@ -12,7 +12,7 @@ Cuando un estudiante se registra con el **código del instituto**, queda **pendi
 
 ## Calendario y horarios  (*Gestión → Calendario y horarios*, administrador)
 - **Feriados y días sin clases**: botón «Cargar feriados de Perú» (referenciales: verifica traslados o días no laborables decretados) y fechas propias (*Feriado*, *Sin clases*, *Evento*). **No cuentan como falta**: se excluyen de reportes, alertas y del portal de apoderados.
-- **Horarios**: ingreso, **tolerancia** y salida, del instituto y **por carrera**. Llega tarde quien ingresa después de *ingreso + tolerancia* de **su** carrera. El quiosco y todos los reportes usan ese horario.
+- **Horarios** (instituto y **por carrera**): *inicio de clases* y *tolerancia* (hasta ahí es **puntual**), *cierre del ingreso* (de ahí hasta el cierre es **tardanza**), *apertura del ingreso*, *fin de clases* y los **minutos mínimos antes de poder marcar salida** (120 = 2 horas). Botón **«Usar horario tarde/noche (14:00–20:00)»** que precarga: ingreso desde 13:00, puntual hasta 14:10, tardanza hasta 19:00, salida desde 2 h después del ingreso. El quiosco y todos los reportes usan ese horario.
 
 ## Alertas de inasistencia  (*Consultas → Alertas de inasistencia*)
 Cuenta las faltas del periodo (sin feriados, sin el día en curso, restando las justificadas) y marca **En riesgo** desde el 70 % del límite y **Límite superado** al llegar a `LIMITE_FALTAS_PCT` (30 % por defecto, en `config.js`). Muestra cuántas faltas le quedan y un botón **Avisar** que abre WhatsApp con el mensaje al apoderado (`PLANTILLA_RIESGO`).

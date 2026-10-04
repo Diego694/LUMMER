@@ -53,3 +53,29 @@ export function tablaLimites(horarios = [], porDefecto = "08:00") {
   horarios.filter((h) => h.nivel).forEach((h) => { porNivel[h.nivel] = limiteDeHorario(horarios, h.nivel, porDefecto); });
   return { general: limiteDeHorario(horarios, null, porDefecto), porNivel };
 }
+
+/** Horario efectivo de una carrera: el suyo, o el general, o los valores por defecto. */
+export function horarioDe(horarios = [], nivel, porDefecto = { limite: "08:00", permanencia: 120 }) {
+  const h = horarios.find((x) => x.nivel && x.nivel === nivel) || horarios.find((x) => !x.nivel);
+  if (!h) return { definido: false, ingreso: null, tolerancia: 0, limite: porDefecto.limite, salida: null, desde: null, hasta: null, permanencia: porDefecto.permanencia };
+  return {
+    definido: true, ingreso: h.hora_ingreso, tolerancia: Number(h.tolerancia_min || 0), limite: aHHMM(aMin(h.hora_ingreso) + Number(h.tolerancia_min || 0)),
+    salida: h.hora_salida || null, desde: h.ingreso_desde || null, hasta: h.ingreso_hasta || null, permanencia: Number(h.permanencia_min ?? porDefecto.permanencia),
+  };
+}
+
+/**
+ * ¿Cómo es un ingreso a esta hora? 'temprano' (aún no se abre el ingreso) · 'puntual' · 'tarde' (pasó el límite de puntualidad)
+ * · 'cerrado' (pasó la hora de cierre del ingreso).
+ */
+export function estadoIngreso(h, hhmm) {
+  if (h.desde && hhmm < h.desde) return "temprano";
+  if (h.hasta && hhmm > h.hasta) return "cerrado";
+  return hhmm > h.limite ? "tarde" : "puntual";
+}
+
+/** ¿Ya puede marcar su salida? Pasada la permanencia mínima desde su ingreso. Devuelve { ok, desde:'HH:MM' }. */
+export function salidaPermitida(horaIngreso, ahoraHHMM, permanencia = 120) {
+  const desde = aHHMM(Math.min(aMin(horaIngreso) + permanencia, 24 * 60 - 1));
+  return { ok: ahoraHHMM >= desde, desde };
+}

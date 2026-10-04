@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { CONFIG } from "../config.js";
 import { DB, asegurarHoy, refreshHoy } from "../state.js";
 import { registerActions, toast } from "../ui.js";
+import { estadoIngreso, horarioDe, salidaPermitida } from "../calendario.js";
 import { esTardanza } from "../stats.js";
 import { estadoSync, onEstado, red } from "../sync.js";
 import { accionParaAlumno, registrarHoy, registrarSalida, resolverAlumno } from "./registro.js";
@@ -48,12 +49,15 @@ function hablar(texto) {
 
 /* ------------------------------ Resultado ------------------------------ */
 /** Convierte lo que devolvió registrarHoy/registrarSalida en lo que se muestra: { clase, titulo, detalle, sonido, voz }. */
-export function presentarResultado(estado, alumno, hora) {
+export function presentarResultado(estado, alumno, hora, extra = {}) {
   const nombre = (alumno.nombre || "").split(" ")[0];
   if (typeof estado === "string") {
     return {
       dup: { clase: "info", titulo: "Ya registraste tu ingreso", detalle: "Hoy ya estás registrado.", sonido: "info", voz: `${nombre}, ya registraste tu ingreso` },
-      ya_ingreso: { clase: "info", titulo: "Ya registraste tu ingreso", detalle: "Hoy ya estás registrado.", sonido: "info", voz: `${nombre}, ya registraste tu ingreso` },
+      ya_ingreso: { clase: "info", titulo: "Ya registraste tu ingreso", detalle: extra.desde ? `Podrás marcar tu salida desde las ${extra.desde}.` : "Hoy ya estás registrado.", sonido: "info", voz: extra.desde ? `${nombre}, podrás salir desde las ${extra.desde}` : `${nombre}, ya registraste tu ingreso` },
+      salida_temprana: { clase: "warn", titulo: "Aún no puedes marcar tu salida", detalle: `Podrás hacerlo desde las ${extra.desde || "—"}. Si necesitas salir antes, habla con tu docente.`, sonido: "error", voz: "Aún no puedes marcar tu salida" },
+      temprano: { clase: "warn", titulo: "Aún no es hora de ingreso", detalle: `El ingreso se abre a las ${extra.desde || "—"}.`, sonido: "error", voz: "Aún no es hora de ingreso" },
+      cerrado: { clase: "err", titulo: "El ingreso ya cerró", detalle: `Cerró a las ${extra.hasta || "—"}. Habla con tu docente.`, sonido: "error", voz: "El ingreso ya cerró" },
       dup_salida: { clase: "info", titulo: "Ya registraste tu salida", detalle: "", sonido: "info", voz: `${nombre}, ya registraste tu salida` },
       sin_entrada: { clase: "err", titulo: "No registraste tu ingreso hoy", detalle: "Habla con tu docente.", sonido: "error", voz: "No registraste tu ingreso hoy" },
       pendiente: { clase: "warn", titulo: "Tu registro está pendiente", detalle: "El instituto aún debe aprobarlo.", sonido: "error", voz: "Tu registro está pendiente de aprobación" },
@@ -110,13 +114,28 @@ export async function procesar(texto, origen = "qr") {
     }
     const a = r.alumno;
     const modo = ajustes?.modo || "auto";
+    const h = horarioDe(DB.horarios, a.nivel, { limite: CONFIG.HORA_LIMITE, permanencia: CONFIG.MIN_PERMANENCIA_MIN });
+    const ahoraHM = nowHHMM();
     let accion = modo === "salida" ? "salida" : modo === "entrada" ? "entrada" : await accionParaAlumno(a);
-    let res;
-    if (accion === "entrada") res = await registrarHoy(a, origen === "qr" ? "quiosco" : origen);
-    else if (accion === "salida") res = await registrarSalida(a, origen === "qr" ? "quiosco" : origen);
-    else res = accion;   // 'ya_ingreso' | 'dup_salida'
+    const reg = DB.hoy.find((x) => x.alumno_id === a.id);
+    let res, extra = {};
+    if (accion === "entrada") {
+      // ventana de ingreso del horario: antes de la apertura o después del cierre no se registra
+      const ev = reg ? "puntual" : estadoIngreso(h, ahoraHM);
+      if (ev === "temprano") { res = "temprano"; extra = { desde: h.desde }; }
+      else if (ev === "cerrado") { res = "cerrado"; extra = { hasta: h.hasta }; }
+      else res = await registrarHoy(a, origen === "qr" ? "quiosco" : origen);
+    } else if (accion === "salida") {
+      // permanencia mínima: nadie sale antes de X minutos desde su ingreso (evita fugas)
+      const sp = reg && !reg.hora_salida ? salidaPermitida(reg.hora, ahoraHM, h.permanencia) : { ok: true };
+      if (!sp.ok) { res = "salida_temprana"; extra = { desde: sp.desde }; }
+      else res = await registrarSalida(a, origen === "qr" ? "quiosco" : origen);
+    } else {
+      res = accion;   // 'ya_ingreso' | 'dup_salida'
+      if (accion === "ya_ingreso" && reg) extra = { desde: salidaPermitida(reg.hora, ahoraHM, h.permanencia).desde };
+    }
     const hora = typeof res === "object" ? res.hora : DB.hoy.find((x) => x.alumno_id === a.id)?.hora || "";
-    mostrar(presentarResultado(res, a, hora), a, hora);
+    mostrar(presentarResultado(res, a, hora, extra), a, hora);
   } catch (e) {
     mostrar({ clase: "err", titulo: "No se pudo registrar", detalle: e.message, sonido: "error", voz: "" }, null);
   } finally { setTimeout(() => { ocupado = false; }, 700); }
@@ -311,7 +330,7 @@ export const quioscoPage = {
         <ul class="muted" style="margin:6px 0 0;padding-left:20px;line-height:1.7">
           <li>Pantalla completa y sin menús; la pantalla no se apaga. <b>Solo se sale con el PIN.</b></li>
           <li>Acepta el <b>QR del carnet</b> (también el dinámico), <b>tags NFC</b> (en la app Android) y <b>lectores USB/Bluetooth</b>.</li>
-          <li>En «automático»: el primer pase es el <b>ingreso</b>; un pase pasados ${CONFIG.MIN_PERMANENCIA_MIN} min es la <b>salida</b>; antes de eso se toma como repetido.</li>
+          <li>En «automático»: el primer pase es el <b>ingreso</b>; la <b>salida</b> solo se habilita pasado el tiempo mínimo del horario (por defecto <b>2 horas</b> después del ingreso: evita fugas); antes de eso se avisa desde qué hora podrá salir. El ingreso respeta la <b>ventana</b> del horario (no antes de la apertura ni después del cierre).</li>
           <li>Muestra <b>foto y nombre</b> (apellidos protegidos), puntual o tardanza, con sonido.</li>
           <li><b>Sin internet</b> sigue funcionando y envía todo al volver la conexión.</li>
           <li>Si el aparato se reinicia, el quiosco <b>vuelve a abrirse solo</b>.</li></ul></section></div>`;

@@ -159,7 +159,7 @@ test("normalizarFilasImport valida, deduplica y avisa", () => {
 });
 
 /* calendario, horarios, periodos, riesgo, fusión, quiosco (v2.8) */
-import { diasLectivos, esDiaLectivo, feriadosPeru, limiteDeHorario, mapaNoLectivos, tablaLimites } from "../assets/js/calendario.js";
+import { diasLectivos, esDiaLectivo, estadoIngreso, feriadosPeru, horarioDe, limiteDeHorario, mapaNoLectivos, salidaPermitida, tablaLimites } from "../assets/js/calendario.js";
 import { cambiosPromocion, planPromocion } from "../assets/js/promocion.js";
 import { asistenciasParaOnline, planFusion } from "../assets/js/fusion.js";
 import { calcularRiesgo, faltasRestantes } from "../assets/js/riesgo.js";
@@ -243,6 +243,22 @@ test("quiosco · decidirAccion: ingreso, repetido, salida tras la permanencia m�
   same(decidirAccion({ hora: "07:50" }, "08:10", 45), "ya_ingreso");
   same(decidirAccion({ hora: "07:50" }, "08:35", 45), "salida");
   same(decidirAccion({ hora: "07:50", hora_salida: "13:00" }, "13:30", 45), "dup_salida");
+});
+
+test("horario tarde/noche: puntual hasta 14:10, tardanza hasta el cierre, ventana de ingreso y valores por defecto", () => {
+  const h = horarioDe([{ nivel: null, hora_ingreso: "14:00", tolerancia_min: 10, hora_salida: "20:00", ingreso_desde: "13:00", ingreso_hasta: "19:00", permanencia_min: 120 }], "APSTI");
+  same([h.limite, h.desde, h.hasta, h.salida, h.permanencia], ["14:10", "13:00", "19:00", "20:00", 120]);
+  same(["12:59", "13:00", "14:10", "14:11", "19:00", "19:01"].map((x) => estadoIngreso(h, x)), ["temprano", "puntual", "puntual", "tarde", "tarde", "cerrado"]);
+  const d = horarioDe([], "X");
+  same([d.definido, d.limite, d.permanencia], [false, "08:00", 120]);
+  assert(estadoIngreso(d, "03:00") === "puntual" && estadoIngreso(d, "23:00") === "tarde", "sin ventana definida no se rechaza nada");
+  same(horarioDe([{ nivel: null, hora_ingreso: "14:00" }, { nivel: "APSTI", hora_ingreso: "15:00", tolerancia_min: 5 }], "APSTI").limite, "15:05");   // la carrera manda
+});
+test("salida: solo pasadas 2 horas desde el ingreso (quien sale temprano también espera)", () => {
+  same(salidaPermitida("14:05", "15:59", 120), { ok: false, desde: "16:05" });
+  same(salidaPermitida("14:05", "16:05", 120), { ok: true, desde: "16:05" });
+  same(salidaPermitida("14:05", "14:06", 0).ok, true);
+  same(salidaPermitida("23:00", "23:58", 120), { ok: false, desde: "23:59" });   // no se pasa de medianoche
 });
 
 /* render */

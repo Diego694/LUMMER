@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.10.0 — 2026-10-05
+
+### Añadido
+- **Horario con ventana de ingreso** (Calendario y horarios): inicio de clases + tolerancia (puntual), **tardanza hasta el cierre del ingreso**, hora desde la que se abre el ingreso y fin de clases; general o por carrera. Botón **«Usar horario tarde/noche (14:00–20:00)»**. El quiosco no registra antes de la apertura ni después del cierre y avisa por qué.
+- **Salida solo después de una permanencia mínima** (por defecto **2 horas** desde el ingreso, configurable): quien sale temprano también espera, para evitar fugas. Si intenta antes, el quiosco le dice desde qué hora podrá salir. (Migración `010`.)
+
 ## 2.9.0 — 2026-10-05
 
 ### Añadido

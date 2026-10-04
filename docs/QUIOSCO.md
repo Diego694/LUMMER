@@ -14,8 +14,21 @@ Una tablet (o teléfono) fija en la puerta donde **cada estudiante muestra su ca
 - **Sonido** de confirmación y, si se activa, **saludo por voz** («Bienvenido, Juan»).
 - Contadores abajo: ingresos del día, salidas y, si no hay internet, cuántos registros están por enviar.
 
-## Ingreso y salida automáticos
-En modo *Ingreso y salida (automático)*: el primer pase del día es el **ingreso**; si vuelve a pasar el carnet **antes de 45 minutos** se toma como repetido (evita salidas por error); pasado ese tiempo es la **salida**, que se guarda una sola vez. También se puede fijar el quiosco a *solo ingreso* o *solo salida*.
+## Ingreso y salida automáticos (según el horario)
+Todo sale del **horario** configurado en *Gestión → Calendario y horarios* (general o por carrera). Ejemplo para un instituto de **tarde/noche, de 14:00 a 20:00** (botón «Usar horario tarde/noche»):
+
+| Hora | Qué pasa en el quiosco |
+|---|---|
+| Antes de 13:00 | «Aún no es hora de ingreso» (no registra) |
+| 13:00 – 14:10 | **Puntual** (14:00 + 10 min de tolerancia) |
+| 14:11 – 19:00 | **Tardanza** |
+| Después de 19:00 | «El ingreso ya cerró» (no registra; el docente puede registrarlo a mano) |
+| Segundo pase antes de 2 h | «Ya registraste tu ingreso. Podrás marcar tu salida desde las HH:MM» |
+| Segundo pase pasadas **2 h** del ingreso | **Salida** («¡Hasta luego!»), una sola vez |
+
+- **Quien sale temprano también puede marcar su salida, pero solo pasadas 2 horas desde su ingreso** (minutos configurables), para evitar fugas: si ingresó a las 14:30, podrá salir desde las 16:30, aunque las clases terminen a las 20:00.
+- Si necesita salir antes, **habla con el docente**, que puede registrar la salida a mano en *Registro por QR → «Estoy registrando: Salida»* (el docente no tiene la restricción).
+- También se puede fijar el quiosco a *solo ingreso* o *solo salida*.
 La salida se muestra en el historial del alumno, en el reporte y en el portal de apoderados.
 
 ## Seguridad y robustez
