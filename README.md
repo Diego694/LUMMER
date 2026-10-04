@@ -1,5 +1,7 @@
 # Sistema de Registro Académico
 
+> Proyecto escolar que busca mejorar el control de asistencia de alumnos en sitios remotos del Perú, con mejoras continuas.
+
 Aplicación web para el **control de asistencia escolar**: registro por carnet **QR**, **NFC** o código manual, dashboard con indicadores y alertas, carnets imprimibles, importación de alumnos por CSV y comunicados. Interfaz responsiva con tema claro/oscuro.
 
 > Sin build ni dependencias de Node: HTML + CSS + JavaScript (módulos ES) en el cliente, **Supabase** (PostgreSQL + Auth + RLS) como backend, **Docker/nginx** para servirlo y **GitHub Actions** para CI y despliegue.
