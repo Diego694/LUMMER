@@ -63,7 +63,7 @@ jobs:
           cp android/app/build/outputs/apk/estudiante/release/app-estudiante-release.apk carnet-estudiante.apk
           ls -lh asistencia-escolar.apk carnet-estudiante.apk
           for f in asistencia-escolar.apk carnet-estudiante.apk; do
-            "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$f" | head -3
+            "$ANDROID_HOME"/build-tools/34.0.0/apksigner verify --print-certs "$f" | head -3
           done
 
       - uses: actions/upload-artifact@v4
