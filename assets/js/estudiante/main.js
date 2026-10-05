@@ -99,10 +99,13 @@ function pedirFoto() {
 function vistaAuth(modo = "login") {
   const reg = modo === "signup";
   root().innerHTML = `
+    <section class="est-hero"><h1 class="est-hero-t">${reg ? "Tu carnet institucional en 3 pasos" : "Tu carnet, siempre contigo"}</h1>
+      <p>${reg ? "Crea tu cuenta, regístrate con el código de tu instituto y obtén tu QR personal." : "Muestra tu código QR al ingresar y revisa el estado de tu registro."}</p>
+      <div class="pasos" aria-hidden="true"><span>1 · Cuenta</span><span>2 · Registro</span><span>3 · Carnet QR</span></div></section>
     <section class="est-card">
-      <h1>${reg ? "Crear mi cuenta" : "Bienvenido"}</h1>
+      <h2>${reg ? "Crear mi cuenta" : "Bienvenido"}</h2>
       <p class="est-sub">${reg ? "Paso 1 de 3 · Tu correo y una contraseña." : "Ingresa para ver tu carnet con código QR."}</p>
-      <div class="tabs-est" role="tablist"><button type="button" class="${reg ? "" : "active"}" data-modo="login" role="tab">Ingresar</button><button type="button" class="${reg ? "active" : ""}" data-modo="signup" role="tab">Crear cuenta</button></div>
+      <div class="tabs-est" role="tablist" aria-label="Acceso"><button type="button" class="${reg ? "" : "active"}" data-modo="login" role="tab" aria-selected="${!reg}">Ingresar</button><button type="button" class="${reg ? "active" : ""}" data-modo="signup" role="tab" aria-selected="${reg}">Crear cuenta</button></div>
       <form id="f-auth" class="est-form" novalidate>
         <div class="field"><label for="a-email">Correo</label><input id="a-email" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com" required></div>
         <div class="field"><label for="a-pass">Contraseña</label><input id="a-pass" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${reg ? "Mínimo 8 caracteres" : "••••••••"}" required></div>

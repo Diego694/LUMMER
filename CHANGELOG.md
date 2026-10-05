@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.0 — 2026-10-05
+
+### Rediseño de la interfaz (ver `docs/DISENO.md`)
+- Nuevo **sistema de diseño**: paleta OKLCH verificada con WCAG (claro y oscuro), escalas de espacio y tipografía, sombras y radios coherentes.
+- **Acceso del personal** rediseñado, **menú por grupos plegables**, migas de pan, cabecera compacta en móvil, aviso de solicitudes más claro.
+- **Portal del estudiante y de apoderados**: cabecera de bienvenida, formularios sin zoom en iPhone, carnet renovado.
+- **Accesibilidad**: foco visible, «Saltar al contenido», `aria-current`, objetivos táctiles de 44 px, reducción de movimiento y alto contraste.
+- Estados de carga que no mueven el diseño; respaldo para WebViews antiguos.
+
 ## 2.11.0 — 2026-10-05
 
 ### Añadido

@@ -13,7 +13,7 @@ const SHELL = [
   "assets/js/pages/calendario.js", "assets/js/pages/periodos.js", "assets/js/pages/alertas.js", "assets/js/pages/historial.js", "assets/js/pages/migrar.js", "assets/js/pages/quiosco.js", "assets/js/pages/solicitudes.js", "assets/js/respaldo-offline.js", "assets/js/pages/offline.js", "assets/js/compat.js", "privacidad.html", "entorno.html",
   "assets/js/pages/avisos.js", "assets/js/pages/reportes.js", "assets/js/pages/cursos.js", "assets/js/pages/sistema.js",
   // Portal del estudiante
-  "estudiante/", "estudiante/manifest.webmanifest", "apoderado/", "assets/js/apoderado/main.js", "assets/css/estudiante.css",
+  "estudiante/", "estudiante/manifest.webmanifest", "apoderado/", "assets/js/apoderado/main.js", "assets/css/estudiante.css", "assets/css/diseno.css",
   "assets/js/estudiante/main.js", "assets/js/estudiante/api.js",
 ];
 const CDN = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];

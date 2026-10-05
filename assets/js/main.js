@@ -58,7 +58,8 @@ function pintarSolicitudes() {
   const n = esAdmin() ? pendientes().length : 0;
   if (chip) {
     chip.hidden = n === 0;
-    chip.textContent = `🔔 ${n} solicitud${n === 1 ? "" : "es"} de ingreso`;
+    chip.innerHTML = `<span aria-hidden="true">🔔</span> <b>${n}</b><span class="sol-txt"> solicitud${n === 1 ? "" : "es"} de ingreso</span>`;
+    chip.setAttribute("aria-label", `${n} solicitud${n === 1 ? "" : "es"} de ingreso esperando aprobación`);
     chip.title = "Estudiantes esperando aprobación";
   }
   document.querySelectorAll('#nav a[data-page="solicitudes"]').forEach((a) => {
@@ -74,10 +75,24 @@ setInterval(() => { if (logged && esAdmin() && !document.hidden && api.mode !== 
 
 /* ---------------------------- Navegación ---------------------------- */
 const visibles = () => PAGES.filter((p) => !p.soloAdmin || esAdmin());
+const CHEVRON = '<svg class="icon chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const gruposCerrados = () => { try { return JSON.parse(localStorage.getItem("ra-nav-cerrados")) || []; } catch { return []; } };
+const guardarCerrados = (l) => { try { localStorage.setItem("ra-nav-cerrados", JSON.stringify(l)); } catch { /* sin almacenamiento */ } };
+const slug = (t) => String(t).toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-");
+
+/** Menú por grupos plegables (el estado se recuerda). El grupo de la página abierta siempre se muestra. */
 function buildNav() {
-  const grupos = [...new Set(visibles().map((p) => p.group))];
-  $("#nav").innerHTML = grupos.map((g) => `<div class="nav-group"><div class="nav-group-title">${esc(g)}</div>${visibles().filter((p) => p.group === g)
-    .map((p) => `<a class="nav-item" href="#/${p.id}" data-page="${p.id}">${icon(p.icon)}<span>${esc(p.title)}</span></a>`).join("")}</div>`).join("");
+  const grupos = [...new Set(visibles().map((p) => p.group))], cerrados = gruposCerrados();
+  $("#nav").innerHTML = grupos.map((g) => {
+    const abierto = !cerrados.includes(g), id = `ng-${slug(g)}`;
+    return `<div class="nav-group${abierto ? "" : " cerrado"}" data-grupo="${esc(g)}"><button type="button" class="nav-group-title" aria-expanded="${abierto}" aria-controls="${id}" data-action="nav-grupo">${esc(g)}${CHEVRON}</button>
+      <div class="nav-items" id="${id}">${visibles().filter((p) => p.group === g).map((p) => `<a class="nav-item" href="#/${p.id}" data-page="${p.id}">${icon(p.icon)}<span>${esc(p.title)}</span></a>`).join("")}</div></div>`;
+  }).join("");
+}
+function abrirGrupoDe(item) {
+  const g = item?.closest(".nav-group");
+  if (!g || !g.classList.contains("cerrado")) return;
+  g.classList.remove("cerrado"); g.querySelector(".nav-group-title")?.setAttribute("aria-expanded", "true");
 }
 
 function parseHash() {
@@ -92,7 +107,8 @@ async function route() {
   if (page.soloAdmin && !esAdmin()) { toast("Esa sección es solo para el administrador.", "error"); page = dashboardPage; history.replaceState(null, "", "#/dashboard"); }
   if (actual && actual !== page) await actual.onLeave?.();
   actual = page;
-  document.querySelectorAll(".nav-item").forEach((n) => { const on = n.dataset.page === page.id; n.classList.toggle("active", on); n.toggleAttribute("aria-current", on); });
+  document.querySelectorAll(".nav-item").forEach((n) => { const on = n.dataset.page === page.id; n.classList.toggle("active", on); if (on) { n.setAttribute("aria-current", "page"); abrirGrupoDe(n); } else n.removeAttribute("aria-current"); });
+  $("#topbar-group").textContent = page.group || "Panel";
   $("#topbar-title").textContent = page.title;
   document.title = `${page.title} · ${CONFIG.APP_NAME}`;
   const root = $("#page-root");
@@ -171,6 +187,11 @@ async function salir() {
 
 function initLogin() {
   const form = $("#login-form"), err = $("#login-err"), btn = $("#login-btn");
+  $("#pw-toggle")?.addEventListener("click", (e) => {
+    const inp = $("#login-pass"), ver = inp.type === "password";
+    inp.type = ver ? "text" : "password";
+    e.currentTarget.setAttribute("aria-pressed", String(ver)); e.currentTarget.setAttribute("aria-label", ver ? "Ocultar contraseña" : "Mostrar contraseña");
+  });
   if (isDemoMode()) {
     $("#demo-hint").hidden = false;
     $("#demo-hint-creds").textContent = `${DEMO_USER.email} / ${DEMO_USER.password}`;
@@ -191,6 +212,11 @@ function initLogin() {
 }
 
 registerActions({
+  "nav-grupo": (el) => {
+    const g = el.closest(".nav-group"), cerrado = g.classList.toggle("cerrado");
+    el.setAttribute("aria-expanded", String(!cerrado));
+    const l = gruposCerrados().filter((x) => x !== g.dataset.grupo); if (cerrado) l.push(g.dataset.grupo); guardarCerrados(l);
+  },
   theme: () => setTheme(temaActual() === "dark" ? "light" : "dark"),
   logout: salir,
   menu: () => toggleSidebar(),

@@ -10,6 +10,7 @@
 - [Roles y accesos · notificaciones](ROLES.md)
 - [Modo quiosco](QUIOSCO.md)
 - [Gestión académica: periodos, calendario, alertas, reportes, apoderados](GESTION-ACADEMICA.md)
+- [Sistema de diseño de la interfaz](DISENO.md)
 - [Despliegue](DESPLIEGUE.md) · [Entornos y dominio propio](ENTORNOS.md)
 - [Operación: respaldos y pausa del plan gratuito](OPERACION.md)
 - [Respaldo offline: exportar sin internet e importar después](RESPALDO-OFFLINE.md)

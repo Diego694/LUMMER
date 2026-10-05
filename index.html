@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/diseno.css">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -28,24 +29,32 @@
 <body>
 <noscript><p style="padding:24px">Esta aplicación requiere JavaScript.</p></noscript>
 
+<a class="skip-link" href="#page-root">Saltar al contenido</a>
+
 <main id="login-screen" class="login">
-  <div class="login-art" aria-hidden="true">
+  <aside class="login-art" aria-labelledby="la-title">
     <div class="login-art-inner">
-      <div class="brand-mark lg">RA</div>
-      <h2>Asistencia escolar,<br>simple y en tiempo real.</h2>
-      <ul>
-        <li>Registro por carnet QR, NFC o código</li>
-        <li>Dashboard con indicadores y alertas</li>
-        <li>Carnets, reportes y comunicados</li>
-      </ul>
+      <div class="la-top"><div class="brand-mark lg" aria-hidden="true">RA</div><div><strong>Registro Académico</strong><small>Control de asistencia institucional</small></div></div>
+      <div>
+        <h2 id="la-title">La asistencia de tu instituto, clara y al día.</h2>
+        <p class="lead">Registra en segundos, sigue a cada estudiante y actúa a tiempo, con o sin internet.</p>
+        <ul class="la-list">
+          <li><span class="la-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h3M21 17v4"/></svg></span><div><b>Registro en la puerta</b><span>Carnet con QR, NFC o código; quiosco con foto y sonido.</span></div></li>
+          <li><span class="la-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5-2.7M19 12.9a10 10 0 0 0-2-1.6M2 8.8A15 15 0 0 1 6 6.4M22 8.8a15 15 0 0 0-8-4.1M2 2l20 20"/></svg></span><div><b>Funciona sin internet</b><span>Guarda los registros y los envía solos al volver la conexión.</span></div></li>
+          <li><span class="la-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><div><b>Alertas e informes</b><span>Inasistencias a tiempo y nómina mensual lista para firmar.</span></div></li>
+        </ul>
+      </div>
+      <p class="la-foot"><i aria-hidden="true"></i> Tus datos se protegen por rol y por instituto.</p>
     </div>
-  </div>
+  </aside>
   <div class="login-panel">
     <form id="login-form" class="login-card" autocomplete="on">
-      <div class="brand"><div class="brand-mark">RA</div><div><h1>Registro Académico</h1><p>Control de asistencia institucional</p></div></div>
-      <h2 class="login-title">Iniciar sesión</h2>
-      <div class="field"><label for="login-email">Correo</label><input id="login-email" type="email" placeholder="admin@micolegio.com" autocomplete="username" required></div>
-      <div class="field"><label for="login-pass">Contraseña</label><input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" required></div>
+      <div class="brand"><div class="brand-mark" aria-hidden="true">RA</div><div><h1>Registro Académico</h1><p>Control de asistencia institucional</p></div></div>
+      <h2 class="login-title">Inicia sesión</h2>
+      <p class="login-sub">Usa la cuenta que te entregó tu instituto.</p>
+      <div class="field"><label for="login-email">Correo</label><input id="login-email" type="email" placeholder="nombre@instituto.pe" autocomplete="username" required></div>
+      <div class="field"><label for="login-pass">Contraseña</label><div class="pw-wrap"><input id="login-pass" type="password" placeholder="Tu contraseña" autocomplete="current-password" required>
+        <button class="pw-toggle" id="pw-toggle" type="button" aria-label="Mostrar contraseña" aria-pressed="false"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
       <button class="btn btn-primary btn-block" id="login-btn" type="submit">Ingresar</button>
       <p class="err-msg" id="login-err" role="alert" hidden></p>
       <p class="demo-hint" id="demo-hint" hidden><strong>Modo demo</strong> (sin servidor): los datos se guardan solo en este navegador.<br>Acceso: <code id="demo-hint-creds"></code></p>
@@ -56,7 +65,7 @@
 <div id="app" hidden>
   <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
     <div class="side-brand"><div class="brand-mark">RA</div><div><strong>Registro Académico</strong><small>Control de asistencia institucional</small></div></div>
-    <nav id="nav"></nav>
+    <nav id="nav" aria-label="Secciones"></nav>
     <div class="side-foot">
       <button class="btn btn-ghost-light btn-sm btn-block" id="demo-reset" data-action="demo-reset" hidden>Restablecer datos demo</button>
       <div class="user-card"><a href="#/perfil" class="avatar avatar-amber" id="user-avatar" title="Mi perfil" aria-label="Mi perfil">A</a><div><strong id="user-name">Administrador</strong><small id="user-role"></small></div>
@@ -69,7 +78,7 @@
   <div class="content">
     <header class="topbar">
       <button class="icon-only menu-btn" id="menu-toggle" data-action="menu" aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-      <div class="crumbs"><span class="muted">Panel</span><span class="muted">/</span><strong id="topbar-title">Dashboard</strong></div>
+      <div class="crumbs"><span class="muted" id="topbar-group">Panel</span><span class="sep" aria-hidden="true">/</span><strong id="topbar-title">Dashboard</strong></div>
       <div class="top-right">
         <button class="chip chip-amber sol-chip" id="sol-chip" data-action="ir-solicitudes" hidden></button>
         <button class="chip net-chip" id="net-chip" data-action="sync-now" hidden aria-live="polite"></button>
