@@ -54,6 +54,12 @@ async function generar(root) {
     ${m.filas.map((r) => `<tr><td class="sticky"><strong>${esc(r.alumno.nombre)}</strong>${rp.grado ? "" : `<br><small class="muted">${esc(cicloCorto(r.alumno.grado, rp.nivel))}</small>`}</td>
       ${m.dias.map((d) => `<td class="c celda-${r.celdas[d]}">${r.celdas[d]}</td>`).join("")}
       <td class="c">${r.p}</td><td class="c">${r.t}</td><td class="c">${r.j}</td><td class="c">${r.f}</td><td class="c"><b class="${r.pct < CONFIG.UMBRAL_ASISTENCIA ? "pct-red" : ""}">${r.pct}%</b></td></tr>`).join("")}</tbody></table></div>`;
+  const tw = box.querySelector(".table-wrap.matriz");
+  if (tw) {
+    const onScroll = () => tw.classList.toggle("is-scrolled", tw.scrollLeft > 2);
+    tw.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  }
 }
 
 function pdfReporte() {

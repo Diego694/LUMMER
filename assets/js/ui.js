@@ -87,9 +87,11 @@ export function openModal({ title, body, footer = "", wide = false }) {
 
 export function confirmDialog({ title = "Confirmar", message, confirmLabel = "Eliminar", danger = true }) {
   return new Promise((resolve) => {
+    const icName = danger ? "alert" : "info";
+    const icTone = danger ? "confirm-ic-danger" : "confirm-ic-info";
     const m = openModal({
       title,
-      body: `<p class="confirm-msg">${message}</p>`,
+      body: `<div class="confirm-layout"><div class="confirm-ic ${icTone}">${icon(icName, 22)}</div><div class="confirm-content"><p class="confirm-msg">${message}</p></div></div>`,
       footer: `<button class="btn btn-outline" data-no>Cancelar</button><button class="btn ${danger ? "btn-danger-solid" : "btn-primary"}" data-yes>${esc(confirmLabel)}</button>`,
     });
     let done = false;
@@ -176,8 +178,19 @@ export function formModal({ title, fields, submitLabel = "Guardar", onSubmit }) 
 export function emptyState(title, sub, ic = "info") {
   return `<div class="empty-state"><div class="empty-ic">${icon(ic, 26)}</div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div>`;
 }
-export function kpi({ label, value, hint = "", ic, tone = "navy" }) {
-  return `<div class="kpi kpi-${tone}"><div class="kpi-ic">${icon(ic, 20)}</div><div class="kpi-body"><span class="kpi-label">${esc(label)}</span><span class="kpi-value">${value}</span>${hint ? `<span class="kpi-hint">${hint}</span>` : ""}</div></div>`;
+export function kpi({ label, value, hint = "", ic, tone = "navy", delta = null }) {
+  let deltaHtml = "";
+  if (delta !== null && delta !== undefined) {
+    const isObj = typeof delta === "object" && delta !== null;
+    const num = isObj ? delta.val : Number(delta);
+    if (!isNaN(num)) {
+      const isUp = num >= 0;
+      const arrow = isUp ? "▲" : "▼";
+      const txt = isObj ? (delta.text || `${Math.abs(num)} pts`) : `${Math.abs(num)} pts`;
+      deltaHtml = `<span class="kpi-delta ${isUp ? "kpi-delta-up" : "kpi-delta-down"}"><span aria-hidden="true">${arrow}</span> ${esc(String(txt))}</span>`;
+    }
+  }
+  return `<div class="kpi kpi-${tone}"><div class="kpi-ic">${icon(ic, 20)}</div><div class="kpi-body"><span class="kpi-label">${esc(label)}</span><span class="kpi-value">${value}</span>${deltaHtml}${hint ? `<span class="kpi-hint">${hint}</span>` : ""}</div></div>`;
 }
 export function badge(text, tone = "neutral") { return `<span class="badge badge-${tone}">${esc(text)}</span>`; }
 export function skeleton(lines = 3) { return `<div class="skeleton-wrap">${Array.from({ length: lines }, () => '<div class="skeleton"></div>').join("")}</div>`; }

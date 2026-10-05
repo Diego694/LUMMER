@@ -187,6 +187,96 @@ export const extrasSupabase = {
   alRecuperar(cb) {
     this.sb.auth.onAuthStateChange((evento) => { if (evento === "PASSWORD_RECOVERY") cb(); });
   },
+
+  /* ------------------- Multi-institución (superadmin) ------------------- */
+  async esSuperadmin() {
+    try {
+      const { data, error } = await this.sb.rpc("es_superadmin");
+      if (error) return false;
+      return Boolean(data);
+    } catch {
+      return false;
+    }
+  },
+  async saListar() {
+    const { data, error } = await this.sb.rpc("sa_listar");
+    if (error) {
+      if (/does not exist|schema cache|function/i.test(error.message) || error.code === "PGRST202" || error.code === "42883") {
+        throw err("Falta aplicar la migración 011", error.code);
+      }
+      throw err(error.message, error.code);
+    }
+    return data || [];
+  },
+  async saCrear(nombre, codigo) {
+    const { data, error } = await this.sb.rpc("sa_crear", {
+      p_nombre: nombre,
+      p_codigo: codigo || null,
+    });
+    if (error) {
+      if (/does not exist|schema cache|function/i.test(error.message) || error.code === "PGRST202" || error.code === "42883") {
+        throw err("Falta aplicar la migración 011", error.code);
+      }
+      throw err(error.message, error.code);
+    }
+    return data;
+  },
+  async saRenombrar(id, nombre) {
+    const { error } = await this.sb.rpc("sa_renombrar", {
+      p_id: id,
+      p_nombre: nombre,
+    });
+    if (error) {
+      if (/does not exist|schema cache|function/i.test(error.message) || error.code === "PGRST202" || error.code === "42883") {
+        throw err("Falta aplicar la migración 011", error.code);
+      }
+      throw err(error.message, error.code);
+    }
+  },
+  async saActivar(id, activo) {
+    const { error } = await this.sb.rpc("sa_activar", {
+      p_id: id,
+      p_activo: activo,
+    });
+    if (error) {
+      if (/does not exist|schema cache|function/i.test(error.message) || error.code === "PGRST202" || error.code === "42883") {
+        throw err("Falta aplicar la migración 011", error.code);
+      }
+      throw err(error.message, error.code);
+    }
+  },
+  async saEntrar(id) {
+    const { data, error } = await this.sb.rpc("sa_entrar", {
+      p_colegio: id,
+    });
+    if (error) {
+      if (/does not exist|schema cache|function/i.test(error.message) || error.code === "PGRST202" || error.code === "42883") {
+        throw err("Falta aplicar la migración 011", error.code);
+      }
+      throw err(error.message, error.code);
+    }
+    return data;
+  },
+  async saAsignarAdmin(id, email) {
+    const { data, error } = await this.sb.rpc("sa_asignar_admin", {
+      p_colegio: id,
+      p_email: email,
+    });
+    if (error) {
+      if (/does not exist|schema cache|function/i.test(error.message) || error.code === "PGRST202" || error.code === "42883") {
+        throw err("Falta aplicar la migración 011", error.code);
+      }
+      throw err(error.message, error.code);
+    }
+    return data;
+  },
+  async renombrarInstituto(cid, nombre) {
+    const nom = String(nombre || "").trim();
+    if (nom.length < 3 || nom.length > 80) throw err("El nombre debe tener entre 3 y 80 caracteres");
+    const { error, count } = await this.sb.from("colegios").update({ nombre: nom }, { count: "exact" }).eq("id", cid);
+    if (error) throw err(error.message, error.code);
+    if (count === 0) throw err("No tienes permiso para cambiar el nombre");
+  },
 };
 
 /* --------------------------------- Demo --------------------------------- */
@@ -271,4 +361,111 @@ export const extrasDemo = {
   async solicitarRecuperacion() { throw err("En modo demo no se envían correos."); },
   async cambiarPassword() { throw err("En modo demo no hay recuperación de contraseña."); },
   alRecuperar() { /* sin eventos en demo */ },
+
+  /* ------------------- Multi-institución (superadmin demo) ------------------- */
+  // En modo demo esSuperadmin() = true para permitir probar la pantalla de gestión
+  async esSuperadmin() { return true; },
+
+  _asegurarInstituciones() {
+    this.reload();
+    if (!this.db.instituciones || !Array.isArray(this.db.instituciones)) {
+      this.db.instituciones = [{
+        id: this.db.colegio.id,
+        nombre: this.db.colegio.nombre,
+        codigo_registro: this.db.colegio.codigo_registro || "DEMO01",
+        activo: true,
+        creado_en: new Date().toISOString(),
+        alumnos: (this.db.alumnos || []).length,
+        personal: (this.db.personal || []).length,
+        actual: true,
+      }];
+      this.persist();
+    } else {
+      const act = this.db.instituciones.find((i) => i.id === this.db.colegio.id);
+      if (act) {
+        act.nombre = this.db.colegio.nombre;
+        act.alumnos = (this.db.alumnos || []).length;
+        act.personal = (this.db.personal || []).length;
+        act.actual = true;
+      }
+    }
+    return this.db.instituciones;
+  },
+
+  async saListar() {
+    const list = this._asegurarInstituciones();
+    return list.map((i) => ({
+      ...i,
+      actual: i.id === this.db.colegio.id,
+    })).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  },
+
+  async saCrear(nombre, codigo) {
+    this._asegurarInstituciones();
+    const nom = String(nombre || "").trim();
+    if (nom.length < 3 || nom.length > 80) throw err("El nombre debe tener entre 3 y 80 caracteres");
+    let cod = String(codigo || "").trim().toUpperCase();
+    if (!cod) {
+      cod = "INST" + Math.floor(1000 + Math.random() * 9000);
+    } else {
+      if (!/^[A-Z0-9]{6,20}$/.test(cod)) throw err("El código debe tener entre 6 y 20 caracteres alfanuméricos (A-Z, 0-9)");
+      if (this.db.instituciones.some((i) => i.codigo_registro === cod)) {
+        throw err(`Ya existe una institución con el código «${cod}»`);
+      }
+    }
+    const nueva = {
+      id: uid(),
+      nombre: nom,
+      codigo_registro: cod,
+      activo: true,
+      creado_en: new Date().toISOString(),
+      alumnos: 0,
+      personal: 0,
+      actual: false,
+    };
+    this.db.instituciones.push(nueva);
+    this.persist();
+    return nueva;
+  },
+
+  async saRenombrar(id, nombre) {
+    this._asegurarInstituciones();
+    const nom = String(nombre || "").trim();
+    if (nom.length < 3 || nom.length > 80) throw err("El nombre debe tener entre 3 y 80 caracteres");
+    const inst = this.db.instituciones.find((i) => i.id === id);
+    if (!inst) throw err("No se encontró la institución");
+    inst.nombre = nom;
+    if (id === this.db.colegio.id) {
+      this.db.colegio.nombre = nom;
+    }
+    this.persist();
+  },
+
+  async saActivar(id, activo) {
+    this._asegurarInstituciones();
+    const inst = this.db.instituciones.find((i) => i.id === id);
+    if (!inst) throw err("No se encontró la institución");
+    inst.activo = Boolean(activo);
+    this.persist();
+  },
+
+  async saEntrar(_id) {
+    throw err("En modo demo hay un solo instituto");
+  },
+
+  async saAsignarAdmin(_id, _email) {
+    throw err("En modo demo hay un solo instituto");
+  },
+
+  async renombrarInstituto(cid, nombre) {
+    this.reload();
+    const nom = String(nombre || "").trim();
+    if (nom.length < 3 || nom.length > 80) throw err("El nombre debe tener entre 3 y 80 caracteres");
+    this.db.colegio.nombre = nom;
+    if (this.db.instituciones) {
+      const inst = this.db.instituciones.find((i) => i.id === cid || i.id === this.db.colegio.id);
+      if (inst) inst.nombre = nom;
+    }
+    this.persist();
+  },
 };

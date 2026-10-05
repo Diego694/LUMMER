@@ -5,10 +5,11 @@ import { borrarPerfil, guardarPerfil, leerPerfil } from "./cola.js";
 import { DB, alCargarDatos, loadAll, refreshHoy } from "./state.js";
 import { alNecesitarSesion, alSincronizar, estadoSync, iniciarSync, onEstado, red, sincronizar, sincronizarRelojServidor } from "./sync.js";
 import { bindActions, confirmDialog, emptyState, icon, registerActions, setAutorizador, toast } from "./ui.js";
-import { ETIQUETA_ROL, aplicarPermisos, esAdmin, instalarEstiloPermisos, puede, rolActual } from "./permisos.js";
+import { ETIQUETA_ROL, aplicarPermisos, esAdmin, esSuper, instalarEstiloPermisos, puede, rolActual } from "./permisos.js";
 import { enviarPendientes, iniciarLogErrores } from "./errlog.js";
 import { iniciarSelectorModo } from "./modo.js";
 import { activarAvisos, desactivarAvisos } from "./notificaciones.js";
+import { marcaLogin, pintarMarca, nombreInstituto } from "./marca.js";
 import { personalPage } from "./pages/personal.js";
 import { perfilPage, pintarAvatar } from "./pages/perfil.js";
 import { calendarioPage } from "./pages/calendario.js";
@@ -25,18 +26,20 @@ import { registroAlumnoPage, registroMasivoPage, registroQrPage } from "./pages/
 import { asistAlumnoPage, asistGradoPage } from "./pages/consultas.js";
 import { carnetPage } from "./pages/carnet.js";
 import { codigoPage } from "./pages/codigo.js";
+import { institutoPage } from "./pages/instituto.js";
 import { avisosPage } from "./pages/avisos.js";
 import { justificacionesPage, reportePage } from "./pages/reportes.js";
 import { asistCursoPage, cursosPage } from "./pages/cursos.js";
 import { diagnosticoPage, erroresPage, respaldoPage } from "./pages/sistema.js";
 import { alumnosPage, comunicadosPage, docentesPage, gradosPage, nivelesPage } from "./pages/mantenimiento.js";
+import { institucionesPage } from "./pages/instituciones.js";
 
 const PAGES = [
   dashboardPage, perfilPage,
   registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, alertasPage, avisosPage,
-  carnetPage, codigoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
-  diagnosticoPage, respaldoPage, offlinePage, historialPage, migrarPage, erroresPage,
+  carnetPage, codigoPage, institutoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
+  diagnosticoPage, respaldoPage, offlinePage, historialPage, migrarPage, erroresPage, institucionesPage,
 ];
 const $ = (s) => document.querySelector(s);
 let actual = null;
@@ -74,7 +77,7 @@ alCargarDatos(pintarSolicitudes);
 setInterval(() => { if (logged && esAdmin() && !document.hidden && api.mode !== "local") loadAll().catch(() => {}); }, 60000);
 
 /* ---------------------------- Navegación ---------------------------- */
-const visibles = () => PAGES.filter((p) => !p.soloAdmin || esAdmin());
+const visibles = () => PAGES.filter((p) => (!p.soloAdmin || esAdmin()) && (!p.soloSuper || esSuper()));
 const CHEVRON = '<svg class="icon chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const gruposAbiertos = () => { try { return JSON.parse(localStorage.getItem("ra-nav-abiertos")) || []; } catch { return []; } };
 const guardarAbiertos = (l) => { try { localStorage.setItem("ra-nav-abiertos", JSON.stringify(l)); } catch { /* sin almacenamiento */ } };
@@ -104,13 +107,14 @@ async function route() {
   if (!logged) return;
   const { id, params } = parseHash();
   let page = PAGES.find((p) => p.id === id) || dashboardPage;
-  if (page.soloAdmin && !esAdmin()) { toast("Esa sección es solo para el administrador.", "error"); page = dashboardPage; history.replaceState(null, "", "#/dashboard"); }
+  if (page.soloSuper && !esSuper()) { toast("Esa sección es solo para el administrador superior.", "error"); page = dashboardPage; history.replaceState(null, "", "#/dashboard"); }
+  else if (page.soloAdmin && !esAdmin()) { toast("Esa sección es solo para el administrador.", "error"); page = dashboardPage; history.replaceState(null, "", "#/dashboard"); }
   if (actual && actual !== page) await actual.onLeave?.();
   actual = page;
   document.querySelectorAll(".nav-item").forEach((n) => { const on = n.dataset.page === page.id; n.classList.toggle("active", on); if (on) { n.setAttribute("aria-current", "page"); abrirGrupoDe(n); } else n.removeAttribute("aria-current"); });
   $("#topbar-group").textContent = page.group || "Panel";
   $("#topbar-title").textContent = page.title;
-  document.title = `${page.title} · ${CONFIG.APP_NAME}`;
+  document.title = `${page.title} · ${nombreInstituto()}`;
   const root = $("#page-root");
   root._repaint = null; root._hist = null;
   toggleSidebar(false);
@@ -156,6 +160,7 @@ async function entrar(user, guardado = null) {
   $("#demo-reset").hidden = api.mode !== "demo";
   pintarChip(estadoSync());
   sincronizar();
+  pintarMarca();
   if (!location.hash) location.hash = "#/dashboard"; else route();
 }
 
@@ -182,10 +187,12 @@ async function salir() {
   await api.signOut();
   $("#app").hidden = true; $("#login-screen").hidden = false;
   $("#login-pass").value = "";
+  marcaLogin();
   history.replaceState(null, "", location.pathname);
 }
 
 function initLogin() {
+  marcaLogin();
   const form = $("#login-form"), err = $("#login-err"), btn = $("#login-btn");
   $("#pw-toggle")?.addEventListener("click", (e) => {
     const inp = $("#login-pass"), ver = inp.type === "password";

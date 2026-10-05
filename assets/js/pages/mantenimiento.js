@@ -186,8 +186,12 @@ export const alumnosPage = {
             <button class="icon-only" title="Historial" aria-label="Historial de ${esc(a.nombre)}" data-action="al-hist" data-id="${a.id}">${icon("history", 16)}</button>
             <button class="icon-only danger" title="Eliminar" aria-label="Eliminar ${esc(a.nombre)}" data-action="al-del" data-id="${a.id}">${icon("trash", 16)}</button></td></tr>`).join("")}</tbody></table></div>`
         : emptyState("No se encontraron alumnos", "Prueba con otro criterio o agrega un nuevo alumno.", "search");
-      el.querySelector("#pager").innerHTML = tot > 1 ? `<button class="btn btn-outline btn-sm" data-action="al-page" data-d="-1" ${al.page <= 1 ? "disabled" : ""}>Anterior</button>
-        <span class="muted">Página ${al.page} de ${tot} · ${l.length} alumnos</span><button class="btn btn-outline btn-sm" data-action="al-page" data-d="1" ${al.page >= tot ? "disabled" : ""}>Siguiente</button>` : `<span class="muted">${l.length} alumno(s)</span>`;
+      el.querySelector("#pager").innerHTML = tot > 1 ? `
+        <div class="pager-group" role="navigation" aria-label="Paginación de alumnos">
+          <button class="btn btn-outline btn-sm" data-action="al-page" data-d="-1" ${al.page <= 1 ? "disabled" : ""} aria-label="Página anterior">Anterior</button>
+          <span class="pager-info muted">Página ${al.page} de ${tot} · ${l.length} alumnos</span>
+          <button class="btn btn-outline btn-sm" data-action="al-page" data-d="1" ${al.page >= tot ? "disabled" : ""} aria-label="Página siguiente">Siguiente</button>
+        </div>` : `<span class="muted">${l.length} alumno(s)</span>`;
     };
     el._repaint();
   },

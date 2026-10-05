@@ -63,7 +63,7 @@ function pintar() {
   const previos = serie.filter((s) => s.fecha !== todayStr() && s.presentes > 0);
   const promedio = previos.length ? Math.round(previos.reduce((t, s) => t + s.pct, 0) / previos.length) : 0;
   const delta = previos.length ? r.pct - promedio : null;
-  const deltaTxt = delta === null ? "Sin histórico" : `${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta)} pts vs. promedio (${promedio}%)`;
+  const deltaHint = delta === null ? "Sin histórico" : `vs. promedio (${promedio}%)`;
   const atencion = bajaAsistencia(AL, filasAL, CONFIG.UMBRAL_ASISTENCIA);
   const recientes = [...hoy].sort((a, b) => b.hora.localeCompare(a.hora)).slice(0, 8);
   const alum = new Map(DB.alumnos.map((a) => [a.id, a]));
@@ -85,7 +85,7 @@ function pintar() {
       ${kpi({ label: "Alumnos activos", value: r.activos, hint: `${inactivos} inactivo(s) · ${DB.grados.length} ciclos`, ic: "users", tone: "navy" })}
       ${kpi({ label: "Presentes hoy", value: r.presentes, hint: `${r.puntuales} puntuales · ${r.tardes} tardanzas`, ic: "userCheck", tone: "teal" })}
       ${kpi({ label: "Ausentes hoy", value: finde && !r.presentes ? "—" : r.ausentes, hint: finde && !r.presentes ? "Fin de semana: sin clases" : r.ausentes ? "Sin registro de ingreso" : "¡Asistencia completa!", ic: "userX", tone: r.ausentes && !(finde && !r.presentes) ? "red" : "teal" })}
-      ${kpi({ label: "% de asistencia hoy", value: r.pct + "%", hint: deltaTxt, ic: "percent", tone: "amber" })}
+      ${kpi({ label: "% de asistencia hoy", value: r.pct + "%", delta: delta !== null ? { val: delta, text: `${Math.abs(delta)} pts` } : null, hint: deltaHint, ic: "percent", tone: "amber" })}
     </section>
 
     <section class="dash-grid">
@@ -155,18 +155,80 @@ function dibujarGraficos() {
     } },
   }));
 
+  const pluginCentroDona = {
+    id: "centroDona",
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      const cx = (chartArea.left + chartArea.right) / 2;
+      const cy = (chartArea.top + chartArea.bottom) / 2;
+      const ink = cssVar("--ink") || "#17223B";
+      const inkSoft = cssVar("--ink-soft") || "#4E5970";
+      const fontDisplay = cssVar("--font-display") || "'Space Grotesk', Inter, sans-serif";
+      const fontUi = cssVar("--font-ui") || "Inter, sans-serif";
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      ctx.font = `700 24px ${fontDisplay}`;
+      ctx.fillStyle = ink;
+      ctx.fillText(`${r.pct ?? 0}%`, cx, cy - 8);
+
+      ctx.font = `600 11px ${fontUi}`;
+      ctx.fillStyle = inkSoft;
+      ctx.fillText("Presentes", cx, cy + 12);
+      ctx.restore();
+    },
+  };
+
   charts.push(new Chart(get("chart-hoy"), {
     type: "doughnut",
     data: { labels: ["Puntuales", "Tardanzas", "Ausentes"], datasets: [{ data: [r.puntuales, r.tardes, r.ausentes], backgroundColor: [C.teal, C.amber, C.red], borderColor: C.panel, borderWidth: 3 }] },
-    options: { ...base, cutout: "68%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } } } },
+    options: { ...base, cutout: "70%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } } } },
+    plugins: [pluginCentroDona],
   }));
 
   const colorGrado = (p) => (p >= CONFIG.UMBRAL_ASISTENCIA ? C.teal : p >= 60 ? C.amber : C.red);
+  const pluginGuiaMeta = {
+    id: "guiaMeta",
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea, scales } = chart;
+      if (!chartArea || !scales.x) return;
+      const meta = CONFIG.UMBRAL_ASISTENCIA || 80;
+      const xPixel = scales.x.getPixelForValue(meta);
+      if (xPixel < chartArea.left || xPixel > chartArea.right) return;
+
+      const metaColor = cssVar("--amber-dark") || cssVar("--amber") || "#F2AB35";
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = metaColor;
+      ctx.moveTo(xPixel, chartArea.top);
+      ctx.lineTo(xPixel, chartArea.bottom);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.font = `600 10px ${cssVar("--font-ui") || "Inter, sans-serif"}`;
+      ctx.fillStyle = metaColor;
+      ctx.textAlign = "center";
+      ctx.fillText(`Meta ${meta}%`, xPixel, chartArea.top - 4);
+      ctx.restore();
+    },
+  };
+
   charts.push(new Chart(get("chart-grados"), {
     type: "bar",
     data: { labels: grados.map((g) => g.key), datasets: [{ label: "% asistencia hoy", data: grados.map((g) => g.pct), backgroundColor: grados.map((g) => colorGrado(g.pct)), borderRadius: 4, barThickness: 16 }] },
-    options: { ...base, indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.x}% (${grados[c.dataIndex].presentes}/${grados[c.dataIndex].total})` } } },
-      scales: { x: { min: 0, max: 100, grid: { color: C.grid }, ticks: { callback: (v) => v + "%" } }, y: { grid: { display: false } } } },
+    options: {
+      ...base,
+      layout: { padding: { top: 12 } },
+      indexAxis: "y",
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.x}% (${grados[c.dataIndex].presentes}/${grados[c.dataIndex].total})` } } },
+      scales: { x: { min: 0, max: 100, grid: { color: C.grid }, ticks: { callback: (v) => v + "%" } }, y: { grid: { display: false } } }
+    },
+    plugins: [pluginGuiaMeta],
   }));
 
   charts.push(new Chart(get("chart-niveles"), {

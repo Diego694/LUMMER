@@ -97,7 +97,7 @@ function pintarContadores() {
   const activos = DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false).length;
   const ing = DB.hoy.length, sal = DB.hoy.filter((x) => x.hora_salida).length;
   const s = estadoSync();
-  c.innerHTML = `<span><b>${ing}</b> de ${activos} ingresaron</span><span><b>${sal}</b> salidas</span>${!red.online() ? '<span class="q-off">Sin conexión</span>' : ""}${s.pendientes ? `<span class="q-off">${s.pendientes} por enviar</span>` : ""}`;
+  c.innerHTML = `<span class="q-stat"><b>${ing}</b> de ${activos} ingresaron</span><span class="q-stat"><b>${sal}</b> salidas</span>${!red.online() ? '<span class="q-stat q-off">Sin conexión</span>' : ""}${s.pendientes ? `<span class="q-stat q-off">${s.pendientes} por enviar</span>` : ""}`;
 }
 
 /* ------------------------------ Procesar lectura ------------------------------ */

@@ -292,4 +292,120 @@ do $$ begin
   perform t.eq(public.limite_ingreso('aaaaaaaa-0000-0000-0000-000000000001', 'MECANICA'), '14:10', 'tardanza desde 14:10 (14:00 + 10 min)');
 end $$;
 
+-- ===== 21. Instituciones (superadmin) =====
+do $$
+declare
+  r json;
+  r_creado json;
+  cid_nuevo uuid;
+  cod_generado text;
+  r_root json;
+  cid_root uuid;
+begin
+  -- Fixtures de usuarios nuevos para esta sección
+  insert into auth.users (id, email) values
+    ('00000000-0000-0000-0000-0000000000a3', 'nuevo_admin@test.pe'),
+    ('00000000-0000-0000-0000-0000000000a4', 'admin_crear_inst@test.pe')
+  on conflict (id) do nothing;
+
+  -- (a) admin normal, docente y anon NO pueden llamar sa_*
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform t.falla($q$select public.sa_listar()$q$, 'admin normal no puede sa_listar');
+  perform t.falla($q$select public.sa_crear('Colegio Invalido')$q$, 'admin normal no puede sa_crear');
+  perform t.falla($q$select public.sa_renombrar('aaaaaaaa-0000-0000-0000-000000000001', 'Nuevo Nombre')$q$, 'admin normal no puede sa_renombrar');
+  perform t.falla($q$select public.sa_entrar('bbbbbbbb-0000-0000-0000-000000000001')$q$, 'admin normal no puede sa_entrar');
+  perform t.falla($q$select public.sa_asignar_admin('aaaaaaaa-0000-0000-0000-000000000001', 'nuevo_admin@test.pe')$q$, 'admin normal no puede sa_asignar_admin');
+  perform t.root();
+
+  perform t.act('00000000-0000-0000-0000-0000000000d1');
+  perform t.falla($q$select public.sa_listar()$q$, 'docente no puede sa_listar');
+  perform t.falla($q$select public.sa_crear('Colegio Invalido')$q$, 'docente no puede sa_crear');
+  perform t.falla($q$select public.sa_renombrar('aaaaaaaa-0000-0000-0000-000000000001', 'Nuevo Nombre')$q$, 'docente no puede sa_renombrar');
+  perform t.falla($q$select public.sa_entrar('bbbbbbbb-0000-0000-0000-000000000001')$q$, 'docente no puede sa_entrar');
+  perform t.falla($q$select public.sa_asignar_admin('aaaaaaaa-0000-0000-0000-000000000001', 'nuevo_admin@test.pe')$q$, 'docente no puede sa_asignar_admin');
+  perform t.root();
+
+  execute 'set local role anon';
+  perform t.falla($q$select public.sa_listar()$q$, 'anon no puede sa_listar');
+  perform t.falla($q$select public.sa_crear('Colegio Invalido')$q$, 'anon no puede sa_crear');
+  perform t.falla($q$select public.sa_renombrar('aaaaaaaa-0000-0000-0000-000000000001', 'Nuevo Nombre')$q$, 'anon no puede sa_renombrar');
+  perform t.falla($q$select public.sa_entrar('bbbbbbbb-0000-0000-0000-000000000001')$q$, 'anon no puede sa_entrar');
+  perform t.falla($q$select public.sa_asignar_admin('aaaaaaaa-0000-0000-0000-000000000001', 'nuevo_admin@test.pe')$q$, 'anon no puede sa_asignar_admin');
+  perform t.root();
+
+  -- (b) Insert into superadmins como root de un usuario existente
+  insert into superadmins (user_id) values ('00000000-0000-0000-0000-0000000000a1')
+  on conflict (user_id) do nothing;
+
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  -- sa_listar devuelve >= 2 colegios
+  r := public.sa_listar();
+  perform t.eq((json_array_length(r) >= 2)::text, 'true', 'sa_listar devuelve >= 2 colegios');
+
+  -- sa_crear autogenera un código de 8 caracteres
+  r_creado := public.sa_crear('Instituto Tres');
+  cid_nuevo := (r_creado->>'id')::uuid;
+  cod_generado := r_creado->>'codigo_registro';
+  perform t.eq(length(cod_generado)::text, '8', 'sa_crear autogenera codigo de 8 caracteres');
+
+  -- nombre de 2 caracteres falla
+  perform t.falla($q$select public.sa_crear('AB')$q$, 'nombre de 2 caracteres falla');
+
+  -- código duplicado falla
+  perform t.falla(format($q$select public.sa_crear('Colegio Cuatro', '%s')$q$, cod_generado), 'codigo duplicado falla');
+
+  -- código inválido falla
+  perform t.falla($q$select public.sa_crear('Colegio Cinco', 'ABC')$q$, 'codigo menor a 6 caracteres falla');
+  perform t.falla($q$select public.sa_crear('Colegio Seis', 'CODIGO_CON_GUION')$q$, 'codigo con caracter no alfanumerico falla');
+
+  -- sa_renombrar cambia el nombre (comprobación como root)
+  perform public.sa_renombrar(cid_nuevo, 'Instituto Tres Renombrado');
+  perform t.root();
+  perform t.eq((select nombre from colegios where id = cid_nuevo), 'Instituto Tres Renombrado', 'sa_renombrar cambia el nombre');
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+
+  -- (c) sa_entrar cambia public.mi_colegio() del superadmin
+  perform public.sa_entrar('bbbbbbbb-0000-0000-0000-000000000001');
+  perform t.eq(public.mi_colegio()::text, 'bbbbbbbb-0000-0000-0000-000000000001', 'sa_entrar cambia public.mi_colegio()');
+  perform t.root();
+  perform t.eq((select colegio_id::text from perfiles where id = '00000000-0000-0000-0000-0000000000a1'), 'bbbbbbbb-0000-0000-0000-000000000001', 'sa_entrar persiste colegio_id en perfiles');
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+
+  -- no permite un colegio inactivo (usa sa_activar(id, false))
+  perform public.sa_activar(cid_nuevo, false);
+  perform t.root();
+  perform t.eq((select activo::text from colegios where id = cid_nuevo), 'false', 'sa_activar desactiva colegio');
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+
+  perform t.falla(format($q$select public.sa_entrar('%s')$q$, cid_nuevo), 'sa_entrar a colegio inactivo falla');
+
+  perform public.sa_activar(cid_nuevo, true);
+  perform t.root();
+  perform t.eq((select activo::text from colegios where id = cid_nuevo), 'true', 'sa_activar reactiva colegio');
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+
+  -- (d) sa_asignar_admin: correo inexistente falla; correo válido deja rol 'Administrador' en el colegio
+  perform t.falla(format($q$select public.sa_asignar_admin('%s', 'no_existe_cuenta@correo.com')$q$, cid_nuevo), 'sa_asignar_admin con correo inexistente falla');
+  perform public.sa_asignar_admin(cid_nuevo, 'nuevo_admin@test.pe');
+  perform t.root();
+  perform t.eq((select rol from perfiles where id = '00000000-0000-0000-0000-0000000000a3' and colegio_id = cid_nuevo), 'Administrador', 'sa_asignar_admin asigna rol Administrador en el colegio');
+
+  -- (e) crear_instituto NO es ejecutable por authenticated (t.falla) pero sí por root
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform t.falla($q$select public.crear_instituto('Instituto Prohibido', 'admin_crear_inst@test.pe')$q$, 'crear_instituto no ejecutable por authenticated');
+  perform t.root();
+
+  r_root := public.crear_instituto('Instituto Creado Root', 'admin_crear_inst@test.pe', 'ROOT1234');
+  cid_root := (r_root->>'id')::uuid;
+  perform t.eq((select nombre from colegios where id = cid_root), 'Instituto Creado Root', 'crear_instituto crea colegio desde root');
+  perform t.eq((select rol from perfiles where id = '00000000-0000-0000-0000-0000000000a4' and colegio_id = cid_root), 'Administrador', 'crear_instituto asigna admin desde root');
+
+  -- (f) un admin normal SÍ puede renombrar SU propio instituto con update directo sobre colegios
+  perform t.act('00000000-0000-0000-0000-0000000000a2');
+  perform t.eq(t.dml($q$update colegios set nombre = 'Instituto B Renombrado' where id = 'bbbbbbbb-0000-0000-0000-000000000001'$q$)::text, '1', 'admin normal renombra su propio colegio con update directo');
+  perform t.eq(t.dml($q$update colegios set nombre = 'Hack A' where id = 'aaaaaaaa-0000-0000-0000-000000000001'$q$)::text, '0', 'admin normal no renombra otro colegio con update directo');
+  perform t.root();
+  perform t.eq((select nombre from colegios where id = 'bbbbbbbb-0000-0000-0000-000000000001'), 'Instituto B Renombrado', 'admin normal renombra su propio colegio');
+end $$;
+
 select 'TODAS LAS PRUEBAS DE SEGURIDAD PASARON' as resultado;

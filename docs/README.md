@@ -1,27 +1,8 @@
 # Documentación
 
-## Empezar
-- [Descripción técnica completa](DETALLES.md): características, puesta en marcha, estructura del proyecto y comandos.
-- [Guía de uso](GUIA-DE-USO.md): el día a día del docente y del administrador.
-- [Programa de PC](PC.md): modo online / modo local sin internet.
-- [App Android](ANDROID.md) · [Portal del estudiante](ESTUDIANTES.md)
+## Contenido
 
-## Puesta en marcha y operación
-- [Roles y accesos · notificaciones](ROLES.md)
-- [Modo quiosco](QUIOSCO.md)
-- [Gestión académica: periodos, calendario, alertas, reportes, apoderados](GESTION-ACADEMICA.md)
-- [Sistema de diseño de la interfaz](DISENO.md)
-- [Despliegue](DESPLIEGUE.md) · [Entornos y dominio propio](ENTORNOS.md)
-- [Operación: respaldos y pausa del plan gratuito](OPERACION.md)
-- [Respaldo offline: exportar sin internet e importar después](RESPALDO-OFFLINE.md)
-- [Prueba piloto](PILOTO.md)
-
-## Diseño, seguridad y calidad
-- [Arquitectura](ARQUITECTURA.md) · [Seguridad](SEGURIDAD.md) · [Privacidad y datos de menores](PRIVACIDAD.md)
-- [Pruebas y auditoría](PRUEBAS.md)
-
-## Base de datos
-- Instalación nueva: [`supabase/setup_completo.sql`](../supabase/setup_completo.sql) (se genera con `python scripts/build_setup.py`).
-- Migraciones y pruebas de seguridad (RLS): [`supabase/`](../supabase/).
-
-[Changelog](../CHANGELOG.md)
+- [ROLES.md](./ROLES.md) — Roles y permisos del sistema
+- [ACCESOS.md](./ACCESOS.md) — Flujo de solicitudes de acceso
+- [INSTITUCIONES.md](./INSTITUCIONES.md) — Multi-institución y administrador superior
+- [DISENO.md](./DISENO.md) — Decisiones de diseño y arquitectura
