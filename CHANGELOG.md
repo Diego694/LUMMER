@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.3 — 2026-10-05
+
+### Cambiado
+- **Menú lateral comprimido por defecto**: todos los grupos arrancan cerrados y se despliegan a voluntad (cada uno por separado). Solo se abre solo el grupo de la página en la que estás. El estado que elijas se recuerda.
+
 ## 3.0.2 — 2026-10-05
 
 ### Cambiado

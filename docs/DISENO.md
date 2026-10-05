@@ -11,7 +11,7 @@ Rediseño visual aplicado a todo el sistema (acceso del personal, panel interno,
 | **Accesibilidad** | Foco visible siempre (3 px, ≥ 3:1), «Saltar al contenido», `aria-current="page"`, grupos del menú con `aria-expanded`, pestañas con `aria-selected`, errores con icono (no solo color), objetivos táctiles de **44 px** en pantallas táctiles, `prefers-reduced-motion`, `prefers-contrast` y `forced-colors`. |
 | **Estados** | Vacío (con qué hacer), carga (esqueleto que pulsa con `opacity`, sin mover el layout) y error (causa + acción) en cada pantalla de datos. |
 | **Movimiento** | Solo `transform` y `opacity`, 120–200 ms, curva *ease-out*; nada que se repita decenas de veces al día se anima de más. |
-| **Navegación** | Menú por **grupos plegables** que recuerda su estado y abre el de la página actual; migas «Grupo / Página»; en móvil, cabecera compacta. |
+| **Navegación** | Menú por **grupos plegables, comprimidos por defecto**: se despliegan a voluntad, recuerda lo que abriste y abre solo el grupo de la página actual; migas «Grupo / Página»; en móvil, cabecera compacta. |
 | **Acceso** | Pantalla de inicio con propuesta de valor (quiosco, sin internet, alertas), contraseña con botón mostrar/ocultar y mensajes claros. |
 | **Estudiante / apoderado** | Cabecera de bienvenida con los 3 pasos, formularios a 16 px (sin zoom en iPhone), carnet con QR grande y estado visible. |
 

@@ -76,15 +76,15 @@ setInterval(() => { if (logged && esAdmin() && !document.hidden && api.mode !== 
 /* ---------------------------- Navegación ---------------------------- */
 const visibles = () => PAGES.filter((p) => !p.soloAdmin || esAdmin());
 const CHEVRON = '<svg class="icon chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-const gruposCerrados = () => { try { return JSON.parse(localStorage.getItem("ra-nav-cerrados")) || []; } catch { return []; } };
-const guardarCerrados = (l) => { try { localStorage.setItem("ra-nav-cerrados", JSON.stringify(l)); } catch { /* sin almacenamiento */ } };
+const gruposAbiertos = () => { try { return JSON.parse(localStorage.getItem("ra-nav-abiertos")) || []; } catch { return []; } };
+const guardarAbiertos = (l) => { try { localStorage.setItem("ra-nav-abiertos", JSON.stringify(l)); } catch { /* sin almacenamiento */ } };
 const slug = (t) => String(t).toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-");
 
 /** Menú por grupos plegables (el estado se recuerda). El grupo de la página abierta siempre se muestra. */
 function buildNav() {
-  const grupos = [...new Set(visibles().map((p) => p.group))], cerrados = gruposCerrados();
+  const grupos = [...new Set(visibles().map((p) => p.group))], abiertos = gruposAbiertos();
   $("#nav").innerHTML = grupos.map((g) => {
-    const abierto = !cerrados.includes(g), id = `ng-${slug(g)}`;
+    const abierto = abiertos.includes(g), id = `ng-${slug(g)}`;
     return `<div class="nav-group${abierto ? "" : " cerrado"}" data-grupo="${esc(g)}"><button type="button" class="nav-group-title" aria-expanded="${abierto}" aria-controls="${id}" data-action="nav-grupo">${esc(g)}${CHEVRON}</button>
       <div class="nav-items" id="${id}">${visibles().filter((p) => p.group === g).map((p) => `<a class="nav-item" href="#/${p.id}" data-page="${p.id}">${icon(p.icon)}<span>${esc(p.title)}</span></a>`).join("")}</div></div>`;
   }).join("");
@@ -215,7 +215,7 @@ registerActions({
   "nav-grupo": (el) => {
     const g = el.closest(".nav-group"), cerrado = g.classList.toggle("cerrado");
     el.setAttribute("aria-expanded", String(!cerrado));
-    const l = gruposCerrados().filter((x) => x !== g.dataset.grupo); if (cerrado) l.push(g.dataset.grupo); guardarCerrados(l);
+    const l = gruposAbiertos().filter((x) => x !== g.dataset.grupo); if (!cerrado) l.push(g.dataset.grupo); guardarAbiertos(l);
   },
   theme: () => setTheme(temaActual() === "dark" ? "light" : "dark"),
   logout: salir,

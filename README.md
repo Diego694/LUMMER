@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Diego694/Sistema-de-control-de-asistencia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=1c2433"></a>
-  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-3.0.2-E8A33D?style=flat-square&labelColor=1c2433">
+  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-3.0.3-E8A33D?style=flat-square&labelColor=1c2433">
   <img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-8b95a8?style=flat-square&labelColor=1c2433">
 </p>
 
