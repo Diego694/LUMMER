@@ -1,11 +1,47 @@
+// @ts-check
 // Lógica de negocio pura: estadísticas de asistencia e importación CSV. Sin DOM ni red.
 import { etiquetaCiclo, pct } from "./utils.js";
 
-/** Límites de puntualidad por carrera (se cargan desde la tabla horarios; ver calendario.js → tablaLimites). */
-export const limites = { general: null, porNivel: {} };
-export function configurarLimites(tabla) { limites.general = tabla?.general ?? null; limites.porNivel = tabla?.porNivel || {}; }
+/** @typedef {import('./tipos.d.ts').Alumno} Alumno */
+/** @typedef {import('./tipos.d.ts').Asistencia} Asistencia */
+/** @typedef {import('./tipos.d.ts').Justificacion} Justificacion */
+/** @typedef {import('./tipos.d.ts').Curso} Curso */
+/** @typedef {import('./tipos.d.ts').Grado} Grado */
+/** @typedef {import('./tipos.d.ts').ResumenDia} ResumenDia */
+/** @typedef {import('./tipos.d.ts').SerieDiariaPunto} SerieDiariaPunto */
+/** @typedef {import('./tipos.d.ts').PorGradoItem} PorGradoItem */
+/** @typedef {import('./tipos.d.ts').PorNivelItem} PorNivelItem */
+/** @typedef {import('./tipos.d.ts').BajaAsistenciaItem} BajaAsistenciaItem */
+/** @typedef {import('./tipos.d.ts').ResumenAlumno} ResumenAlumno */
+/** @typedef {import('./tipos.d.ts').MatrizAsistenciaResult} MatrizAsistenciaResult */
+/** @typedef {import('./tipos.d.ts').MatrizFila} MatrizFila */
+/** @typedef {import('./tipos.d.ts').AccionQuiosco} AccionQuiosco */
+/** @typedef {import('./tipos.d.ts').NormalizarImportResult} NormalizarImportResult */
+/** @typedef {import('./tipos.d.ts').NormalizarFilaValida} NormalizarFilaValida */
+/** @typedef {import('./tipos.d.ts').NormalizarFilaError} NormalizarFilaError */
 
-/** ¿El ingreso es tardanza? Compara HH:MM (24 h) contra el límite; si se indica la carrera y tiene horario propio, usa ese. */
+/**
+ * Límites de puntualidad por carrera (se cargan desde la tabla horarios; ver calendario.js → tablaLimites).
+ * @type {{ general: string | null, porNivel: Record<string, string> }}
+ */
+export const limites = { general: null, porNivel: {} };
+
+/**
+ * @param {{ general?: string | null, porNivel?: Record<string, string> } | null | undefined} tabla
+ * @returns {void}
+ */
+export function configurarLimites(tabla) {
+  limites.general = tabla?.general ?? null;
+  limites.porNivel = tabla?.porNivel || {};
+}
+
+/**
+ * ¿El ingreso es tardanza? Compara HH:MM (24 h) contra el límite; si se indica la carrera y tiene horario propio, usa ese.
+ * @param {string | null | undefined} hora
+ * @param {string} limite
+ * @param {string | null | undefined} [nivel]
+ * @returns {boolean}
+ */
 export function esTardanza(hora, limite, nivel) {
   if (!hora) return false;
   const lim = (nivel && limites.porNivel[nivel]) || limite;
@@ -16,15 +52,26 @@ export function esTardanza(hora, limite, nivel) {
  * Qué corresponde hacer cuando un alumno se presenta (quiosco): 'entrada' si hoy no ingresó; 'salida' si ya ingresó,
  * aún no salió y pasó la permanencia mínima; 'ya_ingreso' si vuelve a pasar muy pronto (evita registrar una salida por error);
  * 'dup_salida' si ya tenía salida. `reg` es la asistencia de hoy del alumno (o undefined).
+ * @param {{ hora: string, hora_salida?: string | null } | null | undefined} reg
+ * @param {string} ahoraHHMM
+ * @param {number} [minPermanencia]
+ * @returns {AccionQuiosco}
  */
 export function decidirAccion(reg, ahoraHHMM, minPermanencia = 45) {
   if (!reg) return "entrada";
   if (reg.hora_salida) return "dup_salida";
+  /** @param {string} h */
   const m = (h) => { const [a, b] = String(h).split(":").map(Number); return a * 60 + b; };
   return m(ahoraHHMM) - m(reg.hora) >= minPermanencia ? "salida" : "ya_ingreso";
 }
 
-/** Resumen del día: presentes, tardanzas, ausentes y % sobre alumnos activos. */
+/**
+ * Resumen del día: presentes, tardanzas, ausentes y % sobre alumnos activos.
+ * @param {Alumno[]} alumnos
+ * @param {Asistencia[]} asistencias
+ * @param {string} limite
+ * @returns {ResumenDia}
+ */
 export function resumenDia(alumnos, asistencias, limite) {
   const activos = alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false);
   const ids = new Set(activos.map((a) => a.id));
@@ -42,7 +89,15 @@ export function resumenDia(alumnos, asistencias, limite) {
   };
 }
 
-/** Serie diaria para el gráfico de tendencia. */
+/**
+ * Serie diaria para el gráfico de tendencia.
+ * @param {string[]} dias
+ * @param {Asistencia[]} asistencias
+ * @param {number} totalActivos
+ * @param {string} limite
+ * @param {Map<string, string>} [nivelDe]
+ * @returns {SerieDiariaPunto[]}
+ */
 export function serieDiaria(dias, asistencias, totalActivos, limite, nivelDe = new Map()) {
   return dias.map((fecha) => {
     const del = asistencias.filter((a) => a.fecha === fecha);
@@ -51,9 +106,15 @@ export function serieDiaria(dias, asistencias, totalActivos, limite, nivelDe = n
   });
 }
 
-/** Asistencia del día agrupada por grado (orden alfabético natural). */
+/**
+ * Asistencia del día agrupada por grado (orden alfabético natural).
+ * @param {Alumno[]} alumnos
+ * @param {Asistencia[]} asistencias
+ * @returns {PorGradoItem[]}
+ */
 export function porGrado(alumnos, asistencias) {
   const presentes = new Set(asistencias.map((a) => a.alumno_id));
+  /** @type {Map<string, { key: string, nivel: string, grado: string, total: number, presentes: number }>} */
   const map = new Map();
   alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false).forEach((a) => {
     const key = etiquetaCiclo(a.nivel, a.grado);
@@ -67,6 +128,11 @@ export function porGrado(alumnos, asistencias) {
     .sort((a, b) => a.key.localeCompare(b.key, "es", { numeric: true }));
 }
 
+/**
+ * @param {Alumno[]} alumnos
+ * @param {string[]} niveles
+ * @returns {PorNivelItem[]}
+ */
 export function porNivel(alumnos, niveles) {
   return niveles.map((n) => ({ nivel: n, total: alumnos.filter((a) => a.nivel === n && a.estado === "ACTIVO" && a.aprobado !== false).length }));
 }
@@ -74,10 +140,16 @@ export function porNivel(alumnos, niveles) {
 /**
  * Alumnos activos con menor asistencia en el rango. Los "días de clase" son los días en que
  * hubo al menos un registro (así feriados o días sin actividad no penalizan).
+ * @param {Alumno[]} alumnos
+ * @param {Asistencia[]} asistencias
+ * @param {number} umbral
+ * @param {number} [limiteResultados]
+ * @returns {BajaAsistenciaItem[]}
  */
 export function bajaAsistencia(alumnos, asistencias, umbral, limiteResultados = 8) {
   const diasClase = new Set(asistencias.map((a) => a.fecha));
   if (diasClase.size === 0) return [];
+  /** @type {Map<string, number>} */
   const conteo = new Map();
   asistencias.forEach((a) => conteo.set(a.alumno_id, (conteo.get(a.alumno_id) || 0) + 1));
   return alumnos
@@ -91,7 +163,14 @@ export function bajaAsistencia(alumnos, asistencias, umbral, limiteResultados = 
     .slice(0, limiteResultados);
 }
 
-/** Estadísticas del historial de un alumno sobre los días de clase del periodo. */
+/**
+ * Estadísticas del historial de un alumno sobre los días de clase del periodo.
+ * @param {Asistencia[]} historial
+ * @param {number} diasClase
+ * @param {string} limite
+ * @param {string} [nivel]
+ * @returns {ResumenAlumno}
+ */
 export function resumenAlumno(historial, diasClase, limite, nivel) {
   const presentes = historial.length;
   const tardes = historial.filter((h) => esTardanza(h.hora, limite, nivel)).length;
@@ -102,23 +181,38 @@ export function resumenAlumno(historial, diasClase, limite, nivel) {
  * Matriz de asistencia (reporte mensual). Una columna por día de clase (día con al menos un registro o justificación
  * entre estos alumnos). Código por celda: P presente · T tardanza · J justificado · F falta.
  * pct = presentes (incluye tardanzas) / días de clase; pctJust = (presentes + justificados) / días de clase.
+ * @param {Alumno[]} alumnos
+ * @param {Asistencia[]} asistencias
+ * @param {Justificacion[]} justificaciones
+ * @param {string[]} dias
+ * @param {string} limite
+ * @returns {MatrizAsistenciaResult}
  */
 export function matrizAsistencia(alumnos, asistencias, justificaciones, dias, limite) {
   const ids = new Set(alumnos.map((a) => a.id));
+  /** @type {Map<string, string>} */
   const asis = new Map();   // "alumno|fecha" → hora
+  /** @type {Map<string, string>} */
   const just = new Map();   // "alumno|fecha" → tipo
   asistencias.filter((x) => ids.has(x.alumno_id)).forEach((x) => asis.set(`${x.alumno_id}|${x.fecha}`, x.hora));
   justificaciones.filter((x) => ids.has(x.alumno_id)).forEach((x) => just.set(`${x.alumno_id}|${x.fecha}`, x.tipo));
   const conRegistro = new Set([...asis.keys(), ...just.keys()].map((k) => k.split("|")[1]));
   const diasClase = dias.filter((d) => conRegistro.has(d));
+  /** @type {MatrizFila[]} */
   const filas = alumnos.map((alumno) => {
+    /** @type {Record<string, 'P' | 'T' | 'J' | 'F' | string>} */
     const celdas = {};
     let p = 0, t = 0, j = 0, f = 0;
     diasClase.forEach((d) => {
       const hora = asis.get(`${alumno.id}|${d}`);
-      if (hora !== undefined) { if (esTardanza(hora, limite, alumno.nivel)) { celdas[d] = "T"; t++; } else celdas[d] = "P"; p++; }
-      else if (just.has(`${alumno.id}|${d}`)) { celdas[d] = "J"; j++; }
-      else { celdas[d] = "F"; f++; }
+      if (hora !== undefined) {
+        if (esTardanza(hora, limite, alumno.nivel)) { celdas[d] = "T"; t++; }
+        else { celdas[d] = "P"; p++; }
+      } else if (just.has(`${alumno.id}|${d}`)) {
+        celdas[d] = "J"; j++;
+      } else {
+        celdas[d] = "F"; f++;
+      }
     });
     return { alumno, celdas, p, t, j, f, pct: pct(p, diasClase.length), pctJust: pct(p + j, diasClase.length) };
   });
@@ -126,7 +220,12 @@ export function matrizAsistencia(alumnos, asistencias, justificaciones, dias, li
   return { dias: diasClase, filas, resumen: { alumnos: filas.length, dias: diasClase.length, pct: pct(total, posibles) } };
 }
 
-/** Número para wa.me (solo dígitos, con prefijo de país). Perú por defecto: 9 dígitos que empiezan con 9 → 51XXXXXXXXX. */
+/**
+ * Número para wa.me (solo dígitos, con prefijo de país). Perú por defecto: 9 dígitos que empiezan con 9 → 51XXXXXXXXX.
+ * @param {string | null | undefined} tel
+ * @param {string} [paisPorDefecto]
+ * @returns {string}
+ */
 export function numeroWhatsApp(tel, paisPorDefecto = "51") {
   const d = String(tel || "").replace(/[^0-9]/g, "");
   if (!d) return "";
@@ -134,19 +233,46 @@ export function numeroWhatsApp(tel, paisPorDefecto = "51") {
   if (d.length === 9 && d.startsWith("9")) return paisPorDefecto + d;
   return d;
 }
+
+/**
+ * @param {string | null | undefined} tel
+ * @param {string} texto
+ * @returns {string}
+ */
 export const enlaceWhatsApp = (tel, texto) => { const n = numeroWhatsApp(tel); return n ? `https://wa.me/${n}?text=${encodeURIComponent(texto)}` : ""; };
-/** Rellena {alumno}, {fecha}, {instituto}, {hora}, {ciclo} en una plantilla de aviso. */
+
+/**
+ * Rellena {alumno}, {fecha}, {instituto}, {hora}, {ciclo} en una plantilla de aviso.
+ * @param {string} plantilla
+ * @param {Record<string, any>} datos
+ * @returns {string}
+ */
 export const mensajeAviso = (plantilla, datos) => String(plantilla).replace(/\{(\w+)\}/g, (m, k) => (datos[k] ?? m));
 
-/** ¿El alumno puede asistir a este curso? (misma carrera y, si el curso fija ciclo, el mismo ciclo). */
+/**
+ * ¿El alumno puede asistir a este curso? (misma carrera y, si el curso fija ciclo, el mismo ciclo).
+ * @param {{ nivel: string, grado?: string | null }} alumno
+ * @param {{ nivel: string, grado?: string | null }} curso
+ * @returns {boolean}
+ */
 export const perteneceACurso = (alumno, curso) => alumno.nivel === curso.nivel && (!curso.grado || alumno.grado === curso.grado);
 
-/** Normaliza y valida las filas de un CSV de importación de alumnos. */
+/**
+ * Normaliza y valida las filas de un CSV de importación de alumnos.
+ * @param {Record<string, any>[]} rows
+ * @param {string[]} [niveles]
+ * @param {{ nivel?: string, nombre?: string }[]} [grados]
+ * @returns {NormalizarImportResult}
+ */
 export function normalizarFilasImport(rows, niveles = [], grados = []) {
+  /** @type {NormalizarFilaValida[]} */
   const validas = [];
+  /** @type {NormalizarFilaError[]} */
   const errores = [];
+  /** @type {Set<string>} */
   const vistos = new Set();
   rows.forEach((row, i) => {
+    /** @type {Record<string, string>} */
     const n = {};
     Object.keys(row).forEach((k) => (n[k.trim().toLowerCase()] = (row[k] ?? "").toString().trim()));
     if (!n.nivel && n.carrera) n.nivel = n.carrera; // la plantilla usa "carrera" y "ciclo"; "nivel" y "grado" también valen
@@ -155,6 +281,7 @@ export function normalizarFilasImport(rows, niveles = [], grados = []) {
     if (!n.nombre || !n.codigo) { errores.push({ linea, motivo: "Falta nombre o código" }); return; }
     if (vistos.has(n.codigo)) { errores.push({ linea, motivo: `Código repetido en el archivo: ${n.codigo}` }); return; }
     vistos.add(n.codigo);
+    /** @type {string[]} */
     const aviso = [];
     if (n.nivel && niveles.length && !niveles.includes(n.nivel)) aviso.push(`Carrera "${n.nivel}" no existe`);
     if (n.grado && grados.length && !grados.some((g) => g.nombre === n.grado && (!n.nivel || g.nivel === n.nivel))) aviso.push(`Ciclo "${n.grado}" no existe`);

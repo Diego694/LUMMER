@@ -6,3 +6,4 @@
 - [ACCESOS.md](./ACCESOS.md) — Flujo de solicitudes de acceso
 - [INSTITUCIONES.md](./INSTITUCIONES.md) — Multi-institución y administrador superior
 - [DISENO.md](./DISENO.md) — Decisiones de diseño y arquitectura
+- [MIGRACION.md](./MIGRACION.md) — Plan de migración a TypeScript y app nativa Android (Kotlin)

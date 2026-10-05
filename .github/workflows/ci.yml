@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Instalar dependencias
+        run: npm install
+      - name: Verificación de tipos TypeScript
+        run: npm run typecheck
       - name: Verificaciones estáticas (imports, referencias, secretos, RLS)
         run: python scripts/check.py
       - name: setup_completo.sql al día (generado desde schema + migraciones)

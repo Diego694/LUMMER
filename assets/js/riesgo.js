@@ -1,13 +1,18 @@
+// @ts-check
 // Alerta temprana: alumnos que se acercan (o pasaron) el límite de inasistencias del periodo. Lógica pura.
 import { diasLectivos } from "./calendario.js";
 import { pct } from "./utils.js";
 
+/** @typedef {import('./tipos.d.ts').Alumno} Alumno */
+/** @typedef {import('./tipos.d.ts').Asistencia} Asistencia */
+/** @typedef {import('./tipos.d.ts').Justificacion} Justificacion */
+/** @typedef {import('./tipos.d.ts').DiaCalendario} DiaCalendario */
+/** @typedef {import('./tipos.d.ts').RiesgoAlumno} RiesgoAlumno */
+/** @typedef {import('./tipos.d.ts').OpcionesCalcularRiesgo} OpcionesCalcularRiesgo */
+
 /**
- * @param o.alumnos, o.asistencias, o.justificaciones, o.noLectivos (Map), o.desde, o.hasta (YYYY-MM-DD)
- * @param o.limite     % de inasistencias que hace perder el curso (Perú: 30 %)
- * @param o.aviso      % desde el que se avisa (por defecto, 70 % del límite)
- * El día de HOY (`hasta`) solo cuenta si ya hay registro (nadie es «falta» antes de que termine el ingreso).
- * @returns [{alumno, dias, faltas, justificadas, pctFaltas, nivel:'critico'|'alerta'|'ok'}] ordenado por % de faltas.
+ * @param {OpcionesCalcularRiesgo} opciones
+ * @returns {RiesgoAlumno[]} ordenado por % de faltas.
  */
 export function calcularRiesgo({ alumnos, asistencias, justificaciones = [], noLectivos = new Map(), desde, hasta, limite = 30, aviso, hoy }) {
   const umbralAviso = aviso ?? Math.round(limite * 0.7);
@@ -25,9 +30,16 @@ export function calcularRiesgo({ alumnos, asistencias, justificaciones = [], noL
       if (just.has(k)) justificadas++; else faltas++;
     });
     const pctFaltas = pct(faltas, total);
-    return { alumno, dias: total, faltas, justificadas, pctFaltas, nivel: pctFaltas >= limite ? "critico" : pctFaltas >= umbralAviso ? "alerta" : "ok" };
+    /** @type {'critico' | 'alerta' | 'ok'} */
+    const nivel = pctFaltas >= limite ? "critico" : pctFaltas >= umbralAviso ? "alerta" : "ok";
+    return { alumno, dias: total, faltas, justificadas, pctFaltas, nivel };
   }).sort((x, y) => y.pctFaltas - x.pctFaltas || x.alumno.nombre.localeCompare(y.alumno.nombre, "es"));
 }
 
-/** Cuántas faltas más puede tener antes de llegar al límite (0 si ya lo superó). */
+/**
+ * Cuántas faltas más puede tener antes de llegar al límite (0 si ya lo superó).
+ * @param {RiesgoAlumno} r
+ * @param {number} [limite]
+ * @returns {number}
+ */
 export const faltasRestantes = (r, limite = 30) => Math.max(0, Math.floor((limite / 100) * r.dias) - r.faltas);

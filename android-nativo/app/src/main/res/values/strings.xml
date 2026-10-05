@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings en español para la app nativa (app_name se genera por flavor) -->
+    <string name="login_title">Inicia sesión</string>
+    <string name="login_subtitle">Usa la cuenta institucional asignada a tu perfil.</string>
+    <string name="login_brand_title">Registro Académico</string>
+    <string name="login_brand_subtitle">Control de asistencia institucional</string>
+    <string name="email_label">Correo electrónico</string>
+    <string name="email_placeholder">ejemplo@instituto.pe</string>
+    <string name="password_label">Contraseña</string>
+    <string name="btn_login">Iniciar sesión</string>
+    <string name="btn_logout">Cerrar sesión</string>
+    <string name="show_password">Mostrar contraseña</string>
+    <string name="hide_password">Ocultar contraseña</string>
+    <string name="home_title">Panel Principal</string>
+    <string name="welcome_user">Bienvenido/a</string>
+    <string name="institute_label">Instituto</string>
+    <string name="role_label">Rol</string>
+    <string name="career_label">Carrera</string>
+    <string name="superadmin_badge">Administrador Superior</string>
+    <string name="loading_session">Comprobando sesión…</string>
+    <string name="error_email_required">El correo electrónico es obligatorio</string>
+    <string name="error_email_invalid">Formato de correo electrónico inválido</string>
+    <string name="error_password_required">La contraseña es obligatoria</string>
+    <string name="error_password_short">La contraseña debe tener al menos 6 caracteres</string>
+</resources>

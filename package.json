@@ -7,7 +7,11 @@
   "scripts": {
     "start": "python scripts/serve.py 8080",
     "check": "python scripts/check.py",
-    "test": "node tests/unit.js"
+    "test": "node tests/unit.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
   },
   "license": "MIT"
 }

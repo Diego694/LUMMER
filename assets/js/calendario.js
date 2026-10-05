@@ -1,23 +1,52 @@
+// @ts-check
 // Calendario del instituto: días sin clases (feriados, suspensiones) y horarios. Lógica pura, sin DOM ni red.
 import { addDays, dateStr, isWeekend } from "./utils.js";
 
-/** Mapa fecha → {tipo, nombre} de los días NO lectivos (Feriado y Sin clases; los «Evento» sí tienen clases). */
+/** @typedef {import('./tipos.d.ts').DiaCalendario} DiaCalendario */
+/** @typedef {import('./tipos.d.ts').Horario} Horario */
+/** @typedef {import('./tipos.d.ts').HorarioEfectivo} HorarioEfectivo */
+/** @typedef {import('./tipos.d.ts').TablaLimites} TablaLimites */
+/** @typedef {import('./tipos.d.ts').EstadoIngreso} EstadoIngreso */
+/** @typedef {import('./tipos.d.ts').SalidaPermitidaResult} SalidaPermitidaResult */
+
+/**
+ * Mapa fecha → {tipo, nombre} de los días NO lectivos (Feriado y Sin clases; los «Evento» sí tienen clases).
+ * @param {DiaCalendario[]} [calendario]
+ * @returns {Map<string, DiaCalendario>}
+ */
 export function mapaNoLectivos(calendario = []) {
+  /** @type {Map<string, DiaCalendario>} */
   const m = new Map();
   calendario.filter((c) => c.tipo === "Feriado" || c.tipo === "Sin clases").forEach((c) => m.set(c.fecha, c));
   return m;
 }
 
+/**
+ * @param {string} fecha
+ * @param {Map<string, DiaCalendario>} noLectivos
+ * @returns {boolean}
+ */
 export const esDiaLectivo = (fecha, noLectivos) => !isWeekend(fecha) && !noLectivos.has(fecha);
 
-/** Días lectivos (lun–vie, sin feriados) entre dos fechas YYYY-MM-DD, ambas incluidas. */
+/**
+ * Días lectivos (lun–vie, sin feriados) entre dos fechas YYYY-MM-DD, ambas incluidas.
+ * @param {string} desde
+ * @param {string} hasta
+ * @param {Map<string, DiaCalendario>} [noLectivos]
+ * @returns {string[]}
+ */
 export function diasLectivos(desde, hasta, noLectivos = new Map()) {
+  /** @type {string[]} */
   const out = [];
   for (let f = desde; f <= hasta; f = addDays(f, 1)) if (esDiaLectivo(f, noLectivos)) out.push(f);
   return out;
 }
 
-/** Feriados nacionales de Perú de un año (referenciales: el Gobierno puede trasladarlos o decretar días no laborables). */
+/**
+ * Feriados nacionales de Perú de un año (referenciales: el Gobierno puede trasladarlos o decretar días no laborables).
+ * @param {number} anio
+ * @returns {DiaCalendario[]}
+ */
 export function feriadosPeru(anio) {
   // Pascua (algoritmo de Meeus/Jones/Butcher) → Jueves y Viernes Santo
   const a = anio % 19, b = Math.floor(anio / 100), c = anio % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
@@ -25,6 +54,7 @@ export function feriadosPeru(anio) {
   const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
   const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
   const pascua = dateStr(new Date(anio, mes - 1, dia));
+  /** @type {DiaCalendario[]} */
   const fijos = [
     ["01-01", "Año Nuevo"], ["05-01", "Día del Trabajo"], ["06-07", "Batalla de Arica y Día de la Bandera"], ["06-29", "San Pedro y San Pablo"],
     ["07-23", "Día de la Fuerza Aérea del Perú"], ["07-28", "Fiestas Patrias"], ["07-29", "Fiestas Patrias"], ["08-06", "Batalla de Junín"],
@@ -35,26 +65,53 @@ export function feriadosPeru(anio) {
     .sort((x, y) => x.fecha.localeCompare(y.fecha));
 }
 
+/**
+ * @param {string | number} hhmm
+ * @returns {number}
+ */
 const aMin = (hhmm) => { const [h, m] = String(hhmm).split(":").map(Number); return h * 60 + m; };
+
+/**
+ * @param {number} min
+ * @returns {string}
+ */
 const aHHMM = (min) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
 /**
  * Límite de puntualidad (HH:MM) de una carrera: ingreso + tolerancia de su horario; si no tiene, el general; si no, `porDefecto`.
  * `horarios` = filas de la tabla horarios ({nivel|null, hora_ingreso, tolerancia_min}).
+ * @param {Horario[]} [horarios]
+ * @param {string | null} [nivel]
+ * @param {string} [porDefecto]
+ * @returns {string}
  */
 export function limiteDeHorario(horarios = [], nivel, porDefecto = "08:00") {
   const h = horarios.find((x) => x.nivel && x.nivel === nivel) || horarios.find((x) => !x.nivel);
   return h ? aHHMM(aMin(h.hora_ingreso) + Number(h.tolerancia_min || 0)) : porDefecto;
 }
 
-/** Mapa carrera → límite, más `general`. Es lo que usa `esTardanza` (ver stats.js). */
+/**
+ * Mapa carrera → límite, más `general`. Es lo que usa `esTardanza` (ver stats.js).
+ * @param {Horario[]} [horarios]
+ * @param {string} [porDefecto]
+ * @returns {TablaLimites}
+ */
 export function tablaLimites(horarios = [], porDefecto = "08:00") {
+  /** @type {Record<string, string>} */
   const porNivel = {};
-  horarios.filter((h) => h.nivel).forEach((h) => { porNivel[h.nivel] = limiteDeHorario(horarios, h.nivel, porDefecto); });
+  horarios.filter((h) => h.nivel).forEach((h) => {
+    if (h.nivel) porNivel[h.nivel] = limiteDeHorario(horarios, h.nivel, porDefecto);
+  });
   return { general: limiteDeHorario(horarios, null, porDefecto), porNivel };
 }
 
-/** Horario efectivo de una carrera: el suyo, o el general, o los valores por defecto. */
+/**
+ * Horario efectivo de una carrera: el suyo, o el general, o los valores por defecto.
+ * @param {Horario[]} [horarios]
+ * @param {string | null} [nivel]
+ * @param {{ limite: string, permanencia: number }} [porDefecto]
+ * @returns {HorarioEfectivo}
+ */
 export function horarioDe(horarios = [], nivel, porDefecto = { limite: "08:00", permanencia: 120 }) {
   const h = horarios.find((x) => x.nivel && x.nivel === nivel) || horarios.find((x) => !x.nivel);
   if (!h) return { definido: false, ingreso: null, tolerancia: 0, limite: porDefecto.limite, salida: null, desde: null, hasta: null, permanencia: porDefecto.permanencia };
@@ -67,6 +124,9 @@ export function horarioDe(horarios = [], nivel, porDefecto = { limite: "08:00", 
 /**
  * ¿Cómo es un ingreso a esta hora? 'temprano' (aún no se abre el ingreso) · 'puntual' · 'tarde' (pasó el límite de puntualidad)
  * · 'cerrado' (pasó la hora de cierre del ingreso).
+ * @param {HorarioEfectivo} h
+ * @param {string} hhmm
+ * @returns {EstadoIngreso}
  */
 export function estadoIngreso(h, hhmm) {
   if (h.desde && hhmm < h.desde) return "temprano";
@@ -74,7 +134,13 @@ export function estadoIngreso(h, hhmm) {
   return hhmm > h.limite ? "tarde" : "puntual";
 }
 
-/** ¿Ya puede marcar su salida? Pasada la permanencia mínima desde su ingreso. Devuelve { ok, desde:'HH:MM' }. */
+/**
+ * ¿Ya puede marcar su salida? Pasada la permanencia mínima desde su ingreso. Devuelve { ok, desde:'HH:MM' }.
+ * @param {string} horaIngreso
+ * @param {string} ahoraHHMM
+ * @param {number} [permanencia]
+ * @returns {SalidaPermitidaResult}
+ */
 export function salidaPermitida(horaIngreso, ahoraHHMM, permanencia = 120) {
   const desde = aHHMM(Math.min(aMin(horaIngreso) + permanencia, 24 * 60 - 1));
   return { ok: ahoraHHMM >= desde, desde };
