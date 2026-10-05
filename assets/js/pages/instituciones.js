@@ -67,7 +67,7 @@ function renderHero(stats) {
         <div class="inst-stats" role="region" aria-label="Métricas de instituciones">
           <div class="inst-stat-card">
             <span class="inst-stat-val">${instVal}</span>
-            <span class="inst-stat-lbl">Instituciones</span>
+            <span class="inst-stat-lbl">Institutos</span>
           </div>
           <div class="inst-stat-card">
             <span class="inst-stat-val">${alumVal}</span>

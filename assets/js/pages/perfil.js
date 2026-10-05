@@ -48,8 +48,8 @@ export const perfilPage = {
             <button class="btn btn-outline" type="submit">Guardar nombre</button></form>
           <h3 style="margin:22px 0 8px">Cambiar contraseña</h3>
           <form id="perfil-pass" class="stack" autocomplete="off">
-            <input class="input" id="perfil-p1" type="password" placeholder="Nueva contraseña (mínimo 8 caracteres)" minlength="8" autocomplete="new-password">
-            <input class="input" id="perfil-p2" type="password" placeholder="Repite la nueva contraseña" minlength="8" autocomplete="new-password">
+            <input class="input" id="perfil-p1" type="password" placeholder="Nueva contraseña (mínimo 8 caracteres)" aria-label="Nueva contraseña" minlength="8" autocomplete="new-password">
+            <input class="input" id="perfil-p2" type="password" placeholder="Repite la nueva contraseña" aria-label="Repite la nueva contraseña" minlength="8" autocomplete="new-password">
             <button class="btn btn-outline" type="submit">Cambiar contraseña</button>
           </form>
         </section>

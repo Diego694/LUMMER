@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.1.2 — 2026-10-05
+
+### Corregido
+- **Desborde horizontal en Calendario en móvil**: cabeceras de tarjeta (`.card-head`) configuradas con ajuste envolvente (`flex-wrap`) para que títulos largos y botones de configuración amplia no empujen el ancho de la página ni generen desplazamiento horizontal.
+- **Cabeceras de tarjeta y de página que envuelven en móvil**: los títulos de tarjetas y páginas ocupan el ancho completo (100%) y los controles, selects e inputs se posicionan debajo ocupando todo el ancho disponible, con texto de botones en varias líneas si es necesario.
+- **Filtros a ancho completo y 44px en móvil**: barras de filtros y herramientas (`.toolbar`) adaptadas en móvil a diseño vertical de ancho completo (100%) con altura táctil mínima de 44px en todas las pantallas de consultas y mantenimiento.
+- **Tablas con ancho mínimo y sombra de scroll**: tablas con ancho mínimo razonable (560px) para desplazamiento horizontal fluido en pantallas táctiles sin estrujar columnas, nombres de alumnos en una sola línea y sombra/degradado lateral indicativo de contenido desplazable en tema claro y oscuro.
+- **Objetivos táctiles de 44px**: botones compactos (`.btn-sm`), botones de solo icono (`.icon-only`) y controles de paginación con tamaño táctil mínimo de 44px en pantallas de 640px o menos.
+- **Etiqueta «Institutos» sin cortes**: eliminación del corte de palabras a mitad de sílaba («INSTITUCIO / NES») en el hero de Instituciones mediante la etiqueta «Institutos», espaciado de letras normalizado y ajuste dinámico en resoluciones reducidas.
+- **Aria-label en campos de contraseña del perfil**: accesibilidad mejorada en campos de cambio de contraseña en Mi Perfil y PIN de salida en Modo Quiosco mediante atributos `aria-label` descriptivos.
+- **Modales con botones apilados en pantallas estrechas**: botones de pie de modal (`.modal-foot`) apilados al 100% de ancho con altura mínima de 44px en pantallas de hasta 480px.
+
 ## 3.1.1 — 2026-10-05
 
 ### Añadido

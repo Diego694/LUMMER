@@ -281,7 +281,7 @@ function pedirSalida() {
   const m = document.createElement("div");
   m.id = "q-pin-modal"; m.className = "q-pin-modal";
   m.innerHTML = `<div class="q-pin-card"><h3>Salir del modo quiosco</h3>
-    <input id="q-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="PIN">
+    <input id="q-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="PIN" aria-label="PIN de seguridad">
     <p class="q-pin-err" id="q-pin-err" hidden></p>
     <div class="q-pin-btns"><button class="btn btn-outline" id="q-pin-no">Cancelar</button><button class="btn btn-primary" id="q-pin-ok">Salir</button></div>
     <button class="link-btn" id="q-pin-olvido">Olvidé el PIN: usar mi contraseña</button></div>`;

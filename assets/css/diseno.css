@@ -679,7 +679,11 @@ body.est{background:var(--paper)}
   color: #C3CCE0;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: 0;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
 }
 
 .inst-stat-skel {
@@ -918,7 +922,7 @@ body.est{background:var(--paper)}
   }
   .inst-stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--s-2);
     width: 100%;
     align-items: start;
@@ -939,9 +943,11 @@ body.est{background:var(--paper)}
   .inst-stat-lbl {
     font-size: var(--fs-xs);
     line-height: 1.25;
+    letter-spacing: 0;
     white-space: normal;
     word-break: normal;
-    overflow-wrap: break-word;
+    overflow-wrap: normal;
+    hyphens: none;
   }
   .inst-grid {
     grid-template-columns: 1fr;
@@ -987,4 +993,152 @@ body.est{background:var(--paper)}
     transform: none !important;
   }
 }
+
+/* ---------- 17. Refinamientos móviles y estructurales v3.1.1 ---------- */
+.card-head h2,
+.card-head h3 {
+  font-size: var(--fs-lg);
+}
+
+@media (max-width: 640px) {
+  /* 1. Prevención de desborde horizontal en card-head y controles */
+  .card-head {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--s-3);
+  }
+  .card-head > h2,
+  .card-head > h3,
+  .card-head > div:first-child {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .card-head > .btn:not(.icon-only),
+  .card-head > .btn-row,
+  .card-head > .actions,
+  .card-head > select,
+  .card-head > input {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .card-head .btn,
+  .page-head .btn,
+  .toolbar .btn {
+    white-space: normal;
+    text-align: center;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .card-head .btn-row,
+  .page-head .actions {
+    width: 100%;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+  .card-head .btn-row .btn,
+  .page-head .actions .btn {
+    width: 100%;
+  }
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-3);
+  }
+  .page-head > div:first-child {
+    width: 100%;
+  }
+
+  /* 2. Filtros y barras de herramientas uniformes */
+  .toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: var(--s-2);
+  }
+  .toolbar > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+  .toolbar select,
+  .toolbar input,
+  .toolbar .search,
+  .toolbar .btn,
+  .toolbar .filter {
+    width: 100% !important;
+    min-height: 44px;
+  }
+  .toolbar .search .input {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* 4. Tablas en móvil: scroll horizontal suave sin estrujar columnas y sombra lateral */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background:
+      linear-gradient(to right, var(--panel) 30%, transparent),
+      linear-gradient(to left, var(--panel) 30%, transparent) 100% 0,
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, .18), transparent),
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, .18), transparent) 100% 0;
+    background-repeat: no-repeat;
+    background-color: var(--panel);
+    background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+  :root[data-theme="dark"] .table-wrap {
+    background:
+      linear-gradient(to right, var(--panel) 30%, transparent),
+      linear-gradient(to left, var(--panel) 30%, transparent) 100% 0,
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, .45), transparent),
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, .45), transparent) 100% 0;
+    background-repeat: no-repeat;
+    background-color: var(--panel);
+    background-size: 32px 100%, 32px 100%, 14px 100%, 14px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+  .table-wrap table {
+    min-width: 560px;
+  }
+  .table-wrap .person span:last-child {
+    white-space: nowrap;
+  }
+
+  /* 5(a). Objetivos táctiles interactivos >= 44px en móvil */
+  .btn-sm {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: var(--fs-sm);
+  }
+  .icon-only {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .pager-group .btn {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 5(e). Modales: ajuste de espacio y apilado al 100% de botones */
+  .modal-overlay {
+    padding: 12px;
+  }
+  .modal-foot {
+    flex-direction: column-reverse;
+    gap: var(--s-2);
+  }
+  .modal-foot .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
 
