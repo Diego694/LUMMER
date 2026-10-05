@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.1.1 — 2026-10-05
+
+### Añadido
+- **Pantalla Instituciones rediseñada**: tarjetas responsive, cabecera con identidad del acceso (fondo profundo con degradado azul-negro, orbes difuminados y formas geométricas animadas), métricas globales de instituciones, alumnos y personal, y botón para copiar el código de registro con área táctil accesible y confirmación por notificación.
+
+### Cambiado
+- Reemplazo de la tabla de instituciones por una cuadrícula responsive de tarjetas con borde superior semántico por estado (actual, activa e inactiva), acciones compactas con ajuste flexible sin desbordamiento horizontal y animaciones suaves de entrada respetando preferencias de movimiento reducido.
+
 ## 3.1.0 — 2026-10-05
 
 ### Añadido
