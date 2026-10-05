@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1 — 2026-10-05
+
+### Cambiado
+- **Acceso**: fondo más profundo (degradado hacia negro) y **formas en movimiento** (orbes de luz, anillos, cuadrados, triángulos, cruces y puntos que flotan y giran despacio). Capa decorativa `aria-hidden`; solo `transform`/`opacity`; se detiene con «reducir movimiento»; en móvil se simplifica.
+
 ## 3.0.0 — 2026-10-05
 
 ### Rediseño de la interfaz (ver `docs/DISENO.md`)
