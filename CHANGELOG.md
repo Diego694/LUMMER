@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.2 — 2026-10-05
+
+### Cambiado
+- Se quitó el recuadro provisional **«RA»** del acceso, el menú lateral, el portal del estudiante, el de apoderados y el quiosco: la marca es solo texto hasta que el instituto tenga su logo.
+
 ## 3.0.1 — 2026-10-05
 
 ### Cambiado

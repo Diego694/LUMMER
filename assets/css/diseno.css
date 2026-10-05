@@ -362,3 +362,10 @@ body.est{background:var(--paper)}
   .carnet-est{background:linear-gradient(150deg,#0f1c3a,#1d3263 70%,#27437d)}
   .est-top{background:var(--panel)}
 }
+
+/* Sin logotipo: la marca es solo texto (se añadirá el logo del instituto cuando exista) */
+.side-brand,.brand,.la-top,.q-marca{gap:0}
+.side-brand{padding:22px 20px 14px}
+.side-brand strong{font-size:var(--fs-xl);letter-spacing:-.015em}
+.brand h1{font-size:var(--fs-xl)}
+.la-top strong{font-size:var(--fs-xl)}
