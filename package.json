@@ -1,6 +1,6 @@
 {
   "name": "registro-academico",
-  "version": "3.2.1",
+  "version": "4.0.0",
   "private": true,
   "description": "Sistema de registro académico y control de asistencia escolar (QR/NFC) con dashboard.",
   "type": "module",

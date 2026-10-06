@@ -1,81 +1,119 @@
-# App Android (APK)
+# Apps Android (Nativa y Lite)
 
-## Cómo funciona (y por qué se actualiza sola)
+El proyecto ofrece dos aplicaciones para dispositivos Android que cubren diferentes necesidades y pueden **convivir instaladas al mismo tiempo** en el mismo teléfono:
 
-El APK es un **envoltorio nativo mínimo** (`android/`, ~300 líneas de Java, sin dependencias externas) que abre **tu web publicada** en un WebView. No contiene copia de las pantallas ni de la configuración.
+1. **App Nativa (`android-nativo/`)**: la **versión principal y recomendada** para docentes y administradores. Desarrollada en Kotlin con Jetpack Compose, CameraX, Room y WorkManager.
+2. **App Lite (`android/`)**: la versión secundaria basada en WebView (~300 líneas de Java). Abre la web remota, se actualiza de vez en cuando y aloja también el portal móvil del estudiante.
 
+---
+
+## 1. Comparativa: App Nativa vs. App Lite
+
+| Característica | App Nativa (Principal) | App Lite (Secundaria) |
+|---|---|---|
+| **Tecnología** | Kotlin, Jetpack Compose, Material 3, Hilt | Java + Android WebView |
+| **Código** | `android-nativo/` | `android/` |
+| **ID de aplicación** | `pe.registroacademico.nativo.docente` | `app.registroacademico` (docente) / `.estudiante` |
+| **Nombre visible** | **Registro Académico** | **Asistencia Institucional Lite** / **Mi Carnet Institucional** |
+| **Público objetivo** | Docentes y directivos | Docentes (modo ligero) y Estudiantes |
+| **Pantallas** | Las 33 pantallas completas portadas | Interfaz web servida por HTTPS |
+| **Cámara / Escáner QR** | CameraX + Google ML Kit a alta velocidad | `getUserMedia` HTML5 / WebRTC |
+| **Respaldo offline** | Base de datos Room + cola WorkManager garantizada | Caché del Service Worker (`sw.js`) |
+| **SDK mínimo / destino** | minSdk 24 (Android 7.0+) · targetSdk 37 (Android 17) | minSdk 24 · targetSdk 34 (Android 14) |
+| **Prioridad** | **Alta (Release principal v4.0.0+)** | Secundaria (mantenimiento periódico) |
+
+Ambas aplicaciones tienen `applicationId` diferentes, por lo que **pueden instalarse juntas** en cualquier dispositivo sin conflictos.
+
+---
+
+## 2. Enlaces de descarga estables
+
+Los binarios se compilan automáticamente con GitHub Actions y se publican con URLs de descarga directa:
+
+- **App Nativa (Docente / Administración):**
+  - Release estable: [Releases tag `app-latest`](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/app-latest)
+  - Archivo APK: **`registro-academico.apk`**
+- **App Lite (Docente y Estudiante):**
+  - Release estable: [Releases tag `apk-latest`](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest)
+  - Archivos APK:
+    - **`asistencia-escolar.apk`** (Docente Lite)
+    - **`carnet-estudiante.apk`** (Mi Carnet Institucional - portal del estudiante)
+
+---
+
+## 3. Cómo compilar en tu equipo
+
+### Opción A: Compilar App Nativa (`android-nativo/`)
+
+**Requisitos previos:**
+- **JDK:** Java 21 (Temurin o similar, configurado en `JAVA_HOME`).
+- **Gradle:** 9.6.0.
+- **Android SDK:** `platforms;android-37` y `build-tools;37.0.0` (configurado en `ANDROID_HOME`).
+
+**Comandos:**
+```bash
+cd android-nativo
+
+# 1. Ejecutar pruebas unitarias JVM de dominio y lógica
+gradle testDocenteDebugUnitTest
+
+# 2. Compilar APK de Release (perfil Docente)
+gradle assembleDocenteRelease --no-daemon -PAPP_VERSION_CODE=1001 -PAPP_VERSION_NAME=4.0.0
+
+# El APK resultante se genera en:
+# android-nativo/app/build/outputs/apk/docente/release/app-docente-release.apk
 ```
-Teléfono ── APK (WebView) ──HTTPS──► tu web (GitHub Pages / Docker) ──► Supabase
-                                         ▲
-                       tú publicas aquí: pantallas, estilos, config.js (conexión a la base de datos)
-```
 
-| Cambio que haces | ¿Hay que recompilar/reinstalar el APK? |
-|---|---|
-| Nuevas pantallas, arreglos, estilos, textos | **No.** Haces `git push`; al abrir la app (o al volver tras 15 min en segundo plano) carga la versión nueva. |
-| **Conectar o cambiar la base de datos** (`SUPABASE_URL` / `SUPABASE_ANON_KEY` en `assets/js/config.js`) | **No.** Es parte de la web. |
-| Cambiar la **dirección (URL) de la web** | Sí, una vez: la URL va fija en el APK (`APP_URL`). Usa un dominio estable. |
-| Cambiar permisos Android, el puente nativo (`MainActivity.java`), el icono o el nombre | Sí (y publicar el APK nuevo). |
+### Opción B: Compilar App Lite (`android/`)
 
-Garantía de frescura: `sw.js` usa *red primero* con revalidación (`cache: no-cache`), así que online siempre llega lo último; sin conexión abre la copia guardada. La versión de la web se ve en el pie del menú lateral (`v2.1.0 · app Android`).
+**Requisitos previos:**
+- **JDK:** Java 17+.
+- **Gradle:** 8.9.
+- **Android SDK:** `platforms;android-34` y `build-tools;34.0.0`.
 
-Esto aplica igual en el navegador: la misma web es una **PWA** (se puede “Instalar app” desde Chrome) y no depende del APK.
-
-## Qué cubre la app nativa (lo que un WebView no hace solo)
-
-| Función | Implementación |
-|---|---|
-| **Cámara / escáner QR** | Pide el permiso Android y lo concede al WebView solo para tu dominio. |
-| **Descargas** (CSV, PNG, PDF de carnets) | `AndroidBridge.saveFile` guarda en **Descargas** (MediaStore, sin permisos de almacenamiento). Los PDF usan JPEG para ser ligeros. |
-| **Importar CSV** | Selector de archivos nativo. |
-| **NFC** | Lectura nativa de tags NDEF (texto/URI) → llama a `window.onNativeNfc(código)`; la web registra igual que con QR. (Web NFC no existe en WebView.) |
-| **Sin conexión** | Si no hay red ni copia en cache, muestra una pantalla con *Reintentar*. |
-| **Seguridad** | Solo HTTPS; solo tu dominio navega dentro de la app (enlaces externos abren el navegador); sin acceso a archivos locales; permisos de cámara solo para tu origen. |
-
-Requisito: **Android 7.0 o superior** (minSdk 24). Desde Android 10 los archivos exportados van a *Descargas*; en Android 7–9 se guardan en la carpeta de descargas propia de la app (`Android/data/<app>/files/Download`), sin pedir permisos de almacenamiento. En teléfonos muy antiguos, actualiza *Android System WebView* desde Google Play; si no es posible, la app lo explica en pantalla.
-
-### URL remota (`app-config.json`)
-Si cambia la dirección de la web (p. ej. al pasar a un dominio propio), no hace falta reinstalar: edita `app-config.json` en la raíz del repositorio (claves `docente` y `estudiante`, solo `https`). Cada vez que la app abre —y cuando no logra cargar— lee `https://raw.githubusercontent.com/<usuario>/<repo>/main/app-config.json`, guarda la nueva dirección y pasa a ella. Se puede cambiar el origen del archivo al compilar con `-PCONFIG_URL=...`.
-
-## Obtener el APK
-
-### Opción A — GitHub Actions (recomendada, no requiere instalar nada)
-
-1. Sube el repositorio a GitHub y activa **Pages** (ver [DESPLIEGUE.md](DESPLIEGUE.md)).
-2. **Una sola vez**, crea la clave de firma en tu equipo y guárdala en secretos:
-   ```bash
-   python scripts/make_keystore.py
-   ```
-   Te indica los 4 secretos (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) a crear en *Settings → Secrets and variables → Actions*. **Haz copia de seguridad de la carpeta que genera**: si pierdes la clave, los teléfonos con la app instalada no podrán actualizarla.
-3. *(Opcional)* Si la web no está en `https://<usuario>.github.io/<repo>/`, crea la variable de repositorio `APP_URL` con tu URL HTTPS.
-4. **Actions → Android APK → Run workflow** (también corre solo al cambiar `android/**`).
-5. El APK queda en **Releases → “APK Android (última versión)”** con enlace de descarga estable, y como artefacto del workflow.
-
-### Opción B — Compilar en tu PC
-
-Requiere JDK 17+, Android SDK (plataforma 34 y build-tools) y Gradle 8.9:
-
+**Comandos:**
 ```bash
 cd android
-gradle assembleRelease -PAPP_URL=https://tu-usuario.github.io/tu-repo/
-# → android/app/build/outputs/apk/release/app-release.apk
+
+# Compilar flavors docente y estudiante
+gradle assembleDocenteRelease assembleEstudianteRelease --no-daemon \
+  -PAPP_URL=https://tu-usuario.github.io/tu-repo/ \
+  -PAPP_VERSION_CODE=1 \
+  -PAPP_VERSION_NAME=3.2.1
+
+# Los APKs se generan en:
+# android/app/build/outputs/apk/docente/release/app-docente-release.apk
+# android/app/build/outputs/apk/estudiante/release/app-estudiante-release.apk
 ```
 
-## Instalar en el teléfono
+---
 
-1. Descarga el `.apk` desde la release (o pásalo por cable/WhatsApp/Drive).
-2. Ábrelo; Android pedirá permitir “instalar apps desconocidas” para el navegador o gestor de archivos que lo abrió (Ajustes → Aplicaciones → acceso especial).
-3. La primera vez que uses el escáner, acepta el permiso de cámara.
+## 4. Firma y Secretos en GitHub Actions
 
-Para actualizar el **APK** en el futuro, instala el nuevo encima: funciona solo si está firmado con la **misma clave** (por eso el paso 2).
+Ambos workflows (`.github/workflows/android-nativo.yml` y `.github/workflows/android.yml`) comparten el mismo esquema de firma y los **mismos secretos de repositorio** (*Settings → Secrets and variables → Actions*):
 
-## Solución de problemas
-
-| Síntoma | Causa probable |
+| Secreto | Descripción |
 |---|---|
-| “No se pudo abrir la aplicación” | Sin internet la primera vez, o `APP_URL` incorrecta (compila de nuevo con la URL correcta). |
-| “La app no se instaló / conflicto de paquete” | El APK nuevo está firmado con otra clave. Desinstala el anterior (se pierde solo lo local) o usa siempre la clave del proyecto. |
-| No se descarga un PDF/CSV | La descarga va a la carpeta *Descargas*; aparece un aviso “Guardado en Descargas”. |
-| El escáner no abre la cámara | Permiso de cámara denegado: Ajustes → Apps → Asistencia Institucional → Permisos. |
-| NFC “desactivado” | Activa NFC en los ajustes del teléfono y vuelve a la pantalla. |
-| Veo una versión vieja | Cierra la app desde recientes y ábrela; confirma la versión en el pie del menú. |
+| `ANDROID_KEYSTORE_BASE64` | Archivo `.jks` codificado en base64. |
+| `ANDROID_KEYSTORE_PASSWORD` | Contraseña del almacén de claves (keystore). |
+| `ANDROID_KEY_ALIAS` | Alias de la clave de firmado. |
+| `ANDROID_KEY_PASSWORD` | Contraseña de la clave privada. |
+
+### Generar la clave de firma (una sola vez)
+Ejecuta el script asistido en la raíz del repositorio:
+```bash
+python scripts/make_keystore.py
+```
+El script generará el archivo `release.jks`, imprimirá la cadena en base64 y te guiará para configurar los 4 secretos. **Haz una copia de seguridad segura de la clave**: si se pierde, las instalaciones existentes no podrán actualizarse mediante APK.
+
+> [!NOTE]
+> Si los secretos no están configurados en GitHub Actions, los workflows continuarán compilando pero firmarán con una clave debug efímera. Dicho APK servirá para pruebas, pero mostrará una advertencia y no podrá actualizar instalaciones existentes firmadas con la clave de producción.
+
+---
+
+## 5. Instalación en el teléfono
+
+1. Descarga el archivo `.apk` correspondiente desde GitHub Releases.
+2. Abre el archivo descargado. Android solicitará habilitar el permiso de «Instalar aplicaciones desconocidas» para el navegador o gestor de archivos.
+3. Al iniciar la aplicación nativa por primera vez, concede los permisos de cámara solicitados para permitir el escaneo de carnets QR.
+4. Para futuras actualizaciones, simplemente descarga el nuevo APK e instálalo sobre la app existente (requiere que ambos hayan sido firmados con la misma clave).

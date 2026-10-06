@@ -39,3 +39,47 @@ jobs:
           curl -fsSI http://127.0.0.1:8080/ | tee headers.txt
           grep -qi "content-security-policy" headers.txt
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/tests/tests.html)" = "404"
+
+  android-nativo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Comprobar si corresponde ejecutar tests nativos
+        id: filtro
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "ejecutar=true" >> "$GITHUB_OUTPUT"
+          else
+            CAMBIOS=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep '^android-nativo/' || true)
+            if [ -n "$CAMBIOS" ]; then
+              echo "ejecutar=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "Sin cambios en android-nativo/. Omitiendo tests."
+              echo "ejecutar=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.filtro.outputs.ejecutar == 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Asegurar SDK de Android (plataforma 37 + build-tools 37.0.0)
+        if: steps.filtro.outputs.ejecutar == 'true'
+        run: |
+          SDKM=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1)
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-37" "build-tools;37.0.0" || echo "::warning::sdkmanager no pudo instalar android-37 o build-tools 37.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.filtro.outputs.ejecutar == 'true'
+        with:
+          gradle-version: 9.6.0
+
+      - name: Tests unitarios Android nativo (JVM)
+        if: steps.filtro.outputs.ejecutar == 'true'
+        working-directory: android-nativo
+        run: gradle testDocenteDebugUnitTest --no-daemon

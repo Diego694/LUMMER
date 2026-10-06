@@ -1,5 +1,20 @@
 # Changelog
 
+## 4.0.0 — 2026-10-05
+
+### Añadido
+- **App nativa Android (Kotlin + Jetpack Compose)**: versión oficial principal para docentes y administradores con las 33 pantallas de la web portadas en su totalidad (registro QR con CameraX y Google ML Kit, quiosco con PIN y bloqueo, asistencia masiva y por curso, consultas, gestión, reportes, instituciones y configuración general).
+- **Respaldo y sincronización offline en móvil**: base de datos local Room y sincronización garantizada en segundo plano con WorkManager.
+- **Compilación y firma para Android 17 (API 37)**: `compileSdk 37`, `targetSdk 37`, `minSdk 24`, soporte para signing configs con keystore de producción en CI y distribución como release principal `app-latest` (`registro-academico.apk`) y por tags de versión en GitHub Actions.
+- **Workflow de CI para Android nativo**: ejecución automatizada de pruebas unitarias JVM (`gradle testDocenteDebugUnitTest`) con JDK 21 Temurin y Gradle 9.6.0.
+- **TypeScript gradual**: tipado estático progresivo en el frontend web con validación estricta de tipos `npm run typecheck` integrada en el pipeline de CI.
+
+### Cambiado
+- **App móvil anterior pasa a versión «Lite»**: el APK previo basado en WebView (`android/`, «Asistencia Institucional Lite») pasa a mantenimiento secundario y convive instalado en el dispositivo junto a la nueva app nativa gracias a identificadores de aplicación independientes. El portal del estudiante («Mi Carnet Institucional») se mantiene en la app Lite.
+
+### Corregido
+- **Cálculo de asistencia en matriz tipada**: corrección en el cálculo de la matriz tipada para que el estado de tardanza se contabilice adecuadamente como presente en las asistencias.
+
 ## 3.2.1 — 2026-10-05
 
 ### Corregido

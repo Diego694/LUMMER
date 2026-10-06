@@ -16,7 +16,7 @@ android {
         targetSdk 34
         buildConfigField 'String', 'CONFIG_URL', "\"${configUrl}\""
         versionCode = (findProperty('APP_VERSION_CODE') ?: '1').toString().toInteger()
-        versionName = (findProperty('APP_VERSION_NAME') ?: '3.2.0').toString()
+        versionName = (findProperty('APP_VERSION_NAME') ?: '3.2.1').toString()
     }
 
     buildFeatures {
@@ -31,7 +31,7 @@ android {
         docente {
             dimension 'rol'
             applicationId 'app.registroacademico'   // se conserva: así las instalaciones existentes se actualizan
-            resValue 'string', 'app_name', 'Asistencia Institucional'
+            resValue 'string', 'app_name', 'Asistencia Institucional Lite'
             buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
             buildConfigField 'String', 'CONFIG_KEY', '"docente"'
         }

@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Diego694/Sistema-de-control-de-asistencia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=1c2433"></a>
-  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-3.2.1-E8A33D?style=flat-square&labelColor=1c2433">
+  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-4.0.0-E8A33D?style=flat-square&labelColor=1c2433">
   <img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-8b95a8?style=flat-square&labelColor=1c2433">
 </p>
 
@@ -36,7 +36,7 @@
 
 | Para quién | Dónde |
 |---|---|
-| Docentes y administradores | [Web / PWA](https://diego694.github.io/Sistema-de-control-de-asistencia/) · [App Android](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) · [Programa de PC](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/pc-latest) |
+| Docentes y administradores | [Web / PWA](https://diego694.github.io/Sistema-de-control-de-asistencia/) · [App Android](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/app-latest) ([Lite](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest)) · [Programa de PC](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/pc-latest) |
 | Estudiantes (*Mi Carnet Institucional*) | [Portal web](https://diego694.github.io/Sistema-de-control-de-asistencia/estudiante/) · [App Android](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) |
 
 ## Probarlo en un minuto

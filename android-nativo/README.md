@@ -4,13 +4,20 @@ Proyecto nativo Android desarrollado en **Kotlin**, **Jetpack Compose** y **Mate
 
 Este módulo reside de forma independiente en `android-nativo/` y reproduce la totalidad de las entidades, lógica de negocio y navegación de la plataforma web.
 
+> [!IMPORTANT]
+> **Estado del proyecto:** **Completa y lista para release (v4.0.0)**.
+> - Probada satisfactoriamente en hardware real en todas sus pantallas y flujos.
+> - Se distribuye como la **Release Principal** en GitHub (`app-latest` / `registro-academico.apk`) para el perfil **Docente** (`pe.registroacademico.nativo.docente`).
+> - El perfil **Estudiante** aún no está portado a Compose; los estudiantes continúan accediendo vía el portal web y la app Lite («Mi Carnet Institucional»).
+> - La app anterior WebView (`android/`) se mantiene como versión **Lite** y convive instalada sin interferencias.
+
 ---
 
 ## 1. Requisitos del entorno de compilación
 
 - **JDK:** Java 21 (configurado en `JAVA_HOME`).
 - **Gradle:** 9.6.0 (sin wrapper en el repositorio; el orquestador usa su distribución local).
-- **Android SDK:** `platforms;android-37.0` y `build-tools;37.0.0` (configurado en `ANDROID_HOME`).
+- **Android SDK:** `platforms;android-37` y `build-tools;37.0.0` (configurado en `ANDROID_HOME`).
 - **Nivel de SDK:** `compileSdk 37`, `targetSdk 37`, `minSdk 24`.
 - **Toolchain:** Android Gradle Plugin 9.4.1 (Kotlin 2.4.20 integrado), KSP 2.3.12, Hilt 2.60.1, Compose BOM 2026.09.00, Supabase BOM 3.8.0, Room 2.8.5, WorkManager 2.12.0, DataStore 1.2.1.
 
@@ -20,19 +27,20 @@ Este módulo reside de forma independiente en `android-nativo/` y reproduce la t
 
 Desde el directorio raíz de la app nativa (`android-nativo/`):
 
+### Ejecutar pruebas unitarias JVM
+```bash
+gradle testDocenteDebugUnitTest
+```
+
+### Compilar APK del perfil Docente para Producción (Release)
+```bash
+gradle assembleDocenteRelease -PAPP_VERSION_CODE=1001 -PAPP_VERSION_NAME=4.0.0
+# Genera: app/build/outputs/apk/docente/release/app-docente-release.apk
+```
+
 ### Compilar APK del perfil Docente (Debug)
 ```bash
 gradle assembleDocenteDebug
-```
-
-### Compilar APK del perfil Estudiante (Debug)
-```bash
-gradle assembleEstudianteDebug
-```
-
-### Ejecutar pruebas unitarias JVM
-```bash
-gradle test
 ```
 
 ---

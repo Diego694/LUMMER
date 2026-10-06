@@ -2,6 +2,17 @@
 
 Documento técnico y operativo para la modernización gradual del frontend web y la construcción de la aplicación móvil nativa Android, manteniendo la compatibilidad total con la base de datos Supabase existente (Auth, RLS, RPC, Storage) y preservando el funcionamiento ininterrumpido de la PWA web y el ejecutable de escritorio (.exe Electron).
 
+> [!NOTE]
+> **Estado de la migración (v4.0.0):**
+> - **Android Nativo:** **Completado al 100% (Release Principal v4.0.0)**.
+>   - Portadas y probadas en dispositivo real las 33 pantallas del sistema en Kotlin + Jetpack Compose + Material 3.
+>   - Escaneo QR acelerado con CameraX y Google ML Kit, quiosco seguro con bloqueo por PIN, y persistencia offline garantizada mediante base de datos local Room y cola en segundo plano con WorkManager.
+>   - Compilación para Android 17 (compileSdk 37, minSdk 24) y pipeline CI/CD en `.github/workflows/android-nativo.yml` con publicación directa a GitHub Releases (`app-latest` / `registro-academico.apk`).
+>   - La app anterior basada en WebView (`android/`) pasa a estado «Lite» y convive instalada sin interferir.
+> - **TypeScript (Frontend Web):** **En curso (adopción gradual)**.
+>   - Modelos base tipados en `types/` y verificación de tipos estática obligatoria (`npm run typecheck` con `tsc --noEmit`) activa en el pipeline de CI (`.github/workflows/ci.yml`).
+>   - Corrección en la matriz tipada de asistencias para contabilizar la tardanza como presente.
+
 ---
 
 ## A. Estado actual y justificación técnica
@@ -367,15 +378,15 @@ private val LightColorScheme = lightColorScheme(
 
 ## D. Plan por hitos y asignación de trabajo
 
-| Hito | Alcance técnico | Criterio de aceptación medible | Est. | Agente AGY (≤3 paralelos) | Humano obligatorio |
-|---|---|---|:---:|---|---|
-| **H1: TS Core** | Modelos `types/` + lógica pura (Bloque 1) a TS. | `tsc --noEmit` en 0 errores; `npm test` verde. | 3-4 d | Rutas exclusivas en `assets/js/*.ts` | Revisión de diffs |
-| **H2: TS Red & UI** | Capa de datos (Bloque 2) y componentes UI (Bloque 3). | Cero errores de tipos en llamadas Supabase y modales. | 4-5 d | Rutas en `api.ts`, `state.ts`, `ui.ts` | Validación en navegador |
-| **H3: TS Pages & CI** | Conversión de las 33 páginas y pipeline en GitHub Actions. | Build en CI ejecutando `tsc` y tests sin fallos. | 6-8 d | Páginas en subcarpetas separadas | Aprobación de PR final |
-| **H4: Android Base** | Estructura Compose, Hilt, Supabase Auth y pantallas de Login/Perfil. | Login exitoso y lectura de perfil en emulador. | 5-7 d | Scaffolding, Models, ViewModels | Configuración de keystore local |
-| **H5: Quiosco Nativo** | CameraX, ML Kit, lógica de escaneo, sonido y bloqueo por PIN. | Escaneo QR en < 100 ms y salida segura con PIN. | 5-6 d | Parser QR, estados de quiosco UI | **Prueba en teléfono real con cámara** |
-| **H6: Offline & Room** | Base de datos Room, cola de envíos y WorkManager en segundo plano. | Registros guardados en modo avión sincronizan al reconectar. | 6-8 d | Entidades Room, DAOs, Workers | **Prueba de corte de red en hardware real** |
-| **H7: Estudiante & Release** | Flavor estudiante (carnet), portal apoderado y pipeline de release. | APKs release generados y validados en CI. | 5-7 d | UI de Carnet Compose y Apoderado | Firma final y despliegue |
+| Hito | Alcance técnico | Criterio de aceptación medible | Estado | Agente AGY / Responsable |
+|---|---|---|:---:|---|
+| **H1: TS Core** | Modelos `types/` + lógica pura (Bloque 1) a TS. | `tsc --noEmit` en 0 errores; `npm test` verde. | **Completado** | Tipado de modelos y utilidades base |
+| **H2: TS Red & UI** | Capa de datos (Bloque 2) y componentes UI (Bloque 3). | Cero errores de tipos en llamadas Supabase y modales. | **En curso** | Validación incremental en `tsconfig.json` |
+| **H3: TS Pages & CI** | Conversión de páginas y pipeline en GitHub Actions. | Build en CI ejecutando `tsc` y tests sin fallos. | **En curso** | `npm run typecheck` activo en CI |
+| **H4: Android Base** | Estructura Compose, Hilt, Supabase Auth y pantallas de Login/Perfil. | Login exitoso y navegación fluida. | **Completado** | Módulos Hilt, MVVM y navegación base |
+| **H5: Quiosco Nativo** | CameraX, ML Kit, lógica de escaneo, sonido y bloqueo por PIN. | Escaneo QR en < 100 ms y salida segura con PIN. | **Completado** | Probado en hardware real por el usuario |
+| **H6: Offline & Room** | Base de datos Room, cola de envíos y WorkManager en segundo plano. | Registros en modo avión sincronizan al reconectar. | **Completado** | Probado en hardware real por el usuario |
+| **H7: Docente Release** | Flavor docente nativo (`pe.registroacademico.nativo.docente`), 33 pantallas y CI de release. | APK `registro-academico.apk` publicado en `app-latest` y tags. | **Completado** | Release Principal v4.0.0 (estudiante en Lite) |
 
 ---
 
