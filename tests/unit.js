@@ -271,7 +271,7 @@ import { DB } from "../assets/js/state.js";
 import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
 import { vocabulario } from "../assets/js/estudiante/api.js";
-import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota } from "../assets/js/api-aula.js";
+import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso } from "../assets/js/api-aula.js";
 
 test("permisos · puede: rol docente no puede acciones de administración", () => {
   const previo = DB.perfil;
@@ -355,6 +355,17 @@ test("aula · rutaArchivoAula: <colegio>/<curso>/ y nombre sin acentos ni caract
   const r = rutaArchivoAula("col-1", "cur-2", "Guía de Matemática #1.pdf");
   assert(r.startsWith("col-1/cur-2/"), "carpetas colegio/curso");
   assert(/^col-1\/cur-2\/[^/]+-Guia-de-Matematica-1\.pdf$/.test(r), "nombre limpio: " + r);
+});
+
+test("aula · libroNotas y alumnosDelCurso: promedio sobre 20 con lo calificado", () => {
+  const al = [{ id: "a", nombre: "Ana", nivel: "N", grado: "G1" }, { id: "b", nombre: "Beto", nivel: "N", grado: "G2" }, { id: "c", nombre: "Cris", nivel: "N", grado: "G1", aprobado: false }, { id: "d", nombre: "Dan", nivel: "X", grado: "G1" }];
+  same(alumnosDelCurso(al, { nivel: "N", grado: "G1" }).map((x) => x.id), ["a"]);
+  same(alumnosDelCurso(al, { nivel: "N", grado: null }).map((x) => x.id), ["a", "b"]);
+  const acts = [{ id: "1", puntaje_max: 20 }, { id: "2", puntaje_max: 10 }, { id: "3", puntaje_max: 20 }];
+  const l = libroNotas(al.slice(0, 2), acts, [{ actividad_id: "1", alumno_id: "a", nota: 16 }, { actividad_id: "2", alumno_id: "a", nota: 8 }, { actividad_id: "1", alumno_id: "b", nota: null }]);
+  same(l[0].promedio, 16, "(16+8)/(20+10)*20 = 16");
+  same(l[0].notas["3"], null, "actividad sin calificar");
+  same(l[1].promedio, null, "sin notas no hay promedio");
 });
 
 /* render */

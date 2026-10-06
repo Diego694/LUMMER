@@ -149,6 +149,43 @@ export async function eliminarFila(sb, tabla, fila) {
 }
 
 /**
+ * Estudiantes que cursan un curso: activos y aprobados de su carrera y, si el curso es de un ciclo, de ese ciclo.
+ * @template {{ nombre: string, nivel: string, grado: string, estado?: string, aprobado?: boolean | null }} A
+ * @param {A[]} alumnos
+ * @param {{ nivel: string, grado?: string | null }} curso
+ * @returns {A[]}
+ */
+export function alumnosDelCurso(alumnos, curso) {
+  return alumnos
+    .filter((a) => a.nivel === curso.nivel && (!curso.grado || a.grado === curso.grado) && (a.estado ?? "ACTIVO") === "ACTIVO" && a.aprobado !== false)
+    .sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
+}
+
+/**
+ * Libro de notas de un curso. El promedio se calcula sobre 20 con las actividades YA calificadas de cada estudiante
+ * (suma de notas / suma de puntajes máximos de esas actividades), así una actividad pendiente no lo hunde.
+ * @template {{ id: string, nombre: string }} A
+ * @param {A[]} alumnos
+ * @param {{ id?: string, puntaje_max: number }[]} actividades
+ * @param {{ actividad_id: string, alumno_id: string, nota: number | null }[]} entregas
+ * @returns {{ alumno: A, notas: Record<string, number | null>, promedio: number | null }[]}
+ */
+export function libroNotas(alumnos, actividades, entregas) {
+  return alumnos.map((alumno) => {
+    /** @type {Record<string, number | null>} */
+    const notas = {};
+    let suma = 0, maximo = 0;
+    for (const a of actividades) {
+      const e = entregas.find((x) => x.actividad_id === a.id && x.alumno_id === alumno.id);
+      const nota = e && e.nota != null ? Number(e.nota) : null;
+      notas[String(a.id)] = nota;
+      if (nota != null) { suma += nota; maximo += Number(a.puntaje_max); }
+    }
+    return { alumno, notas, promedio: maximo > 0 ? Math.round((suma / maximo) * 2000) / 100 : null };
+  });
+}
+
+/**
  * Entregas de una actividad con el nombre del alumno (solo las ve quien gestiona el curso).
  * @param {any} sb
  * @param {string} actividadId
@@ -156,6 +193,18 @@ export async function eliminarFila(sb, tabla, fila) {
  */
 export async function entregasDe(sb, actividadId) {
   const { data, error } = await sb.from("curso_entregas").select("*, alumnos(nombre, codigo)").eq("actividad_id", actividadId).order("enviado_en", { ascending: true });
+  if (error) throw err(error.message, error.code);
+  return data;
+}
+
+/**
+ * Todas las entregas de un curso (libro de notas; solo las ve quien gestiona el curso).
+ * @param {any} sb
+ * @param {string} cursoId
+ * @returns {Promise<CursoEntrega[]>}
+ */
+export async function entregasCursoSb(sb, cursoId) {
+  const { data, error } = await sb.from("curso_entregas").select("id, curso_id, actividad_id, alumno_id, nota, tardia").eq("curso_id", cursoId);
   if (error) throw err(error.message, error.code);
   return data;
 }
@@ -234,6 +283,8 @@ export const aulaSupabase = {
   aulaUrlArchivo(path) { return urlArchivoAula(this.sb, path); },
   /** @this {any} @param {string} actividadId */
   aulaEntregas(actividadId) { return entregasDe(this.sb, actividadId); },
+  /** @this {any} @param {string} cursoId */
+  aulaEntregasCurso(cursoId) { return entregasCursoSb(this.sb, cursoId); },
   /** @this {any} @param {string} id @param {number | null} nota @param {string} comentario */
   aulaCalificar(id, nota, comentario) { return calificarSb(this.sb, id, nota, comentario); },
   /** @this {any} @param {string} cursoId @returns {Promise<{ user_id: string }[]>} */
@@ -285,6 +336,11 @@ export const aulaDemo = {
     this.reload();
     return tabla(this.db, "curso_entregas").filter((/** @type {any} */ e) => e.actividad_id === actividadId)
       .map((/** @type {any} */ e) => ({ ...e, alumnos: (this.db.alumnos || []).find((/** @type {any} */ a) => a.id === e.alumno_id) || { nombre: "Estudiante", codigo: "" } }));
+  },
+  /** @this {any} @param {string} cursoId */
+  async aulaEntregasCurso(cursoId) {
+    this.reload();
+    return tabla(this.db, "curso_entregas").filter((/** @type {any} */ e) => e.curso_id === cursoId);
   },
   /** @this {any} @param {string} id @param {number | null} nota @param {string} comentario */
   async aulaCalificar(id, nota, comentario) {

@@ -3,17 +3,17 @@
 // cada docente asignado publica en SUS cursos. La seguridad real está en la base (migración 013); aquí solo se ocultan
 // los botones que fallarían.
 import { api } from "../api.js";
-import { validarArchivoAula, validarNota } from "../api-aula.js";
+import { alumnosDelCurso, libroNotas, validarArchivoAula, validarNota } from "../api-aula.js";
 import { DB } from "../state.js";
 import { esAdmin } from "../permisos.js";
 import { badge, confirmDialog, emptyState, icon, openModal, pageHead, registerActions, skeleton, toast } from "../ui.js";
-import { esc, etiquetaCiclo, fmtDate } from "../utils.js";
+import { downloadFile, esc, etiquetaCiclo, fmtDate } from "../utils.js";
 
 /** @typedef {import('../tipos.d.ts').CursoMaterial} CursoMaterial */
 /** @typedef {import('../tipos.d.ts').CursoActividad} CursoActividad */
 /** @typedef {import('../tipos.d.ts').CursoEntrega} CursoEntrega */
 
-/** @type {{ cursoId: string, tab: "material" | "actividades" }} */
+/** @type {{ cursoId: string, tab: "material" | "actividades" | "notas" }} */
 const st = { cursoId: "", tab: "material" };
 /** @type {{ materiales: CursoMaterial[], actividades: CursoActividad[], docentes: string[], gestiona: boolean }} */
 let datos = { materiales: [], actividades: [], docentes: [], gestiona: false };
@@ -78,8 +78,51 @@ function pintar() {
     <div class="toolbar" role="tablist" aria-label="Secciones del curso">
       <button class="pill ${st.tab === "material" ? "active" : ""}" role="tab" aria-selected="${st.tab === "material"}" data-action="aula-tab" data-tab="material">Material (${materiales.length})</button>
       <button class="pill ${st.tab === "actividades" ? "active" : ""}" role="tab" aria-selected="${st.tab === "actividades"}" data-action="aula-tab" data-tab="actividades">Actividades (${actividades.length})</button>
-      <span style="flex:1"></span>${boton}</div>
-    <div class="card flush">${st.tab === "material" ? htmlMaterial() : htmlActividades()}</div>`;
+      ${gestiona ? `<button class="pill ${st.tab === "notas" ? "active" : ""}" role="tab" aria-selected="${st.tab === "notas"}" data-action="aula-tab" data-tab="notas">Notas</button>` : ""}
+      <span style="flex:1"></span>${st.tab === "notas" ? `<button class="btn btn-outline" data-action="aula-notas-csv">${icon("download", 16)} Exportar CSV</button>` : boton}</div>
+    <div class="card flush" id="aula-tab-cuerpo">${st.tab === "material" ? htmlMaterial() : st.tab === "actividades" ? htmlActividades() : skeleton(4)}</div>`;
+  if (st.tab === "notas") cargarNotas(String(curso.id));
+}
+
+/* ------------------------------ Libro de notas ------------------------------ */
+/** @type {ReturnType<typeof libroNotas>} */
+let libro = [];
+
+/** @param {string} cursoId */
+async function cargarNotas(cursoId) {
+  const caja = document.getElementById("aula-tab-cuerpo");
+  const curso = cursoActual();
+  if (!caja || !curso) return;
+  try {
+    const entregasCurso = await api.aulaEntregasCurso(cursoId);
+    if (!caja.isConnected || st.cursoId !== cursoId || st.tab !== "notas") return;
+    libro = libroNotas(alumnosDelCurso(DB.alumnos, curso), datos.actividades, entregasCurso);
+    caja.innerHTML = htmlNotas();
+  } catch (/** @type {any} */ e) {
+    const sinMigracion = /does not exist|schema cache|curso_entregas/i.test(e.message || "");
+    caja.innerHTML = emptyState("No se pudo cargar el libro de notas", sinMigracion ? "Falta aplicar la migración 014 en Supabase (supabase/migrations/014_entregas_notas.sql)." : e.message, "alert");
+  }
+}
+
+const num = (/** @type {number | null | undefined} */ n) => (n == null ? "—" : String(Math.round(n * 100) / 100));
+
+function htmlNotas() {
+  const { actividades } = datos;
+  if (!actividades.length) return emptyState("Aún no hay actividades", "Publica actividades y califica las entregas para ver el libro de notas.", "listCheck");
+  if (!libro.length) return emptyState("Sin estudiantes en este curso", "Aparecerán los estudiantes aprobados de la carrera y el ciclo del curso.", "users");
+  return `<div class="table-wrap"><table><thead><tr><th>Estudiante</th>${actividades.map((a) => `<th title="${esc(a.titulo)}">${esc(a.titulo.length > 18 ? a.titulo.slice(0, 17) + "…" : a.titulo)}<br><small class="muted">/ ${a.puntaje_max}</small></th>`).join("")}<th>Promedio (/20)</th></tr></thead><tbody>
+    ${libro.map((f) => `<tr><td>${esc(f.alumno.nombre)}</td>${actividades.map((a) => `<td>${num(f.notas[String(a.id)])}</td>`).join("")}<td>${f.promedio == null ? "—" : badge(num(f.promedio), f.promedio >= 10.5 ? "green" : "red")}</td></tr>`).join("")}
+  </tbody></table></div>`;
+}
+
+function exportarNotas() {
+  const curso = cursoActual();
+  if (!curso || !libro.length) { toast("No hay notas para exportar.", "error"); return; }
+  const cel = (/** @type {string} */ t) => `"${t.replace(/"/g, '""')}"`;
+  const vacio = (/** @type {number | null | undefined} */ n) => (n == null ? "" : String(n));
+  const filas = [["Estudiante", ...datos.actividades.map((a) => `${a.titulo} (/${a.puntaje_max})`), "Promedio (/20)"].map(cel).join(",")];
+  for (const f of libro) filas.push([cel(f.alumno.nombre), ...datos.actividades.map((a) => vacio(f.notas[String(a.id)])), vacio(f.promedio)].join(","));
+  downloadFile(`notas-${curso.nombre.replace(/[^\w]+/g, "-")}.csv`, "\uFEFF" + filas.join("\r\n"));
 }
 
 function htmlMaterial() {
@@ -311,7 +354,8 @@ async function calificar(btn) {
 registerActions({
   "aula-entregas": (/** @type {HTMLElement} */ el) => { verEntregas(datos.actividades.find((a) => a.id === el.dataset.id)); },
   "aula-calificar": (/** @type {HTMLElement} */ el) => { calificar(el); },
-  "aula-tab": (/** @type {HTMLElement} */ el) => { st.tab = el.dataset.tab === "actividades" ? "actividades" : "material"; pintar(); },
+  "aula-tab": (/** @type {HTMLElement} */ el) => { st.tab = el.dataset.tab === "actividades" || el.dataset.tab === "notas" ? el.dataset.tab : "material"; pintar(); },
+  "aula-notas-csv": () => exportarNotas(),
   "aula-mat-new": () => formMaterial(),
   "aula-mat-edit": (/** @type {HTMLElement} */ el) => formMaterial(datos.materiales.find((m) => m.id === el.dataset.id)),
   "aula-act-new": () => formActividad(),

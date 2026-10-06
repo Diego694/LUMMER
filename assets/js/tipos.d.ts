@@ -785,6 +785,7 @@ export interface Api {
   aulaUrlArchivo(path: string): Promise<string>;
   aulaDocentes(cursoId: string): Promise<{ user_id: string }[]>;
   aulaEntregas(actividadId: string): Promise<CursoEntrega[]>;
+  aulaEntregasCurso(cursoId: string): Promise<CursoEntrega[]>;
   aulaCalificar(id: string, nota: number | null, comentario: string): Promise<void>;
   aulaAsignarDocente(cursoId: string, userId: string): Promise<void>;
   aulaQuitarDocente(cursoId: string, userId: string): Promise<void>;

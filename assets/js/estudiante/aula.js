@@ -1,6 +1,6 @@
 // @ts-check
 // Aula del estudiante: sus cursos (carrera y ciclo), con el material y las actividades que publican los docentes.
-import { validarArchivoAula } from "../api-aula.js";
+import { libroNotas, validarArchivoAula } from "../api-aula.js";
 import { badge, emptyState, icon, openModal, registerActions, skeleton, toast } from "../ui.js";
 import { esc } from "../utils.js";
 
@@ -64,7 +64,10 @@ export function iniciarAulaEstudiante(ctx) {
           : m.url ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener noreferrer" href="${esc(m.url)}">Abrir enlace</a>` : "";
         return `<li class="aula-est-item"><div><strong>${esc(m.titulo)}</strong>${m.tipo === "aviso" ? ` ${badge("Aviso", "amber")}` : ""}${m.descripcion ? `<p>${esc(m.descripcion)}</p>` : ""}</div>${boton}</li>`;
       }).join("")}</ul>`).join("");
-      caja.innerHTML = `<h2 class="aula-est-h">Actividades</h2>${acts ? `<ul class="aula-est-items">${acts}</ul>` : emptyState("Sin actividades", "Tu docente aún no publicó actividades.", "calendar")}
+      const mias = [...misEntregas.values()].filter((/** @type {CursoEntrega | null} */ e) => !!e).map((e) => /** @type {CursoEntrega} */ (e));
+      const promedio = libroNotas([{ id: "yo", nombre: "" }], actividades, mias.map((e) => ({ actividad_id: e.actividad_id, alumno_id: "yo", nota: e.nota })))[0]?.promedio;
+      const resumen = promedio == null ? "" : `<p class="aula-est-promedio">${badge(`Tu promedio: ${promedio} / 20`, promedio >= 10.5 ? "green" : "red")} <small>según tus actividades ya calificadas</small></p>`;
+      caja.innerHTML = `${resumen}<h2 class="aula-est-h">Actividades</h2>${acts ? `<ul class="aula-est-items">${acts}</ul>` : emptyState("Sin actividades", "Tu docente aún no publicó actividades.", "calendar")}
         <h2 class="aula-est-h">Material</h2>${mats || emptyState("Sin material", "Tu docente aún no subió material.", "book")}`;
     } catch (/** @type {any} */ e) {
       caja.innerHTML = emptyState("No se pudo cargar el curso", e.message || "Inténtalo de nuevo.", "alert");
