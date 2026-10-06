@@ -1,3 +1,4 @@
+// @ts-check
 // Aplica el tema guardado antes del primer pintado (evita el parpadeo claro→oscuro). Script clásico, bloqueante a propósito.
 (function () {
   try {

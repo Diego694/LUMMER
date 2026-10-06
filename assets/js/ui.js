@@ -1,6 +1,19 @@
+// @ts-check
 // Componentes de interfaz reutilizables: iconos, toasts, modales, formularios, tarjetas.
 import { esc } from "./utils.js";
 
+/** @typedef {import('./tipos.d.ts').OpenModalOptions} OpenModalOptions */
+/** @typedef {import('./tipos.d.ts').ModalInstance} ModalInstance */
+/** @typedef {import('./tipos.d.ts').ConfirmDialogOptions} ConfirmDialogOptions */
+/** @typedef {import('./tipos.d.ts').FormFieldOption} FormFieldOption */
+/** @typedef {import('./tipos.d.ts').FormFieldControl} FormFieldControl */
+/** @typedef {import('./tipos.d.ts').FormField} FormField */
+/** @typedef {import('./tipos.d.ts').FormModalOptions} FormModalOptions */
+/** @typedef {import('./tipos.d.ts').FormModalInstance} FormModalInstance */
+/** @typedef {import('./tipos.d.ts').KpiOptions} KpiOptions */
+/** @typedef {import('./tipos.d.ts').ActionHandler} ActionHandler */
+
+/** @type {Record<string, string>} */
 const P = {
   dashboard: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
   qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4"/>',
@@ -39,14 +52,26 @@ const P = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>',
 };
 
+/**
+ * @param {string} name
+ * @param {number} [size]
+ * @returns {string}
+ */
 export function icon(name, size = 18) {
   return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ""}</svg>`;
 }
 
 /* ------------------------------ Toast ------------------------------ */
+/** @type {ReturnType<typeof setTimeout> | undefined} */
 let toastTimer;
+/**
+ * @param {string} msg
+ * @param {'info' | 'success' | 'error' | string} [type]
+ * @returns {void}
+ */
 export function toast(msg, type = "info") {
   const el = document.getElementById("toast");
+  if (!el) return;
   el.className = `toast show toast-${type}`;
   el.innerHTML = `${icon(type === "error" ? "alert" : type === "success" ? "check" : "info", 16)}<span>${esc(msg)}</span>`;
   clearTimeout(toastTimer);
@@ -56,8 +81,12 @@ export function toast(msg, type = "info") {
 /* ------------------------------ Modales ------------------------------ */
 const FOCUSABLE = 'button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[href],[tabindex]:not([tabindex="-1"])';
 
+/**
+ * @param {OpenModalOptions} options
+ * @returns {ModalInstance}
+ */
 export function openModal({ title, body, footer = "", wide = false }) {
-  const previo = document.activeElement;
+  const previo = /** @type {HTMLElement | null} */ (document.activeElement);
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay open";
   overlay.innerHTML = `
@@ -68,10 +97,11 @@ export function openModal({ title, body, footer = "", wide = false }) {
     </div>`;
   document.body.appendChild(overlay);
   const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); previo?.focus?.(); };
+  /** @param {KeyboardEvent} e */
   const onKey = (e) => {
     if (e.key === "Escape") close();
     if (e.key === "Tab") {
-      const f = [...overlay.querySelectorAll(FOCUSABLE)];
+      const f = /** @type {HTMLElement[]} */ ([...overlay.querySelectorAll(FOCUSABLE)]);
       if (!f.length) return;
       const first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -80,11 +110,16 @@ export function openModal({ title, body, footer = "", wide = false }) {
   };
   document.addEventListener("keydown", onKey);
   overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) close(); });
-  overlay.querySelector("[data-close]").addEventListener("click", close);
-  (overlay.querySelector("input:not([type=hidden]),select,textarea") || overlay.querySelector(".modal"))?.focus();
+  overlay.querySelector("[data-close]")?.addEventListener("click", close);
+  const initialFocus = /** @type {HTMLElement | null} */ (overlay.querySelector("input:not([type=hidden]),select,textarea") || overlay.querySelector(".modal"));
+  initialFocus?.focus();
   return { el: overlay, close };
 }
 
+/**
+ * @param {ConfirmDialogOptions} options
+ * @returns {Promise<boolean>}
+ */
 export function confirmDialog({ title = "Confirmar", message, confirmLabel = "Eliminar", danger = true }) {
   return new Promise((resolve) => {
     const icName = danger ? "alert" : "info";
@@ -95,12 +130,13 @@ export function confirmDialog({ title = "Confirmar", message, confirmLabel = "El
       footer: `<button class="btn btn-outline" data-no>Cancelar</button><button class="btn ${danger ? "btn-danger-solid" : "btn-primary"}" data-yes>${esc(confirmLabel)}</button>`,
     });
     let done = false;
+    /** @param {boolean} v */
     const fin = (v) => { if (!done) { done = true; m.close(); resolve(v); } };
-    m.el.querySelector("[data-yes]").addEventListener("click", () => fin(true));
-    m.el.querySelector("[data-no]").addEventListener("click", () => fin(false));
-    m.el.querySelector("[data-close]").addEventListener("click", () => fin(false));
+    m.el.querySelector("[data-yes]")?.addEventListener("click", () => fin(true));
+    m.el.querySelector("[data-no]")?.addEventListener("click", () => fin(false));
+    m.el.querySelector("[data-close]")?.addEventListener("click", () => fin(false));
     m.el.addEventListener("mousedown", (e) => { if (e.target === m.el) fin(false); });
-    m.el.querySelector("[data-yes]").focus();
+    /** @type {HTMLElement | null} */ (m.el.querySelector("[data-yes]"))?.focus();
   });
 }
 
@@ -108,8 +144,14 @@ export function confirmDialog({ title = "Confirmar", message, confirmLabel = "El
  * Modal con formulario declarativo.
  * fields: [{name,label,type:'text'|'select'|'textarea'|'pills',options:[{value,label}],value,required,placeholder,half,onChange}]
  * onSubmit(values) puede lanzar Error → se muestra dentro del formulario y el modal sigue abierto.
+ * @param {FormModalOptions} options
+ * @returns {FormModalInstance}
  */
 export function formModal({ title, fields, submitLabel = "Guardar", onSubmit }) {
+  /**
+   * @param {FormField} f
+   * @returns {string}
+   */
   const renderField = (f) => {
     const id = `f-${f.name}`;
     const v = f.value ?? "";
@@ -117,12 +159,12 @@ export function formModal({ title, fields, submitLabel = "Guardar", onSubmit }) 
     if (f.type === "select") {
       // Si el valor actual ya no existe en el catálogo (p. ej. grado importado por CSV), se conserva como opción
       // para que guardar no lo cambie en silencio.
-      const opts = v && !(f.options || []).some((o) => o.value === v) ? [{ value: v, label: `${v} (no existe en el catálogo)` }, ...f.options] : f.options || [];
+      const opts = v && !(f.options || []).some((o) => o.value === v) ? [{ value: v, label: `${v} (no existe en el catálogo)` }, ...(f.options || [])] : f.options || [];
       control = `<select id="${id}" name="${f.name}" ${f.required ? "required" : ""}>${opts.map((o) => `<option value="${esc(o.value)}" ${o.value === v ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`;
     } else if (f.type === "textarea") {
       control = `<textarea id="${id}" name="${f.name}" rows="4" placeholder="${esc(f.placeholder || "")}" ${f.required ? "required" : ""}>${esc(v)}</textarea>`;
     } else if (f.type === "pills") {
-      control = `<div class="pill-select" role="radiogroup" data-pills="${f.name}">${f.options.map((o) => `<button type="button" role="radio" aria-checked="${o.value === v}" class="pill ${o.value === v ? "active" : ""}" data-val="${esc(o.value)}">${esc(o.label)}</button>`).join("")}</div><input type="hidden" name="${f.name}" value="${esc(v)}">`;
+      control = `<div class="pill-select" role="radiogroup" data-pills="${f.name}">${(f.options || []).map((o) => `<button type="button" role="radio" aria-checked="${o.value === v}" class="pill ${o.value === v ? "active" : ""}" data-val="${esc(o.value)}">${esc(o.label)}</button>`).join("")}</div><input type="hidden" name="${f.name}" value="${esc(v)}">`;
     } else {
       control = `<input id="${id}" name="${f.name}" type="${f.type === "date" ? "date" : f.type === "password" ? "password" : "text"}" value="${esc(v)}" ${f.max ? `max="${esc(f.max)}"` : ""} placeholder="${esc(f.placeholder || "")}" ${f.required ? "required" : ""} autocomplete="${f.type === "password" ? "new-password" : "off"}">`;
     }
@@ -134,50 +176,86 @@ export function formModal({ title, fields, submitLabel = "Guardar", onSubmit }) 
     body: `<form id="modal-form" novalidate><div class="form-grid">${fields.map(renderField).join("")}</div><p class="err-msg" id="form-err" role="alert" hidden></p></form>`,
     footer: `<button class="btn btn-outline" data-close2>Cancelar</button><button class="btn btn-primary" id="form-submit">${esc(submitLabel)}</button>`,
   });
-  const form = m.el.querySelector("#modal-form");
-  const errEl = m.el.querySelector("#form-err");
-  const setErr = (t) => { errEl.textContent = t || ""; errEl.hidden = !t; };
+  const form = /** @type {HTMLFormElement | null} */ (m.el.querySelector("#modal-form"));
+  const errEl = /** @type {HTMLElement | null} */ (m.el.querySelector("#form-err"));
+  /** @param {string} t */
+  const setErr = (t) => { if (errEl) { errEl.textContent = t || ""; errEl.hidden = !t; } };
 
   m.el.querySelectorAll("[data-pills]").forEach((group) => {
     group.addEventListener("click", (e) => {
-      const b = e.target.closest(".pill"); if (!b) return;
-      group.querySelectorAll(".pill").forEach((p) => { p.classList.toggle("active", p === b); p.setAttribute("aria-checked", p === b); });
-      form.elements[group.dataset.pills].value = b.dataset.val;
+      const target = /** @type {HTMLElement | null} */ (e.target instanceof Element ? e.target : null);
+      const b = /** @type {HTMLElement | null} */ (target?.closest(".pill") ?? null);
+      if (!b) return;
+      group.querySelectorAll(".pill").forEach((p) => { p.classList.toggle("active", p === b); p.setAttribute("aria-checked", String(p === b)); });
+      const pillName = /** @type {HTMLElement} */ (group).dataset.pills;
+      if (form && pillName) {
+        const input = /** @type {HTMLInputElement | undefined} */ (/** @type {any} */ (form.elements)[pillName]);
+        if (input && b.dataset.val !== undefined) input.value = b.dataset.val;
+      }
     });
   });
 
+  /** @type {FormFieldControl} */
   const control = {
     setOptions(name, options, selected) {
-      const sel = form.elements[name];
+      if (!form) return;
+      const sel = /** @type {HTMLSelectElement | undefined} */ (/** @type {any} */ (form.elements)[name]);
+      if (!sel) return;
       sel.innerHTML = options.map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
       if (selected !== undefined) sel.value = selected;
     },
   };
   fields.forEach((f) => {
-    if (f.onChange) form.elements[f.name].addEventListener("change", (e) => f.onChange(e.target.value, control));
+    if (f.onChange && form) {
+      const fieldEl = /** @type {HTMLElement | undefined} */ (/** @type {any} */ (form.elements)[f.name]);
+      fieldEl?.addEventListener("change", (e) => {
+        const val = /** @type {HTMLInputElement | HTMLSelectElement} */ (e.target).value;
+        f.onChange?.(val, control);
+      });
+    }
   });
 
-  const values = () => Object.fromEntries(fields.map((f) => [f.name, (form.elements[f.name].value || "").trim()]));
+  const values = () => Object.fromEntries(fields.map((f) => {
+    const el = form ? /** @type {any} */ (form.elements)[f.name] : null;
+    return [f.name, (el?.value || "").trim()];
+  }));
   const submit = async () => {
     setErr("");
     const vals = values();
     const faltante = fields.find((f) => f.required && !vals[f.name]);
-    if (faltante) { setErr(`Completa el campo "${faltante.label}".`); form.elements[faltante.name].focus?.(); return; }
-    const btn = m.el.querySelector("#form-submit");
-    btn.disabled = true;
+    if (faltante) {
+      setErr(`Completa el campo "${faltante.label}".`);
+      if (form) /** @type {any} */ (form.elements)[faltante.name]?.focus?.();
+      return;
+    }
+    const btn = /** @type {HTMLButtonElement | null} */ (m.el.querySelector("#form-submit"));
+    if (btn) btn.disabled = true;
     try { await onSubmit(vals); m.close(); }
-    catch (e) { setErr(e.message || "No se pudo guardar."); btn.disabled = false; }
+    catch (e) {
+      setErr(/** @type {Error} */ (e).message || "No se pudo guardar.");
+      if (btn) btn.disabled = false;
+    }
   };
-  m.el.querySelector("#form-submit").addEventListener("click", submit);
-  m.el.querySelector("[data-close2]").addEventListener("click", m.close);
-  form.addEventListener("submit", (e) => { e.preventDefault(); submit(); });
+  m.el.querySelector("#form-submit")?.addEventListener("click", submit);
+  m.el.querySelector("[data-close2]")?.addEventListener("click", m.close);
+  form?.addEventListener("submit", (e) => { e.preventDefault(); submit(); });
   return { ...m, control };
 }
 
 /* --------------------------- Piezas de UI --------------------------- */
+/**
+ * @param {string} title
+ * @param {string} sub
+ * @param {string} [ic]
+ * @returns {string}
+ */
 export function emptyState(title, sub, ic = "info") {
   return `<div class="empty-state"><div class="empty-ic">${icon(ic, 26)}</div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div>`;
 }
+/**
+ * @param {KpiOptions} options
+ * @returns {string}
+ */
 export function kpi({ label, value, hint = "", ic, tone = "navy", delta = null }) {
   let deltaHtml = "";
   if (delta !== null && delta !== undefined) {
@@ -192,23 +270,55 @@ export function kpi({ label, value, hint = "", ic, tone = "navy", delta = null }
   }
   return `<div class="kpi kpi-${tone}"><div class="kpi-ic">${icon(ic, 20)}</div><div class="kpi-body"><span class="kpi-label">${esc(label)}</span><span class="kpi-value">${value}</span>${deltaHtml}${hint ? `<span class="kpi-hint">${hint}</span>` : ""}</div></div>`;
 }
+/**
+ * @param {string} text
+ * @param {string} [tone]
+ * @returns {string}
+ */
 export function badge(text, tone = "neutral") { return `<span class="badge badge-${tone}">${esc(text)}</span>`; }
+/**
+ * @param {number} [lines]
+ * @returns {string}
+ */
 export function skeleton(lines = 3) { return `<div class="skeleton-wrap">${Array.from({ length: lines }, () => '<div class="skeleton"></div>').join("")}</div>`; }
+/**
+ * @param {string} title
+ * @param {string} [subtitle]
+ * @param {string} [actions]
+ * @returns {string}
+ */
 export function pageHead(title, subtitle = "", actions = "") {
   return `<div class="page-head"><div><h1>${esc(title)}</h1>${subtitle ? `<p class="page-sub">${subtitle}</p>` : ""}</div><div class="actions">${actions}</div></div>`;
 }
 
 /** Delegación de eventos: <button data-action="nombre" data-id="..."> → handlers.nombre(el, event). */
+/** @type {Record<string, ActionHandler>} */
 const handlers = {};
+/** @type {((accion: string) => boolean) | null} */
 let autorizador = null;   // (accion) => boolean; lo fija la app según el rol (defensa en profundidad: la base de datos es el control real)
+/**
+ * @param {Record<string, ActionHandler>} map
+ * @returns {void}
+ */
 export function registerActions(map) { Object.assign(handlers, map); }
+/**
+ * @param {((accion: string) => boolean) | null} fn
+ * @returns {void}
+ */
 export function setAutorizador(fn) { autorizador = fn; }
+/**
+ * @param {Document | HTMLElement} [root]
+ * @returns {void}
+ */
 export function bindActions(root = document) {
   root.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-action]");
-    if (!el || el.disabled) return;
-    if (autorizador && !autorizador(el.dataset.action)) { e.preventDefault(); toast("Solo el administrador puede hacer esto.", "error"); return; }
-    const fn = handlers[el.dataset.action];
+    const target = /** @type {HTMLElement | null} */ (e.target instanceof Element ? e.target : null);
+    const el = /** @type {HTMLElement | null} */ (target?.closest("[data-action]") ?? null);
+    if (!el || /** @type {HTMLButtonElement} */ (el).disabled) return;
+    const action = el.dataset.action;
+    if (!action) return;
+    if (autorizador && !autorizador(action)) { e.preventDefault(); toast("Solo el administrador puede hacer esto.", "error"); return; }
+    const fn = handlers[action];
     if (fn) { e.preventDefault(); fn(el, e); }
   });
 }

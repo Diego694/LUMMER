@@ -1,3 +1,4 @@
+// @ts-check
 // Configuración de la aplicación.
 // Mientras URL_PRODUCCION / KEY_PRODUCCION contengan los placeholders, la app corre en MODO DEMO
 // (datos locales en el navegador). Para producción reemplázalos con los de tu proyecto Supabase.
@@ -7,9 +8,11 @@ const KEY_PRODUCCION = "sb_publishable_V0wt4JdNVXHc20_0tJWBHA_D47gcmbf";
 
 // Entorno de pruebas: desde entorno.html se puede apuntar ESTE navegador a otro proyecto Supabase (staging)
 // sin tocar el código ni afectar a nadie más. Se guarda solo en este navegador.
+/** @type {{ url: string, key: string, nombre?: string } | null} */
 const OVERRIDE = (() => {
   try {
-    const o = JSON.parse(localStorage.getItem("ra-entorno"));
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem("ra-entorno") : null;
+    const o = raw ? JSON.parse(raw) : null;
     return o && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(o.url) && o.key ? o : null;
   } catch { return null; }
 })();
@@ -49,6 +52,7 @@ export const CONFIG = {
 
 // Modo demo: automático con los placeholders, o forzado con ?demo=1 (queda guardado en este navegador; ?demo=0 lo quita).
 // El modo demo solo usa datos locales del navegador: nunca toca la base de datos real.
+/** @returns {boolean} */
 function demoForzado() {
   try {
     const q = new URLSearchParams(location.search).get("demo");
@@ -57,17 +61,23 @@ function demoForzado() {
     return localStorage.getItem("ra-force-demo") === "1";
   } catch { return false; }
 }
+/** @returns {boolean} */
 export const isDemoMode = () =>
   CONFIG.SUPABASE_URL.includes("TU-PROYECTO") || CONFIG.SUPABASE_ANON_KEY.includes("TU-ANON-KEY") || demoForzado();
 
 export const DEMO_SCHOOL_CODE = "DEMO2026";
 
 // Programa de escritorio (.exe): el preload de Electron expone `escritorio`. Solo allí existe el modo local.
+/** @returns {boolean} */
 export const esEscritorio = () => !!globalThis.escritorio;
-/** "online" (Supabase) o "local" (base en este equipo). Fuera del .exe siempre es "online". */
+/**
+ * "online" (Supabase) o "local" (base en este equipo). Fuera del .exe siempre es "online".
+ * @returns {'local' | 'online'}
+ */
 export function modoActual() {
   try { return esEscritorio() && localStorage.getItem("ra-modo") === "local" ? "local" : "online"; } catch { return "online"; }
 }
+/** @returns {boolean} */
 export const modoLocal = () => modoActual() === "local";
 
 export const DEMO_USER = { email: "demo@instituto.pe", password: "demo1234" };

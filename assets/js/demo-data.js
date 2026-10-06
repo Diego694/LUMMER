@@ -1,6 +1,21 @@
+// @ts-check
 // Generador determinista de datos de ejemplo para el MODO DEMO.
 import { lastWeekdays, todayStr, uid } from "./utils.js";
 
+/** @typedef {import('./tipos.d.ts').Colegio} Colegio */
+/** @typedef {import('./tipos.d.ts').Nivel} Nivel */
+/** @typedef {import('./tipos.d.ts').Grado} Grado */
+/** @typedef {import('./tipos.d.ts').Alumno} Alumno */
+/** @typedef {import('./tipos.d.ts').Asistencia} Asistencia */
+/** @typedef {import('./tipos.d.ts').Docente} Docente */
+/** @typedef {import('./tipos.d.ts').Comunicado} Comunicado */
+/** @typedef {import('./tipos.d.ts').Curso} Curso */
+/** @typedef {import('./tipos.d.ts').DemoDB} DemoDB */
+
+/**
+ * @param {number} seed
+ * @returns {() => number}
+ */
 function rng(seed) {
   let s = seed >>> 0;
   return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
@@ -12,16 +27,25 @@ const APODERADOS = ["María", "José", "Carmen", "Luis", "Rosa", "Jorge", "Ana",
 
 // Cada carrera tiene sus ciclos; el nombre del ciclo lleva la carrera para distinguirlos de un vistazo.
 export const CARRERAS_DEMO = ["MECANICA ELECTRICA", "APSTI"];
+/**
+ * @param {string} carrera
+ * @param {string} c
+ * @returns {string}
+ */
 const ciclo = (carrera, c) => `${carrera} · ${c} CICLO`;
+/** @type {[string, string][]} */
 export const GRADOS_DEMO = [
   ["MECANICA ELECTRICA", ciclo("MECANICA ELECTRICA", "I")], ["MECANICA ELECTRICA", ciclo("MECANICA ELECTRICA", "III")], ["MECANICA ELECTRICA", ciclo("MECANICA ELECTRICA", "V")],
   ["APSTI", ciclo("APSTI", "II")], ["APSTI", ciclo("APSTI", "IV")], ["APSTI", ciclo("APSTI", "VI")],
 ];
 
+/** @returns {DemoDB} */
 export function buildDemoDB() {
   const r = rng(2026);
+  /** @template T @param {T[]} a @returns {T} */
   const pick = (a) => a[Math.floor(r() * a.length)];
   const colegioId = "demo-colegio";
+  /** @type {DemoDB} */
   const db = {
     colegio: { id: colegioId, nombre: "Instituto Demo San Martín", codigo_registro: "DEMO2026", qr_modo: "obligatorio" },
     niveles: CARRERAS_DEMO.map((nombre) => ({ id: uid(), colegio_id: colegioId, nombre })),
@@ -79,7 +103,7 @@ export function buildDemoDB() {
     ["Simulacro de sismo", "El próximo martes se realizará el simulacro nacional. Se solicita puntualidad en el ingreso."],
     ["Entrega de carnets", "Los carnets con código QR ya están disponibles. Es obligatorio presentarlos para registrar la asistencia."],
   ].map(([titulo, mensaje], i) => ({
-    id: uid(), colegio_id: colegioId, titulo, mensaje, fecha: lastWeekdays(5 + i * 3).at(0),
+    id: uid(), colegio_id: colegioId, titulo, mensaje, fecha: lastWeekdays(5 + i * 3).at(0) || todayStr(),
   }));
 
   return db;

@@ -265,6 +265,58 @@ test("salida: solo pasadas 2 horas desde el ingreso (quien sale temprano tambié
   same(salidaPermitida("23:00", "23:58", 120), { ok: false, desde: "23:59" });   // no se pasa de medianoche
 });
 
+/* permisos, qr-seguro, api, estudiante (v4.0 Lote 2) */
+import { esAdmin, puede, rolActual } from "../assets/js/permisos.js";
+import { DB } from "../assets/js/state.js";
+import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
+import { codigoApoderado } from "../assets/js/api.js";
+import { vocabulario } from "../assets/js/estudiante/api.js";
+
+test("permisos · puede: rol docente no puede acciones de administración", () => {
+  const previo = DB.perfil;
+  DB.perfil = { colegio_id: "c", rol: "docente" };
+  assert(!puede("al-edit"), "docente no debe editar alumnos");
+  assert(!puede("pers-crear"), "docente no debe gestionar personal");
+  assert(puede("registrar"), "docente debe poder acciones no restringidas");
+  DB.perfil = { colegio_id: "c", rol: "Administrador" };
+  assert(puede("al-edit"), "administrador debe poder editar alumnos");
+  DB.perfil = previo;
+});
+
+test("permisos · esAdmin y rolActual: normalización y detección de administrador", () => {
+  const previo = DB.perfil;
+  const con = (rol) => { DB.perfil = rol === null ? null : { colegio_id: "c", rol }; return [esAdmin(), rolActual()]; };
+  same(con("admin"), [true, "admin"]);
+  same(con("Administrador"), [true, "admin"]);
+  same(con("Coordinador"), [false, "coordinador"]);
+  same(con("docente"), [false, "docente"]);
+  same(con(null), [false, "docente"]);
+  DB.perfil = previo;
+});
+
+test("qr-seguro · qrModoEfectivo y ventana", () => {
+  same(qrModoEfectivo("off"), "off");
+  same(qrModoEfectivo(" Opcional "), "opcional");
+  same(qrModoEfectivo("desconocido"), "obligatorio");
+  same(qrModoEfectivo(null), "obligatorio");
+  same(ventana(30000), 1);
+  same(ventana(29999), 0);
+});
+
+test("api · codigoApoderado: genera código hexadecimal de 12 caracteres", () => {
+  const cod = codigoApoderado();
+  assert(typeof cod === "string" && cod.length === 12, "debe tener 12 caracteres");
+  assert(/^[0-9A-F]{12}$/.test(cod), "debe ser hexadecimal en mayúsculas");
+  const cod2 = codigoApoderado();
+  assert(cod !== cod2, "dos códigos sucesivos deben ser distintos");
+});
+
+test("estudiante api · vocabulario: reemplaza términos colegiales por institucionales", () => {
+  same(vocabulario("Error en el colegio: Nivel o grado no existe"), "Error en el instituto: Carrera o ciclo no existe");
+  same(vocabulario("Colegio registrado"), "Instituto registrado");
+  same(vocabulario(""), "");
+});
+
 /* render */
 const fail = results.filter((r) => !r.ok);
 if (typeof document !== "undefined") {

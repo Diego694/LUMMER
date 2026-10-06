@@ -124,6 +124,39 @@ flowchart TD
 
 ---
 
+### Progreso de migración TypeScript por lotes (Estrategia @ts-check + JSDoc)
+
+- **LOTE 1 (Completado):**
+  - Módulos base: `assets/js/utils.js`, `stats.js`, `state.js`, `sync.js`.
+  - Definición base de tipos en `assets/js/tipos.d.ts`.
+  - Configuración inicial de `tsconfig.json` (`strict`, `noEmit`, `allowJs: true`, `checkJs: false`).
+
+- **LOTE 2 (Completado):**
+  - Módulos de configuración y utilidades triviales: `assets/js/permisos.js`, `config.js`, `qr-seguro.js`, `theme-init.js`.
+  - Generación de datos deterministas: `assets/js/demo-data.js` (tipado con `DemoDB` y entidades de `tipos.d.ts`).
+  - Capa de componentes de UI: `assets/js/ui.js` (helpers DOM, modales, diálogos de confirmación, toast, KPIs, badges, skeletons, bindings de acciones con guardas null estrictas).
+  - Capa de datos principal y extendida: `assets/js/api.js` y `assets/js/api-extra.js` (contrato común `Backend`/`Api`, adaptadores `SupabaseBackend`, `LocalBackend`, `DemoBackend`, tipado completo de filas SQL y cliente Supabase).
+  - Capa de datos del portal de estudiante: `assets/js/estudiante/api.js` (adaptadores `DemoEstudiante` y `SupabaseEstudiante`, tipado con `BackendEstudiante`, `DatosRegistroEstudiante`, `InfoColegioResult`, `MiRegistroResult`, etc.).
+  - Ampliación de `assets/js/tipos.d.ts`: nuevos contratos (`Backend`, `BackendEstudiante`, `SupabaseClient`, `DemoDB`, `LogCliente`, `IntentoPin`, `IntentoLogin`, modales y formularios de UI, tipos de QR seguro, `Window.supabase`).
+  - Cobertura de tests unitarios: 5 nuevos tests en `tests/unit.js` para lógica pura tipada (permisos por rol, normalización de roles admin, `qrModoEfectivo`, `codigoApoderado` de 12 caracteres hex, `vocabulario` institucional). Total: 56 tests unitarios pasando.
+
+- **LOTE 3 (Siguiente lote - Páginas pequeñas):**
+  - `assets/js/pages/historial.js` (45 lín)
+  - `assets/js/pages/alertas.js` (52 lín)
+  - `assets/js/pages/solicitudes.js` (62 lín)
+  - `assets/js/pages/migrar.js` (61 lín)
+  - `assets/js/pages/perfil.js` (95 lín)
+  - `assets/js/pages/avisos.js` (90 lín)
+  - `assets/js/pages/periodos.js` (107 lín)
+  - `assets/js/pages/codigo.js` (108 lín)
+  - `assets/js/pages/personal.js` (109 lín)
+
+- **LOTE 4 (Páginas principales, quiosco y puntos de entrada):**
+  - Páginas complejas: `assets/js/pages/registro.js`, `instituciones.js`, `quiosco.js`, `dashboard.js`, `mantenimiento.js`, `sistema.js`, `reportes.js`, `offline.js`, `cursos.js`, `consultas.js`, `carnet.js`, `instituto.js`.
+  - Puntos de entrada: `assets/js/main.js`, `assets/js/estudiante/main.js`, `assets/js/apoderado/main.js`.
+
+---
+
 ### 2. Estrategia técnica de compilación e integración
 
 Para no romper los navegadores que cargan ES modules nativos ni el pipeline existente, se adopta compilación **módulo a módulo sin bundling**:

@@ -21,6 +21,7 @@ export interface Colegio {
   id: string;
   nombre: string;
   codigo_registro?: string | null;
+  qr_modo?: 'off' | 'opcional' | 'obligatorio' | string;
   aviso_token?: string;
   activo?: boolean;
   creado_en?: string;
@@ -29,7 +30,7 @@ export interface Colegio {
 
 // Perfil de personal (tabla perfiles + sesión extendida)
 export interface Perfil {
-  id: string;
+  id?: string;
   colegio_id: string;
   rol: Rol | string;
   carrera?: string | null;
@@ -38,6 +39,7 @@ export interface Perfil {
   email?: string | null;
   colegio?: string;
   superadmin?: boolean;
+  qr_modo?: 'off' | 'opcional' | 'obligatorio' | string;
 }
 
 // Nivel / Carrera
@@ -210,7 +212,7 @@ export interface AvisoApoderado {
   creado_en?: string;
 }
 
-// Registro de auditoría
+// Registro de auditoría (id: bigserial numérico en PostgreSQL)
 export interface Auditoria {
   id?: number | string;
   colegio_id?: string | null;
@@ -220,6 +222,35 @@ export interface Auditoria {
   tabla: string;
   registro_id?: string | null;
   detalle?: Record<string, unknown> | null;
+  creado_en?: string;
+}
+
+// Log de errores del cliente en base de datos (logs_cliente)
+export interface LogCliente {
+  id?: number | string;
+  colegio_id?: string | null;
+  mensaje?: string | null;
+  detalle?: string | null;
+  url?: string | null;
+  agente?: string | null;
+  app?: string | null;
+  creado_en?: string | null;
+}
+
+// Intentos de acceso / PIN (id: bigserial numérico en PostgreSQL)
+export interface IntentoPin {
+  id?: number;
+  colegio_id?: string | null;
+  ip?: string | null;
+  exitoso?: boolean;
+  creado_en?: string;
+}
+
+export interface IntentoLogin {
+  id?: number;
+  email?: string | null;
+  ip?: string | null;
+  exitoso?: boolean;
   creado_en?: string;
 }
 
@@ -732,8 +763,167 @@ export interface Api {
   saEntrar(id: string): Promise<any>;
   saAsignarAdmin(id: string, email: string): Promise<any>;
   renombrarInstituto(cid: string, nombre: string): Promise<void>;
+  cambiarQrModo?(cid: string, modo: string): Promise<void>;
 
   estadoSolicitud?(token: string): Promise<{ aprobado?: boolean } | null>;
+}
+
+// Interfaz común de backend (implementada por SupabaseBackend, DemoBackend, LocalBackend)
+export type Backend = Api;
+
+// Cliente mínimo de Supabase (sin dependencias instaladas)
+export type SupabaseClient = any;
+
+// Base de datos en memoria / localStorage del modo Demo y Local
+export interface DemoDB {
+  colegio: Colegio;
+  niveles: Nivel[];
+  grados: Grado[];
+  alumnos: Alumno[];
+  asistencias: Asistencia[];
+  docentes: Docente[];
+  comunicados: Comunicado[];
+  cursos?: Curso[];
+  periodos?: Periodo[];
+  calendario?: DiaCalendario[];
+  horarios?: Horario[];
+  auditoria?: Auditoria[];
+  justificaciones?: Justificacion[];
+  asistencias_curso?: AsistenciaCurso[];
+  avisos_apoderados?: AvisoApoderado[];
+  logs_cliente?: LogCliente[];
+  personal?: any[];
+  instituciones?: any[];
+  perfil_nombre?: string;
+  foto_perfil?: string;
+  [key: string]: any;
+}
+
+// --- Tipos de UI (ui.js) ---
+
+export interface ModalInstance {
+  el: HTMLElement;
+  close: () => void;
+}
+
+export interface OpenModalOptions {
+  title: string;
+  body: string;
+  footer?: string;
+  wide?: boolean;
+}
+
+export interface ConfirmDialogOptions {
+  title?: string;
+  message: string;
+  confirmLabel?: string;
+  danger?: boolean;
+}
+
+export interface FormFieldOption {
+  value: string;
+  label: string;
+}
+
+export interface FormFieldControl {
+  setOptions(name: string, options: FormFieldOption[], selected?: string): void;
+}
+
+export interface FormField {
+  name: string;
+  label: string;
+  type?: 'text' | 'select' | 'textarea' | 'pills' | 'date' | 'password' | string;
+  options?: FormFieldOption[];
+  value?: string | null;
+  required?: boolean;
+  placeholder?: string;
+  half?: boolean;
+  max?: string;
+  onChange?: (val: string, control: FormFieldControl) => void;
+}
+
+export interface FormModalOptions {
+  title: string;
+  fields: FormField[];
+  submitLabel?: string;
+  onSubmit: (values: Record<string, string>) => Promise<void> | void;
+}
+
+export type FormModalInstance = ModalInstance & { control: FormFieldControl };
+
+export interface KpiOptions {
+  label: string;
+  value: string | number;
+  hint?: string;
+  ic: string;
+  tone?: 'navy' | 'gold' | 'teal' | 'danger' | string;
+  delta?: null | number | string | { val: number; text?: string };
+}
+
+export type ActionHandler = (el: HTMLElement, event: Event) => void;
+
+// --- Tipos de QR seguro (qr-seguro.js) ---
+
+export type QrModo = 'off' | 'opcional' | 'obligatorio' | string;
+
+export type MotivoFalloQR = 'desconocido' | 'vencido' | 'firma' | 'sinsecreto' | 'nocrypto' | string;
+
+export type ResultadoVerificarQR =
+  | { estatico: true; ok?: undefined; motivo?: undefined; alumno?: undefined }
+  | { ok: true; alumno: Alumno; estatico?: undefined; motivo?: undefined }
+  | { ok: false; motivo: MotivoFalloQR; alumno?: Alumno; estatico?: undefined };
+
+// --- Tipos de Portal Estudiante (estudiante/api.js) ---
+
+export interface DatosRegistroEstudiante {
+  codigoColegio: string;
+  nombres: string;
+  apellidos: string;
+  nivel: string;
+  grado: string;
+  apoderado?: string;
+  dni?: string | null;
+  apoderadoTel?: string | null;
+  apoderadoEmail?: string | null;
+}
+
+export interface InfoColegioResult {
+  nombre: string;
+  niveles: string[];
+  grados: { nivel: string; nombre: string }[];
+}
+
+export interface MiRegistroResult {
+  alumno: Alumno;
+  colegio: string;
+  qr_modo: string;
+}
+
+export interface EstadoSolicitudResult {
+  aprobado?: boolean;
+  nombre?: string;
+}
+
+export interface BackendEstudiante {
+  mode: 'demo' | 'supabase' | 'error' | string;
+  error?: unknown;
+  init(): Promise<{ id: string; email?: string } | null>;
+  horaServidor(): Promise<number>;
+  registrarError(row: Partial<LogCliente> | ErrorLogItem): Promise<void>;
+  solicitarRecuperacion(email: string, redirectTo?: string): Promise<void>;
+  cambiarPassword(password: string): Promise<void>;
+  alRecuperar(cb: () => void): void;
+  eliminarMiCuenta(user: { id: string }): Promise<void>;
+  signUp(email: string, password: string, captchaToken?: string): Promise<any>;
+  signIn(email: string, password: string): Promise<any>;
+  signOut(): Promise<void>;
+  infoColegio(codigo: string): Promise<InfoColegioResult | null>;
+  registrar(user: { id: string }, f: DatosRegistroEstudiante): Promise<any>;
+  miRegistro(user?: { id: string }): Promise<MiRegistroResult | null>;
+  tokenAvisos(): Promise<string | null>;
+  estadoSolicitud(token: string): Promise<EstadoSolicitudResult | null>;
+  subirFoto(user: { id: string }, blob: Blob): Promise<{ foto_path?: string; foto_data?: string } | Alumno>;
+  fotoUrl(alumno: { id?: string; foto_path?: string | null; foto_data?: string | null }): Promise<string | null>;
 }
 
 declare global {
@@ -742,9 +932,12 @@ declare global {
     __simOffline?: boolean;
     __compatFallo?: boolean;
     AndroidBridge?: AndroidBridge;
+    supabase?: any;
   }
   var escritorio: boolean | undefined;
   var __simOffline: boolean | undefined;
   var __compatFallo: boolean | undefined;
   var AndroidBridge: AndroidBridge | undefined;
+  var supabase: any;
 }
+

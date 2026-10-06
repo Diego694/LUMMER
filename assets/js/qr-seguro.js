@@ -1,8 +1,13 @@
+// @ts-check
 // QR dinámico: el QR del carnet cambia cada 30 s y lleva una firma HMAC-SHA256
 // calculada con un secreto que solo conocen el estudiante y el instituto. Una captura de pantalla o foto del QR
 // deja de servir en ~60 s y no se puede fabricar un QR válido sin el secreto.
 //   formato:  <codigo>.<ventana en base 36>.<firma 10 hex>
 import { CONFIG } from "./config.js";
+
+/** @typedef {import('./tipos.d.ts').Alumno} Alumno */
+/** @typedef {import('./tipos.d.ts').QrModo} QrModo */
+/** @typedef {import('./tipos.d.ts').ResultadoVerificarQR} ResultadoVerificarQR */
 
 export const VENTANA_MS = 30000;
 const TOLERANCIA = 1;   // ventanas aceptadas a cada lado (cubre relojes algo desfasados y el tiempo de lectura)
@@ -12,6 +17,8 @@ const MODOS_VALIDOS = new Set(["off", "opcional", "obligatorio"]);
 /**
  * Devuelve "off" | "opcional" | "obligatorio" validando entradas desconocidas
  * (utiliza CONFIG.QR_MODO como respaldo si la entrada no es válida).
+ * @param {string | null | undefined} [modo]
+ * @returns {QrModo}
  */
 export function qrModoEfectivo(modo) {
   const m = String(modo || "").toLowerCase().trim();
@@ -21,6 +28,11 @@ export function qrModoEfectivo(modo) {
 }
 
 const ENC = new TextEncoder();
+/**
+ * @param {string} secreto
+ * @param {string} mensaje
+ * @returns {Promise<string>}
+ */
 async function firma(secreto, mensaje) {
   if (!globalThis.crypto?.subtle) throw new Error("crypto.subtle no disponible");
   const key = await crypto.subtle.importKey("raw", ENC.encode(secreto), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -28,9 +40,23 @@ async function firma(secreto, mensaje) {
   return [...sig.slice(0, 5)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * @param {number} ms
+ * @returns {number}
+ */
 export const ventana = (ms) => Math.floor(ms / VENTANA_MS);
+/**
+ * @param {number} ms
+ * @returns {number}
+ */
 export const segundosRestantes = (ms) => Math.ceil((VENTANA_MS - (ms % VENTANA_MS)) / 1000);
 
+/**
+ * @param {string} codigo
+ * @param {string} secreto
+ * @param {number} ms
+ * @returns {Promise<string>}
+ */
 export async function generarQR(codigo, secreto, ms) {
   const w = ventana(ms);
   return `${codigo}.${w.toString(36)}.${await firma(secreto, `${codigo}.${w}`)}`;
@@ -41,6 +67,10 @@ export async function generarQR(codigo, secreto, ms) {
  *  { estatico: true }                       → es un código normal (sin firma)
  *  { ok: true, alumno }                     → QR dinámico válido
  *  { ok: false, motivo, alumno? }           → 'desconocido' | 'vencido' | 'firma' | 'sinsecreto' | 'nocrypto'
+ * @param {string} texto
+ * @param {(codigo: string) => Alumno | null | undefined} buscarPorCodigo
+ * @param {number} ms
+ * @returns {Promise<ResultadoVerificarQR>}
  */
 export async function verificarQR(texto, buscarPorCodigo, ms) {
   if (buscarPorCodigo(texto)) return { estatico: true };           // un código existente (aunque contenga puntos) es estático
