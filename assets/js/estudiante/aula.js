@@ -1,6 +1,6 @@
 // @ts-check
 // Aula del estudiante: sus cursos (carrera y ciclo), con el material y las actividades que publican los docentes.
-import { libroNotas, validarArchivoAula } from "../api-aula.js";
+import { libroNotas, periodoDe, periodosDe, validarArchivoAula } from "../api-aula.js";
 import { badge, emptyState, icon, openModal, registerActions, skeleton, toast } from "../ui.js";
 import { esc } from "../utils.js";
 
@@ -66,7 +66,12 @@ export function iniciarAulaEstudiante(ctx) {
       }).join("")}</ul>`).join("");
       const mias = [...misEntregas.values()].filter((/** @type {CursoEntrega | null} */ e) => !!e).map((e) => /** @type {CursoEntrega} */ (e));
       const promedio = libroNotas([{ id: "yo", nombre: "" }], actividades, mias.map((e) => ({ actividad_id: e.actividad_id, alumno_id: "yo", nota: e.nota })))[0]?.promedio;
-      const resumen = promedio == null ? "" : `<p class="aula-est-promedio">${badge(`Tu promedio: ${promedio} / 20`, promedio >= 10.5 ? "green" : "red")} <small>según tus actividades ya calificadas</small></p>`;
+      const entregasPropias = mias.map((e) => ({ actividad_id: e.actividad_id, alumno_id: "yo", nota: e.nota }));
+      const periodos = periodosDe(actividades);
+      const porPeriodo = periodos.length > 1
+        ? periodos.map((p) => ({ p, v: libroNotas([{ id: "yo", nombre: "" }], actividades.filter((a) => periodoDe(a) === p), entregasPropias)[0]?.promedio }))
+          .filter((x) => x.v != null).map((x) => ` ${badge(`Periodo ${x.p}: ${x.v}`, /** @type {number} */ (x.v) >= 10.5 ? "green" : "red")}`).join("") : "";
+      const resumen = promedio == null ? "" : `<p class="aula-est-promedio">${badge(`Tu promedio: ${promedio} / 20`, promedio >= 10.5 ? "green" : "red")}${porPeriodo} <small>según tus actividades ya calificadas</small></p>`;
       caja.innerHTML = `${resumen}<h2 class="aula-est-h">Actividades</h2>${acts ? `<ul class="aula-est-items">${acts}</ul>` : emptyState("Sin actividades", "Tu docente aún no publicó actividades.", "calendar")}
         <h2 class="aula-est-h">Material</h2>${mats || emptyState("Sin material", "Tu docente aún no subió material.", "book")}`;
     } catch (/** @type {any} */ e) {

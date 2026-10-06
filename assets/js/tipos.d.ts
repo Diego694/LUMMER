@@ -181,6 +181,8 @@ export interface CursoActividad extends Partial<ArchivoAula> {
   instrucciones: string;
   fecha_limite?: string | null;
   puntaje_max: number;
+  /** Periodo del libro de notas (1 a 8); migración 015. Las actividades antiguas cuentan como periodo 1. */
+  periodo?: number;
   publicado: boolean;
   creado_por?: string | null;
   creado_en?: string;

@@ -271,7 +271,7 @@ import { DB } from "../assets/js/state.js";
 import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
 import { vocabulario } from "../assets/js/estudiante/api.js";
-import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso } from "../assets/js/api-aula.js";
+import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso, periodoDe, periodosDe } from "../assets/js/api-aula.js";
 
 test("permisos · puede: rol docente no puede acciones de administración", () => {
   const previo = DB.perfil;
@@ -366,6 +366,17 @@ test("aula · libroNotas y alumnosDelCurso: promedio sobre 20 con lo calificado"
   same(l[0].promedio, 16, "(16+8)/(20+10)*20 = 16");
   same(l[0].notas["3"], null, "actividad sin calificar");
   same(l[1].promedio, null, "sin notas no hay promedio");
+});
+
+test("aula · periodos: las actividades antiguas cuentan como periodo 1 y el promedio se calcula por periodo", () => {
+  const acts = [{ id: "1", puntaje_max: 20 }, { id: "2", puntaje_max: 20, periodo: 2 }, { id: "3", puntaje_max: 10, periodo: 2 }];
+  same(acts.map(periodoDe), [1, 2, 2]);
+  same(periodosDe(acts), [1, 2]);
+  const ent = [{ actividad_id: "1", alumno_id: "a", nota: 10 }, { actividad_id: "2", alumno_id: "a", nota: 20 }, { actividad_id: "3", alumno_id: "a", nota: 5 }];
+  const alu = [{ id: "a", nombre: "Ana" }];
+  same(libroNotas(alu, acts.filter((a) => periodoDe(a) === 1), ent)[0].promedio, 10, "periodo 1");
+  same(libroNotas(alu, acts.filter((a) => periodoDe(a) === 2), ent)[0].promedio, 16.67, "(20+5)/(20+10)*20");
+  same(libroNotas(alu, acts, ent)[0].promedio, 14, "(10+20+5)/50*20");
 });
 
 /* render */

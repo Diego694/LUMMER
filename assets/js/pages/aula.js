@@ -3,7 +3,7 @@
 // cada docente asignado publica en SUS cursos. La seguridad real está en la base (migración 013); aquí solo se ocultan
 // los botones que fallarían.
 import { api } from "../api.js";
-import { alumnosDelCurso, libroNotas, validarArchivoAula, validarNota } from "../api-aula.js";
+import { alumnosDelCurso, libroNotas, periodoDe, periodosDe, PERIODOS_MAX, validarArchivoAula, validarNota } from "../api-aula.js";
 import { DB } from "../state.js";
 import { esAdmin } from "../permisos.js";
 import { badge, confirmDialog, emptyState, icon, openModal, pageHead, registerActions, skeleton, toast } from "../ui.js";
@@ -13,8 +13,8 @@ import { downloadFile, esc, etiquetaCiclo, fmtDate } from "../utils.js";
 /** @typedef {import('../tipos.d.ts').CursoActividad} CursoActividad */
 /** @typedef {import('../tipos.d.ts').CursoEntrega} CursoEntrega */
 
-/** @type {{ cursoId: string, tab: "material" | "actividades" | "notas" }} */
-const st = { cursoId: "", tab: "material" };
+/** @type {{ cursoId: string, tab: "material" | "actividades" | "notas", periodo: number }} */
+const st = { cursoId: "", tab: "material", periodo: 0 }; // periodo 0 = todo el curso
 /** @type {{ materiales: CursoMaterial[], actividades: CursoActividad[], docentes: string[], gestiona: boolean }} */
 let datos = { materiales: [], actividades: [], docentes: [], gestiona: false };
 
@@ -87,6 +87,14 @@ function pintar() {
 /* ------------------------------ Libro de notas ------------------------------ */
 /** @type {ReturnType<typeof libroNotas>} */
 let libro = [];
+/** @type {Awaited<ReturnType<typeof api.aulaEntregasCurso>>} */
+let entregasLibro = [];
+/** Actividades del periodo elegido (0 = todo el curso). */
+const actividadesVista = () => (st.periodo ? datos.actividades.filter((a) => periodoDe(a) === st.periodo) : datos.actividades);
+const calcularLibro = () => {
+  const curso = cursoActual();
+  libro = curso ? libroNotas(alumnosDelCurso(DB.alumnos, curso), actividadesVista(), entregasLibro) : [];
+};
 
 /** @param {string} cursoId */
 async function cargarNotas(cursoId) {
@@ -96,21 +104,35 @@ async function cargarNotas(cursoId) {
   try {
     const entregasCurso = await api.aulaEntregasCurso(cursoId);
     if (!caja.isConnected || st.cursoId !== cursoId || st.tab !== "notas") return;
-    libro = libroNotas(alumnosDelCurso(DB.alumnos, curso), datos.actividades, entregasCurso);
-    caja.innerHTML = htmlNotas();
+    entregasLibro = entregasCurso;
+    if (st.periodo && !periodosDe(datos.actividades).includes(st.periodo)) st.periodo = 0;
+    calcularLibro();
+    mostrarNotas(caja);
   } catch (/** @type {any} */ e) {
     const sinMigracion = /does not exist|schema cache|curso_entregas/i.test(e.message || "");
     caja.innerHTML = emptyState("No se pudo cargar el libro de notas", sinMigracion ? "Falta aplicar la migración 014 en Supabase (supabase/migrations/014_entregas_notas.sql)." : e.message, "alert");
   }
 }
 
+/** @param {HTMLElement} caja */
+function mostrarNotas(caja) {
+  caja.innerHTML = htmlNotas();
+  caja.querySelector("#aula-filtro-periodo")?.addEventListener("change", (e) => {
+    st.periodo = Number(/** @type {HTMLSelectElement} */ (e.target).value) || 0;
+    calcularLibro();
+    mostrarNotas(caja);
+  });
+}
+
 const num = (/** @type {number | null | undefined} */ n) => (n == null ? "—" : String(Math.round(n * 100) / 100));
 
 function htmlNotas() {
-  const { actividades } = datos;
-  if (!actividades.length) return emptyState("Aún no hay actividades", "Publica actividades y califica las entregas para ver el libro de notas.", "listCheck");
+  const actividades = actividadesVista();
+  if (!datos.actividades.length) return emptyState("Aún no hay actividades", "Publica actividades y califica las entregas para ver el libro de notas.", "listCheck");
   if (!libro.length) return emptyState("Sin estudiantes en este curso", "Aparecerán los estudiantes aprobados de la carrera y el ciclo del curso.", "users");
-  return `<div class="table-wrap"><table><thead><tr><th>Estudiante</th>${actividades.map((a) => `<th title="${esc(a.titulo)}">${esc(a.titulo.length > 18 ? a.titulo.slice(0, 17) + "…" : a.titulo)}<br><small class="muted">/ ${a.puntaje_max}</small></th>`).join("")}<th>Promedio (/20)</th></tr></thead><tbody>
+  const periodos = periodosDe(datos.actividades);
+  const selector = periodos.length > 1 ? `<div class="toolbar pad"><label for="aula-filtro-periodo" class="muted">Ver</label><select class="filter" id="aula-filtro-periodo"><option value="0">Todo el curso</option>${periodos.map((p) => `<option value="${p}" ${p === st.periodo ? "selected" : ""}>Periodo ${p}</option>`).join("")}</select></div>` : "";
+  return `${selector}<div class="table-wrap"><table><thead><tr><th>Estudiante</th>${actividades.map((a) => `<th title="${esc(a.titulo)}">${esc(a.titulo.length > 18 ? a.titulo.slice(0, 17) + "…" : a.titulo)}<br><small class="muted">/ ${a.puntaje_max}</small></th>`).join("")}<th>${st.periodo ? `Promedio periodo ${st.periodo}` : "Promedio"} (/20)</th></tr></thead><tbody>
     ${libro.map((f) => `<tr><td>${esc(f.alumno.nombre)}</td>${actividades.map((a) => `<td>${num(f.notas[String(a.id)])}</td>`).join("")}<td>${f.promedio == null ? "—" : badge(num(f.promedio), f.promedio >= 10.5 ? "green" : "red")}</td></tr>`).join("")}
   </tbody></table></div>`;
 }
@@ -120,9 +142,10 @@ function exportarNotas() {
   if (!curso || !libro.length) { toast("No hay notas para exportar.", "error"); return; }
   const cel = (/** @type {string} */ t) => `"${t.replace(/"/g, '""')}"`;
   const vacio = (/** @type {number | null | undefined} */ n) => (n == null ? "" : String(n));
-  const filas = [["Estudiante", ...datos.actividades.map((a) => `${a.titulo} (/${a.puntaje_max})`), "Promedio (/20)"].map(cel).join(",")];
-  for (const f of libro) filas.push([cel(f.alumno.nombre), ...datos.actividades.map((a) => vacio(f.notas[String(a.id)])), vacio(f.promedio)].join(","));
-  downloadFile(`notas-${curso.nombre.replace(/[^\w]+/g, "-")}.csv`, "\uFEFF" + filas.join("\r\n"));
+  const actividades = actividadesVista();
+  const filas = [["Estudiante", ...actividades.map((a) => `${a.titulo} (/${a.puntaje_max})`), "Promedio (/20)"].map(cel).join(",")];
+  for (const f of libro) filas.push([cel(f.alumno.nombre), ...actividades.map((a) => vacio(f.notas[String(a.id)])), vacio(f.promedio)].join(","));
+  downloadFile(`notas-${curso.nombre.replace(/[^\w]+/g, "-")}${st.periodo ? "-periodo" + st.periodo : ""}.csv`, "\uFEFF" + filas.join("\r\n"));
 }
 
 function htmlMaterial() {
@@ -150,7 +173,7 @@ function htmlActividades() {
   return `<ul class="log-list">${actividades.map((a) => {
     const vencida = a.fecha_limite ? new Date(a.fecha_limite).getTime() < ahora : false;
     return `<li><div class="person"><span class="avatar" aria-hidden="true">${icon("listCheck", 16)}</span>
-      <div><strong>${esc(a.titulo)}</strong>${a.publicado ? "" : ` ${badge("Borrador", "amber")}`}
+      <div><strong>${esc(a.titulo)}</strong> ${badge(`Periodo ${periodoDe(a)}`, "neutral")}${a.publicado ? "" : ` ${badge("Borrador", "amber")}`}
         ${a.instrucciones ? `<small>${esc(a.instrucciones)}</small>` : ""}
         <small>${a.fecha_limite ? `Entrega hasta ${esc(fechaLimite(a.fecha_limite))}` : "Sin fecha límite"} · ${a.puntaje_max} pts ${vencida ? badge("Vencida", "red") : ""}</small>
         ${a.archivo_nombre ? `<small>${esc(a.archivo_nombre)} · ${kb(a.archivo_bytes)}</small>` : ""}</div></div>
@@ -234,17 +257,20 @@ function formActividad(a) {
     cuerpo: `${campo("titulo", "Título", "required maxlength=160", a?.titulo)}
       <div class="field"><label for="aula-instrucciones">Instrucciones</label><textarea id="aula-instrucciones" name="instrucciones" rows="4" maxlength="8000">${esc(a?.instrucciones || "")}</textarea></div>
       <div class="row2">${campo("fecha_limite", "Fecha límite (opcional)", "type=datetime-local", local)}${campo("puntaje_max", "Puntaje máximo", "type=number min=1 max=100 step=0.5", String(a?.puntaje_max ?? 20))}</div>
+      <div class="field"><label for="aula-periodo">Periodo del libro de notas</label><select id="aula-periodo" name="periodo">${Array.from({ length: PERIODOS_MAX }, (_, i) => `<option value="${i + 1}" ${(a ? periodoDe(a) : st.periodo || 1) === i + 1 ? "selected" : ""}>Periodo ${i + 1}</option>`).join("")}</select></div>
       ${campoArchivo(a)}
       <label class="check-row"><input type="checkbox" name="publicado" ${a?.publicado === false ? "" : "checked"}> Visible para los estudiantes</label>`,
     alGuardar: async (f, archivo) => {
       const titulo = val(f, "titulo");
       if (!titulo) throw new Error("Escribe un título.");
+      const periodo = Number(val(f, "periodo") || 1);
+      if (!Number.isInteger(periodo) || periodo < 1 || periodo > PERIODOS_MAX) throw new Error(`El periodo debe estar entre 1 y ${PERIODOS_MAX}.`);
       const puntaje = Number(val(f, "puntaje_max") || 20);
       if (!(puntaje > 0 && puntaje <= 100)) throw new Error("El puntaje debe estar entre 1 y 100.");
       const limite = val(f, "fecha_limite");
       await api.aulaGuardar("curso_actividades", {
         id: a?.id, colegio_id: curso.colegio_id || DB.cid, curso_id: curso.id, titulo, instrucciones: val(f, "instrucciones"),
-        fecha_limite: limite ? new Date(limite).toISOString() : null, puntaje_max: puntaje, publicado: marcado(f, "publicado"),
+        fecha_limite: limite ? new Date(limite).toISOString() : null, puntaje_max: puntaje, periodo, publicado: marcado(f, "publicado"),
       }, archivo);
     },
   });

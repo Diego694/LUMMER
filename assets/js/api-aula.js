@@ -148,6 +148,14 @@ export async function eliminarFila(sb, tabla, fila) {
   if (fila.archivo_path) await sb.storage.from(BUCKET_AULA).remove([fila.archivo_path]).catch(() => { /* el archivo huérfano no bloquea */ });
 }
 
+export const PERIODOS_MAX = 8;
+
+/** Periodo de una actividad (las anteriores a la migración 015 cuentan como periodo 1). @param {{ periodo?: number | null }} a */
+export const periodoDe = (a) => a.periodo || 1;
+
+/** Periodos distintos que tiene el curso, ordenados. @param {{ periodo?: number | null }[]} actividades */
+export const periodosDe = (actividades) => [...new Set(actividades.map(periodoDe))].sort((a, b) => a - b);
+
 /**
  * Estudiantes que cursan un curso: activos y aprobados de su carrera y, si el curso es de un ciclo, de ese ciclo.
  * @template {{ nombre: string, nivel: string, grado: string, estado?: string, aprobado?: boolean | null }} A

@@ -174,5 +174,15 @@ do $$ begin
   perform ta.root();
 end $$;
 
+-- ===== 8. Periodos del libro de notas (015) =====
+do $$ begin
+  perform ta.act('f0000000-0000-0000-0000-0000000000d1');
+  perform ta.eq(ta.dml($q$insert into curso_actividades (curso_id, titulo, periodo) values ('fc000000-0000-0000-0000-00000000000a', 'Examen P3', 3)$q$)::text, '1', 'docente publica una actividad en el periodo 3');
+  perform ta.falla($q$insert into curso_actividades (curso_id, titulo, periodo) values ('fc000000-0000-0000-0000-00000000000a', 'Periodo invalido', 9)$q$, 'el periodo debe estar entre 1 y 8');
+  perform ta.falla($q$insert into curso_actividades (curso_id, titulo, periodo) values ('fc000000-0000-0000-0000-00000000000a', 'Periodo cero', 0)$q$, 'el periodo 0 no es valido');
+  perform ta.eq(ta.n($q$select 1 from curso_actividades where titulo = 'Examen P3' and periodo = 3$q$)::text, '1', 'el periodo se guarda');
+  perform ta.root();
+end $$;
+
 rollback;
 select 'AULA: TODAS LAS PRUEBAS PASARON' as resultado;
