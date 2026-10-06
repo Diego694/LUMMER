@@ -134,7 +134,7 @@ export const erroresPage = {
       const l = await api.erroresRecientes(DB.cid);
       root.querySelector("#err-lista").innerHTML = l.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>App</th><th>Mensaje</th><th>Pantalla</th><th>Dispositivo</th></tr></thead><tbody>
         ${l.map((e) => `<tr><td class="nowrap">${esc(new Date(e.creado_en).toLocaleString("es-PE"))}</td><td>${badge(e.app || "—", e.app === "estudiante" ? "amber" : "neutral")}</td>
-          <td><details><summary>${esc((e.mensaje || "").slice(0, 110))}</summary><pre class="stack">${esc(e.detalle || "(sin detalle)")}</pre></details></td>
+          <td><details><summary>${esc((e.mensaje || "").slice(0, 110))}</summary><pre class="err-stack">${esc(e.detalle || "(sin detalle)")}</pre></details></td>
           <td class="muted">${esc((e.url || "").replace(/^https?:\/\/[^/]+/, ""))}</td><td class="muted">${esc((e.agente || "").match(/\(([^)]*)\)/)?.[1]?.slice(0, 40) || "")}</td></tr>`).join("")}</tbody></table></div>`
         : emptyState("Sin errores registrados", "Todo funciona bien. Aquí aparecerán los fallos que ocurran en los teléfonos.", "check");
     } catch (e) { root.querySelector("#err-lista").innerHTML = emptyState("No se pudo cargar", /does not exist|schema cache/i.test(e.message) ? "Falta aplicar la migración 004 en Supabase." : e.message, "alert"); }

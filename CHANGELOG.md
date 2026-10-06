@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.1 — 2026-10-05
+
+### Corregido
+- **Colisión de clase CSS `.stack` en panel de registros de sesión**: corrección del conflicto entre la clase de diseño (`display: grid`) y la regla de trazas de error renombrada a `.err-stack`, restaurando el diseño visual de «Registros de esta sesión» en Registro por QR y los formularios afectados.
+
 ## 3.2.0 — 2026-10-05
 
 ### Añadido

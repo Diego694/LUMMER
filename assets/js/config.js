@@ -24,7 +24,7 @@ export const CONFIG = {
   // Enlace de descarga del APK "Mi Carnet Institucional" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.
   APK_ESTUDIANTE_URL: "https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/download/apk-latest/carnet-estudiante.apk",
   // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
-  APP_VERSION: "3.2.0",
+  APP_VERSION: "3.2.1",
   // QR del carnet: valor de respaldo si la institución no tiene uno configurado (manda la configuración de cada institución en Mi instituto).
   // "off" = QR estático (código del alumno) · "opcional" = dinámico o estático · "obligatorio" = solo dinámico (NFC y código manual siguen valiendo).
   QR_MODO: "obligatorio",
