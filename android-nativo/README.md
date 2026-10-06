@@ -1,4 +1,4 @@
-# Lummer — App Android Nativa (Kotlin + Compose)
+# LUMMER — App Android Nativa (Kotlin + Compose)
 
 Proyecto nativo Android desarrollado en **Kotlin**, **Jetpack Compose** y **Material 3**, bajo arquitectura **MVVM**, inyección de dependencias con **Hilt** y backend en **Supabase** (Postgrest + Auth + Storage + RPC).
 
@@ -8,7 +8,7 @@ Este módulo reside de forma independiente en `android-nativo/` y reproduce la t
 > **Estado del proyecto:** **Completa y lista para release (v4.0.0)**.
 > - Probada satisfactoriamente en hardware real en todas sus pantallas y flujos.
 > - Se distribuye como la **Release Principal** en GitHub (`app-latest` / `registro-academico.apk`) para el perfil **Docente** (`pe.registroacademico.nativo.docente`).
-> - El perfil **Estudiante** aún no está portado a Compose; los estudiantes continúan accediendo vía el portal web y la app Lite («Lummer Estudiante»).
+> - El perfil **Estudiante** aún no está portado a Compose; los estudiantes continúan accediendo vía el portal web y la app Lite («LUMMER Estudiante»).
 > - La app anterior WebView (`android/`) se mantiene como versión **Lite** y convive instalada sin interferencias.
 
 ---

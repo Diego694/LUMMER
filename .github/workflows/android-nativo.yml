@@ -89,7 +89,7 @@ jobs:
           printf '\n\nCompilación #%s · commit %s\n' "${{ github.run_number }}" "${GITHUB_SHA::7}" >> "$RUNNER_TEMP/notas.md"
           gh release delete app-latest --cleanup-tag --yes || true
           gh release create app-latest registro-academico.apk \
-            --title "Lummer — app nativa (última versión)" \
+            --title "LUMMER — app nativa (última versión)" \
             --notes-file "$RUNNER_TEMP/notas.md"
 
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
@@ -97,7 +97,7 @@ jobs:
             echo "Publicando release oficial para el tag $TAG..."
             gh release view "$TAG" > /dev/null 2>&1 && gh release delete "$TAG" --yes || true
             gh release create "$TAG" registro-academico.apk \
-              --title "Lummer $TAG — app nativa" \
+              --title "LUMMER $TAG — app nativa" \
               --notes-file .github/release-notes/app-nativa-tag.md \
               --latest
           fi

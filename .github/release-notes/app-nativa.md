@@ -1,4 +1,4 @@
-**Lummer** — aplicación nativa Android oficial para docentes y administradores (Kotlin + Jetpack Compose).
+**LUMMER** — aplicación nativa Android oficial para docentes y administradores (Kotlin + Jetpack Compose).
 
 ### Qué es
 Aplicación nativa completa que incluye las 33 pantallas del sistema: registro de asistencia con cámara (QR dinámico con CameraX y Google ML Kit), modo quiosco, asistencia masiva y por curso, consultas, justificaciones, auditoría, alertas tempranas, gestión multi-institución y configuración general. Incluye respaldo offline con base de datos local (Room) y cola de sincronización garantizada en segundo plano (WorkManager).

@@ -1,11 +1,11 @@
 {
   "name": "registro-academico-pc",
-  "productName": "Lummer",
+  "productName": "LUMMER",
   "version": "4.0.0",
   "description": "Programa de escritorio (Windows) con modo online y modo local sin internet.",
   "main": "main.js",
   "private": true,
-  "author": "Lummer",
+  "author": "LUMMER",
   "scripts": {
     "preparar": "node scripts/preparar.mjs",
     "start": "electron .",
@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "pe.instituto.registroacademico",
-    "productName": "Lummer",
+    "productName": "LUMMER",
     "directories": { "output": "dist", "buildResources": "build" },
     "files": ["main.js", "preload.js", "app/**/*", "package.json"],
     "win": { "target": ["portable", "nsis"], "icon": "build/icon.png" },

@@ -112,7 +112,7 @@ export async function validarPaquete(texto, { hoy = new Date().toISOString().sli
   if (texto.length > MAX_BYTES) return { ok: false, errores: ["El archivo es demasiado grande (máximo 25 MB)."], avisos };
   let p;
   try { p = JSON.parse(texto); } catch { return { ok: false, errores: ["El archivo no es un respaldo válido (no se puede leer)."], avisos }; }
-  if (p?.formato !== FORMATO) return { ok: false, errores: ["Este archivo no es un respaldo de asistencias de Lummer."], avisos };
+  if (p?.formato !== FORMATO) return { ok: false, errores: ["Este archivo no es un respaldo de asistencias de LUMMER."], avisos };
   if (p.version > VERSION) return { ok: false, errores: [`Este respaldo es de una versión más nueva (${p.version}). Actualiza la aplicación e inténtalo de nuevo.`], avisos };
   const d = p.datos;
   if (!d || !Array.isArray(d.asistencias) || !Array.isArray(d.alumnos)) return { ok: false, errores: ["El respaldo está incompleto."], avisos };

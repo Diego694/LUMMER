@@ -43,7 +43,7 @@ class SesionManagerImpl @Inject constructor(
                 esSuperadmin = detalle.superadmin,
                 colegio = colegio,
                 colegioId = detalle.colegioId,
-                nombreInstituto = detalle.colegio.ifBlank { colegio?.nombre ?: "Lummer" },
+                nombreInstituto = detalle.colegio.ifBlank { colegio?.nombre ?: "LUMMER" },
                 qrModo = detalle.qrModo,
                 carrera = detalle.carrera,
                 nombreUsuario = detalle.nombre ?: userEmail,

@@ -1,4 +1,4 @@
-# Lummer — documentación técnica detallada
+# LUMMER — documentación técnica detallada
 
 > Este documento conserva la descripción completa del proyecto (características, puesta en marcha, estructura y comandos). La presentación breve está en el [README](../README.md).
 
@@ -39,7 +39,7 @@ Abre <http://127.0.0.1:8080>. Mientras `assets/js/config.js` tenga los placehold
 
 ## Portal del estudiante
 
-Segunda app (web + APK **Lummer Estudiante**): el estudiante se registra con el código del instituto, sube su foto y obtiene su **carnet con QR único**. Al escanearlo, el docente ve una **alerta con la foto y los apellidos parcialmente censurados**. El instituto aprueba cada registro. Guía y reglas de privacidad en [docs/ESTUDIANTES.md](ESTUDIANTES.md).
+Segunda app (web + APK **LUMMER Estudiante**): el estudiante se registra con el código del instituto, sube su foto y obtiene su **carnet con QR único**. Al escanearlo, el docente ve una **alerta con la foto y los apellidos parcialmente censurados**. El instituto aprueba cada registro. Guía y reglas de privacidad en [docs/ESTUDIANTES.md](ESTUDIANTES.md).
 
 ## App Android (APK) y PWA
 

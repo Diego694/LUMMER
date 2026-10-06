@@ -31,7 +31,7 @@ def main() -> int:
     subprocess.run([
         "keytool", "-genkeypair", "-v", "-keystore", str(jks), "-alias", ALIAS, "-keyalg", "RSA", "-keysize", "2048",
         "-validity", "10000", "-storepass", password, "-keypass", password,
-        "-dname", "CN=Lummer, O=Lummer, C=PE",
+        "-dname", "CN=LUMMER, O=LUMMER, C=PE",
     ], check=True, capture_output=True)
     b64 = base64.b64encode(jks.read_bytes()).decode()
     (OUT / "secretos-github.txt").write_text(

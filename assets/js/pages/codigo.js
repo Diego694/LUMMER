@@ -1,5 +1,5 @@
 // @ts-check
-// Código de registro del instituto: lo que los estudiantes escriben en "Lummer Estudiante" para registrarse.
+// Código de registro del instituto: lo que los estudiantes escriben en "LUMMER Estudiante" para registrarse.
 // Página propia para generarlo, copiarlo y compartirlo en un toque.
 import { api } from "../api.js";
 import { CONFIG } from "../config.js";
@@ -28,7 +28,7 @@ async function copiar(texto) {
 function textoCompartir(codigo) {
   const apk = CONFIG.APK_ESTUDIANTE_URL;
   return [
-    `Regístrate en *Lummer Estudiante* de ${DB.perfil?.colegio || "nuestro instituto"}:`,
+    `Regístrate en *LUMMER Estudiante* de ${DB.perfil?.colegio || "nuestro instituto"}:`,
     apk ? `1) Descarga la app: ${apk}` : `1) Abre: ${portalUrl()}`,
     `2) Crea tu cuenta y escribe el código del instituto: *${codigo}*`,
     `3) Completa tus datos y sube tu foto. Tu carnet con QR se activa cuando el instituto lo apruebe.`,
@@ -46,7 +46,7 @@ export const codigoPage = {
     actual = await api.getCodigoRegistro(/** @type {string} */ (DB.cid));
     const pend = DB.alumnos.filter((a) => a.aprobado === false).length;
     root.innerHTML = `
-      ${pageHead("Código de registro", "El código que tus estudiantes escriben en <b>Lummer Estudiante</b> para registrarse. Tú apruebas cada registro.")}
+      ${pageHead("Código de registro", "El código que tus estudiantes escriben en <b>LUMMER Estudiante</b> para registrarse. Tú apruebas cada registro.")}
       <div class="grid-2 split">
         <section class="card" id="cd-card"></section>
         <section class="card center-col" id="cd-qr-card">

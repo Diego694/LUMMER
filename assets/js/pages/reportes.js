@@ -106,7 +106,7 @@ function pdfReporte() {
     doc.line(x, y, x + 200, y); doc.text(t, x + 100, y + 12, { align: "center" });
   });
   doc.setFontSize(7.5); doc.setTextColor(120);
-  doc.text(`Generado el ${new Date().toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "long", year: "numeric" })} · Lummer`, M, 575);
+  doc.text(`Generado el ${new Date().toLocaleDateString("es-PE", { timeZone: "America/Lima", day: "2-digit", month: "long", year: "numeric" })} · LUMMER`, M, 575);
   doc.setTextColor(0);
   return doc;
 }

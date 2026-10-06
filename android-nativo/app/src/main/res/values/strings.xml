@@ -3,7 +3,7 @@
     <!-- Strings en español para la app nativa (app_name se genera por flavor) -->
     <string name="login_title">Inicia sesión</string>
     <string name="login_subtitle">Usa la cuenta institucional asignada a tu perfil.</string>
-    <string name="login_brand_title">Lummer</string>
+    <string name="login_brand_title">LUMMER</string>
     <string name="login_brand_subtitle">Aula y asistencia institucional</string>
     <string name="email_label">Correo electrónico</string>
     <string name="email_placeholder">ejemplo@instituto.pe</string>

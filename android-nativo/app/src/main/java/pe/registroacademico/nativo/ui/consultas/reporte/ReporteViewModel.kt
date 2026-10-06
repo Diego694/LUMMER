@@ -200,7 +200,7 @@ class ReporteViewModel @Inject constructor(
         val m = s.matriz ?: return ""
         return buildString {
             appendLine("REPORTE MENSUAL DE ASISTENCIA")
-            appendLine("Institución: Lummer")
+            appendLine("Institución: LUMMER")
             appendLine("Filtro: ${s.titulo}")
             appendLine("Alumnos evaluados: ${m.resumen.alumnos}")
             appendLine("Días de clase registrados: ${m.resumen.dias}")

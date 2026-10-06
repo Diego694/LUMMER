@@ -31,14 +31,14 @@ android {
         docente {
             dimension 'rol'
             applicationId 'app.registroacademico'   // se conserva: así las instalaciones existentes se actualizan
-            resValue 'string', 'app_name', 'Lummer Lite'
+            resValue 'string', 'app_name', 'LUMMER Lite'
             buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
             buildConfigField 'String', 'CONFIG_KEY', '"docente"'
         }
         estudiante {
             dimension 'rol'
             applicationId 'app.registroacademico.estudiante'
-            resValue 'string', 'app_name', 'Lummer Estudiante'
+            resValue 'string', 'app_name', 'LUMMER Estudiante'
             buildConfigField 'String', 'APP_URL', "\"${appUrl}estudiante/\""
             buildConfigField 'String', 'CONFIG_KEY', '"estudiante"'
         }

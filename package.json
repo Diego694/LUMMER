@@ -2,7 +2,7 @@
   "name": "registro-academico",
   "version": "4.0.0",
   "private": true,
-  "description": "Lummer: plataforma de aula y asistencia institucional (QR/NFC) para institutos y escuelas.",
+  "description": "LUMMER: plataforma de aula y asistencia institucional (QR/NFC) para institutos y escuelas.",
   "type": "module",
   "scripts": {
     "start": "python scripts/serve.py 8080",

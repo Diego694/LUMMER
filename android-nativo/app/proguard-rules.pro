@@ -1,4 +1,4 @@
-# ProGuard rules for Lummer Android Nativo
+# ProGuard rules for LUMMER Android Nativo
 
 # Kotlinx Serialization
 -keepattributes *Annotation*,InnerClasses

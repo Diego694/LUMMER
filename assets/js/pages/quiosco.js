@@ -246,7 +246,7 @@ export async function abrirQuiosco(/** @type {any} */ config) {
   const hoy = todayStr(), noLect = DB.noLectivos.get(hoy);
   const ov = document.createElement("div");
   ov.id = "quiosco"; ov.className = "quiosco"; ov.setAttribute("role", "application"); ov.setAttribute("aria-label", "Modo quiosco");
-  ov.innerHTML = `<header class="q-top"><div class="q-marca"><div><strong>${esc(DB.perfil?.colegio || "Lummer")}</strong><small id="q-modo">${ajustes.modo === "salida" ? "SALIDA" : ajustes.modo === "entrada" ? "INGRESO" : "INGRESO Y SALIDA"}</small></div></div>
+  ov.innerHTML = `<header class="q-top"><div class="q-marca"><div><strong>${esc(DB.perfil?.colegio || "LUMMER")}</strong><small id="q-modo">${ajustes.modo === "salida" ? "SALIDA" : ajustes.modo === "entrada" ? "INGRESO" : "INGRESO Y SALIDA"}</small></div></div>
       <div class="q-hora"><div id="q-reloj" class="q-reloj"></div><div id="q-fecha" class="q-fecha"></div></div>
       <div class="q-botones"><button class="q-btn" id="q-pantalla" type="button"></button><button class="q-btn q-salir" id="q-salir" type="button" aria-label="Salir del modo quiosco" title="Salir del modo quiosco">🔒</button></div></header>
     ${noLect ? `<div class="q-aviso">Hoy es ${esc(noLect.tipo.toLowerCase())}: ${esc(noLect.nombre)}. Los registros se guardan igual.</div>` : ""}

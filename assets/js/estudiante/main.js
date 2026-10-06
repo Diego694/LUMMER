@@ -227,7 +227,7 @@ async function vistaCarnet(recienCreado = false) {
     ? "Muestra este QR al docente al ingresar a clases. Cambia solo cada 30 s; una captura no sirve. También se aceptan carnets impresos con QR fijo."
     : "Muestra este QR al docente al ingresar a clases. No lo compartas con otras personas.";
   root().innerHTML = `
-    <section class="carnet-est" aria-label="Lummer Estudiante">
+    <section class="carnet-est" aria-label="LUMMER Estudiante">
       <div class="ce-head">${esc(colegio)} · Carnet institucional</div>
       <div class="ce-id">
         <div class="ce-foto" id="ce-foto"><span>${esc(initials(a.nombre))}</span></div>

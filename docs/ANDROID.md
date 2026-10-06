@@ -14,7 +14,7 @@ El proyecto ofrece dos aplicaciones para dispositivos Android que cubren diferen
 | **Tecnología** | Kotlin, Jetpack Compose, Material 3, Hilt | Java + Android WebView |
 | **Código** | `android-nativo/` | `android/` |
 | **ID de aplicación** | `pe.registroacademico.nativo.docente` | `app.registroacademico` (docente) / `.estudiante` |
-| **Nombre visible** | **Lummer** | **Lummer Lite** / **Lummer Estudiante** |
+| **Nombre visible** | **LUMMER** | **LUMMER Lite** / **LUMMER Estudiante** |
 | **Público objetivo** | Docentes y directivos | Docentes (modo ligero) y Estudiantes |
 | **Pantallas** | Las 33 pantallas completas portadas | Interfaz web servida por HTTPS |
 | **Cámara / Escáner QR** | CameraX + Google ML Kit a alta velocidad | `getUserMedia` HTML5 / WebRTC |
@@ -37,7 +37,7 @@ Los binarios se compilan automáticamente con GitHub Actions y se publican con U
   - Release estable: [Releases tag `apk-latest`](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest)
   - Archivos APK:
     - **`asistencia-escolar.apk`** (Docente Lite)
-    - **`carnet-estudiante.apk`** (Lummer Estudiante - portal del estudiante)
+    - **`carnet-estudiante.apk`** (LUMMER Estudiante - portal del estudiante)
 
 ---
 

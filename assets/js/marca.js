@@ -17,7 +17,7 @@ export function nombreInstituto() {
     const v = localStorage.getItem(LS_KEY);
     if (v) return v;
   } catch { /* */ }
-  return 'Lummer';
+  return 'LUMMER';
 }
 
 /** Pinta el nombre en el menú lateral y el título de la pestaña */

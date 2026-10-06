@@ -39,7 +39,7 @@ jobs:
       - name: Probar el programa ya empaquetado
         run: |
           rm -f "$RUNNER_TEMP/smoke-pack.txt"
-          SMOKE_OUT="$RUNNER_TEMP/smoke-pack.txt" "dist/win-unpacked/Lummer.exe" --smoke || true
+          SMOKE_OUT="$RUNNER_TEMP/smoke-pack.txt" "dist/win-unpacked/LUMMER.exe" --smoke || true
           cat "$RUNNER_TEMP/smoke-pack.txt"
           grep -q '"ok": true' "$RUNNER_TEMP/smoke-pack.txt"
       - name: Publicar en la release pc-latest

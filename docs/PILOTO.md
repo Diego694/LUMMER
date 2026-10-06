@@ -5,7 +5,7 @@ Objetivo: comprobar en condiciones reales, durante **1–2 semanas con un solo s
 ## Preparación (1 día)
 1. Abre **Sistema → Diagnóstico** en el panel docente: debe marcar conexión, base de datos, reloj y cola sin errores.
 2. Crea la carrera y los ciclos (I–VI) y comparte el **código de registro** con el salón piloto.
-3. Cada estudiante instala *Lummer Estudiante* (o abre la web), se registra y sube su foto. Aprueba los registros en **Gestión → Estudiantes**.
+3. Cada estudiante instala *LUMMER Estudiante* (o abre la web), se registra y sube su foto. Aprueba los registros en **Gestión → Estudiantes**.
 4. Instala la APK docente en **al menos 2 teléfonos distintos**, uno de ellos el más antiguo que vayan a usar.
 
 ## Qué probar cada día
