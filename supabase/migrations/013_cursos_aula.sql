@@ -155,7 +155,11 @@ on conflict (id) do update set public = false, file_size_limit = excluded.file_s
 
 drop policy if exists "cursos: ve archivos de su curso" on storage.objects;
 create policy "cursos: ve archivos de su curso" on storage.objects for select to authenticated
-  using (bucket_id = 'cursos' and public.puede_ver_curso(public.curso_de_ruta(name)));
+  using (bucket_id = 'cursos' and (
+    -- <colegio>/<curso>/entregas/<user_id>/…  (migración 014): privadas, solo su autor y quien gestiona el curso
+    case when (storage.foldername(name))[3] = 'entregas'
+         then (storage.foldername(name))[4] = auth.uid()::text or public.puede_gestionar_curso(public.curso_de_ruta(name))
+         else public.puede_ver_curso(public.curso_de_ruta(name)) end));
 drop policy if exists "cursos: sube a su curso" on storage.objects;
 create policy "cursos: sube a su curso" on storage.objects for insert to authenticated
   with check (bucket_id = 'cursos' and (storage.foldername(name))[1] = public.mi_colegio()::text

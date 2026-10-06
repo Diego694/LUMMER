@@ -54,7 +54,7 @@ def main():
         subprocess.run([bin_ / f"createdb{exe}", "-h", "127.0.0.1", "-p", PUERTO, "-U", "postgres", "prueba"], check=True, capture_output=True)
         orden = [AQUI / "stub_supabase.sql", AQUI / "baseline_produccion.sql", RAIZ / "migrations" / "002_estudiantes.sql",
                  Path(os.environ.get("RA_MIGRACION_004", RAIZ / "migrations" / "004_operacion.sql")),
-                 RAIZ / "migrations" / "005_personal_avisos.sql", RAIZ / "migrations" / "006_perfil_personal.sql", RAIZ / "migrations" / "007_operacion_avanzada.sql", RAIZ / "migrations" / "008_directorio_personal.sql", RAIZ / "migrations" / "009_aviso_aprobacion.sql", RAIZ / "migrations" / "010_horario_ventana.sql", RAIZ / "migrations" / "011_instituciones.sql", RAIZ / "migrations" / "012_qr_modo.sql"]  # RA_MIGRACION_004 permite probar mutaciones
+                 RAIZ / "migrations" / "005_personal_avisos.sql", RAIZ / "migrations" / "006_perfil_personal.sql", RAIZ / "migrations" / "007_operacion_avanzada.sql", RAIZ / "migrations" / "008_directorio_personal.sql", RAIZ / "migrations" / "009_aviso_aprobacion.sql", RAIZ / "migrations" / "010_horario_ventana.sql", RAIZ / "migrations" / "011_instituciones.sql", RAIZ / "migrations" / "012_qr_modo.sql", RAIZ / "migrations" / "013_cursos_aula.sql", RAIZ / "migrations" / "014_entregas_notas.sql"]  # RA_MIGRACION_004 permite probar mutaciones
         for f in orden:
             r = psql(f, db="prueba")
             print(("✔ " if r.returncode == 0 else "✘ ") + f.name)
@@ -64,6 +64,11 @@ def main():
         print(r.stdout.strip())
         if r.returncode != 0:
             print("✘ PRUEBAS DE SEGURIDAD FALLARON:\n" + (r.stderr or "").strip()); return 1
+        r = psql(AQUI / "aula_test.sql", db="prueba")
+        print(r.stdout.strip())
+        if r.returncode != 0:
+            print("✘ PRUEBAS DEL AULA FALLARON:
+" + (r.stderr or "").strip()); return 1
         # Idempotencia: volver a aplicar las migraciones no debe fallar ni cambiar el resultado
         for f in orden[2:]:
             r = psql(f, db="prueba")
@@ -80,6 +85,10 @@ def main():
         r = psql(AQUI / "rls_test.sql", db="limpia")
         if r.returncode != 0:
             print("✘ PRUEBAS DE SEGURIDAD FALLARON (instalación limpia):\n" + (r.stderr or "").strip()); return 1
+        r = psql(AQUI / "aula_test.sql", db="limpia")
+        if r.returncode != 0:
+            print("✘ PRUEBAS DEL AULA FALLARON (instalación limpia):
+" + (r.stderr or "").strip()); return 1
         print("✔ instalación limpia: pruebas de seguridad correctas")
         estado = 0
     finally:
