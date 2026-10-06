@@ -1,3 +1,4 @@
+// @ts-check
 import { api } from "../api.js";
 import { CONFIG } from "../config.js";
 import { DB } from "../state.js";
@@ -7,18 +8,22 @@ import { downloadFile, esc, fmtDate, fmtDay, greeting, initials, isWeekend, last
 
 let rango = 7;
 let carrera = "";   // filtro del panel por carrera ("" = todas)
+/** @type {any} */
 let cache = null;
+/** @type {any} */
 let charts = [];
+/** @type {any} */
 let timer = null;
+/** @type {any} */
 let rootEl = null;
 let ver = 0; // invalida cargas en vuelo si el usuario cambia de página o de periodo
 
-const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const cssVar = (/** @type {any} */ n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 export const dashboardPage = {
   id: "dashboard", title: "Dashboard", icon: "dashboard", group: "Principal",
 
-  async render(root) {
+  async render(/** @type {any} */ root) {
     rootEl = root;
     const mia = ++ver;
     root.innerHTML = skeleton(6);
@@ -43,7 +48,7 @@ async function cargar(silencioso = false) {
     const hoy = todayStr();
     const filas = await api.asistenciasRango(DB.cid, dias[0], hoy);
     cache = { dias, filas, hoy: filas.filter((f) => f.fecha === hoy), actualizado: new Date() };
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     if (!silencioso) toast("No se pudo cargar el dashboard: " + e.message, "error");
     cache = cache || { dias: [], filas: [], hoy: [], actualizado: new Date() };
   }
@@ -55,11 +60,11 @@ function pintar() {
   const L = CONFIG.HORA_LIMITE;
   const AL = carrera ? DB.alumnos.filter((a) => a.nivel === carrera) : DB.alumnos;   // alumnos de la vista actual
   const idsAL = new Set(AL.map((a) => a.id));
-  hoy = hoy.filter((x) => idsAL.has(x.alumno_id));
-  const filasAL = filas.filter((f) => idsAL.has(f.alumno_id));
+  hoy = hoy.filter((/** @type {any} */ x) => idsAL.has(x.alumno_id));
+  const filasAL = filas.filter((/** @type {any} */ f) => idsAL.has(f.alumno_id));
   const r = resumenDia(AL, hoy, L);
   const activosIds = new Set(AL.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false).map((a) => a.id));
-  const serie = serieDiaria(dias, filasAL.filter((f) => activosIds.has(f.alumno_id)), r.activos, L);
+  const serie = serieDiaria(dias, filasAL.filter((/** @type {any} */ f) => activosIds.has(f.alumno_id)), r.activos, L);
   const previos = serie.filter((s) => s.fecha !== todayStr() && s.presentes > 0);
   const promedio = previos.length ? Math.round(previos.reduce((t, s) => t + s.pct, 0) / previos.length) : 0;
   const delta = previos.length ? r.pct - promedio : null;
@@ -115,8 +120,8 @@ function pintar() {
           : emptyState("Sin comunicados", "Publica el primero desde la sección Comunicados.", "megaphone")}</article>
     </section>`;
 
-  rootEl.querySelector("#dash-carrera")?.addEventListener("change", (e) => { carrera = e.target.value; pintar(); });
-  rootEl.querySelector("#dash-rango").addEventListener("change", async (e) => {
+  rootEl.querySelector("#dash-carrera")?.addEventListener("change", (/** @type {any} */ e) => { carrera = e.target.value; pintar(); });
+  /** @type {HTMLElement} */ (rootEl.querySelector("#dash-rango")).addEventListener("change", async (/** @type {any} */ e) => {
     rango = Number(e.target.value);
     const mia = ++ver;
     rootEl.innerHTML = skeleton(6);
@@ -127,7 +132,7 @@ function pintar() {
   dibujarGraficos();
 }
 
-function destruirGraficos() { charts.forEach((c) => c.destroy()); charts = []; }
+function destruirGraficos() { charts.forEach((/** @type {any} */ c) => c.destroy()); charts = []; }
 
 function dibujarGraficos() {
   if (!window.Chart || !cache?.derived) return;
@@ -137,27 +142,27 @@ function dibujarGraficos() {
   Chart.defaults.color = C.text;
   const { r, serie, porGrado: grados, porNivel: niveles } = cache.derived;
   const base = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { usePointStyle: true, boxWidth: 8 } } } };
-  const get = (id) => document.getElementById(id);
+  const get = (/** @type {any} */ id) => document.getElementById(id);
 
   charts.push(new Chart(get("chart-tendencia"), {
     data: {
-      labels: serie.map((s) => fmtDay(s.fecha)),
+      labels: serie.map((/** @type {any} */ s) => fmtDay(s.fecha)),
       datasets: [
-        { type: "line", label: "% asistencia", data: serie.map((s) => s.pct), yAxisID: "y1", borderColor: C.navy, backgroundColor: C.navy, tension: 0.35, pointRadius: 3, order: 0 },
-        { type: "bar", label: "Puntuales", data: serie.map((s) => s.presentes - s.tardes), backgroundColor: C.teal, borderRadius: 4, stack: "a", yAxisID: "y", order: 1 },
-        { type: "bar", label: "Tardanzas", data: serie.map((s) => s.tardes), backgroundColor: C.amber, borderRadius: 4, stack: "a", yAxisID: "y", order: 1 },
+        { type: "line", label: "% asistencia", data: serie.map((/** @type {any} */ s) => s.pct), yAxisID: "y1", borderColor: C.navy, backgroundColor: C.navy, tension: 0.35, pointRadius: 3, order: 0 },
+        { type: "bar", label: "Puntuales", data: serie.map((/** @type {any} */ s) => s.presentes - s.tardes), backgroundColor: C.teal, borderRadius: 4, stack: "a", yAxisID: "y", order: 1 },
+        { type: "bar", label: "Tardanzas", data: serie.map((/** @type {any} */ s) => s.tardes), backgroundColor: C.amber, borderRadius: 4, stack: "a", yAxisID: "y", order: 1 },
       ],
     },
     options: { ...base, interaction: { mode: "index", intersect: false }, scales: {
       x: { stacked: true, grid: { display: false } },
       y: { stacked: true, beginAtZero: true, grid: { color: C.grid }, title: { display: true, text: "Alumnos" }, ticks: { precision: 0 } },
-      y1: { position: "right", min: 0, max: 100, grid: { display: false }, ticks: { callback: (v) => v + "%" } },
+      y1: { position: "right", min: 0, max: 100, grid: { display: false }, ticks: { callback: (/** @type {any} */ v) => v + "%" } },
     } },
   }));
 
   const pluginCentroDona = {
     id: "centroDona",
-    afterDraw(chart) {
+    afterDraw(/** @type {any} */ chart) {
       const { ctx, chartArea } = chart;
       if (!chartArea) return;
       const cx = (chartArea.left + chartArea.right) / 2;
@@ -189,10 +194,10 @@ function dibujarGraficos() {
     plugins: [pluginCentroDona],
   }));
 
-  const colorGrado = (p) => (p >= CONFIG.UMBRAL_ASISTENCIA ? C.teal : p >= 60 ? C.amber : C.red);
+  const colorGrado = (/** @type {any} */ p) => (p >= CONFIG.UMBRAL_ASISTENCIA ? C.teal : p >= 60 ? C.amber : C.red);
   const pluginGuiaMeta = {
     id: "guiaMeta",
-    afterDatasetsDraw(chart) {
+    afterDatasetsDraw(/** @type {any} */ chart) {
       const { ctx, chartArea, scales } = chart;
       if (!chartArea || !scales.x) return;
       const meta = CONFIG.UMBRAL_ASISTENCIA || 80;
@@ -220,20 +225,20 @@ function dibujarGraficos() {
 
   charts.push(new Chart(get("chart-grados"), {
     type: "bar",
-    data: { labels: grados.map((g) => g.key), datasets: [{ label: "% asistencia hoy", data: grados.map((g) => g.pct), backgroundColor: grados.map((g) => colorGrado(g.pct)), borderRadius: 4, barThickness: 16 }] },
+    data: { labels: grados.map((/** @type {any} */ g) => g.key), datasets: [{ label: "% asistencia hoy", data: grados.map((/** @type {any} */ g) => g.pct), backgroundColor: grados.map((/** @type {any} */ g) => colorGrado(g.pct)), borderRadius: 4, barThickness: 16 }] },
     options: {
       ...base,
       layout: { padding: { top: 12 } },
       indexAxis: "y",
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.x}% (${grados[c.dataIndex].presentes}/${grados[c.dataIndex].total})` } } },
-      scales: { x: { min: 0, max: 100, grid: { color: C.grid }, ticks: { callback: (v) => v + "%" } }, y: { grid: { display: false } } }
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (/** @type {any} */ c) => ` ${c.parsed.x}% (${grados[c.dataIndex].presentes}/${grados[c.dataIndex].total})` } } },
+      scales: { x: { min: 0, max: 100, grid: { color: C.grid }, ticks: { callback: (/** @type {any} */ v) => v + "%" } }, y: { grid: { display: false } } }
     },
     plugins: [pluginGuiaMeta],
   }));
 
   charts.push(new Chart(get("chart-niveles"), {
     type: "doughnut",
-    data: { labels: niveles.map((n) => n.nivel), datasets: [{ data: niveles.map((n) => n.total), backgroundColor: [C.navy, C.amber, C.teal, C.red, "#7C88A8"], borderColor: C.panel, borderWidth: 3 }] },
+    data: { labels: niveles.map((/** @type {any} */ n) => n.nivel), datasets: [{ data: niveles.map((/** @type {any} */ n) => n.total), backgroundColor: [C.navy, C.amber, C.teal, C.red, "#7C88A8"], borderColor: C.panel, borderWidth: 3 }] },
     options: { ...base, cutout: "60%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } } } },
   }));
 }

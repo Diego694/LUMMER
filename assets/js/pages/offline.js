@@ -1,3 +1,4 @@
+// @ts-check
 // Respaldo offline (administrador): exporta a un archivo .rabackup lo registrado sin internet y lo importa luego,
 // en la web, la app Android o el programa de PC, quedando cada registro en SU fecha (no en la de hoy).
 import { api } from "../api.js";
@@ -9,19 +10,20 @@ import { red } from "../sync.js";
 import { emptyState, icon, pageHead, registerActions, toast } from "../ui.js";
 import { addDays, downloadFile, esc, fmtDate, todayStr } from "../utils.js";
 
-const root = () => document.getElementById("page-root");
+const root = () => /** @type {HTMLElement} */ (document.getElementById("page-root"));
 const local = () => api.mode === "local" || api.mode === "demo";   // la base del propio equipo (modo local / demo)
+/** @type {any} */
 let pendienteImport = null;   // { paquete, plan, nombre }
 
 /* ------------------------------ Exportar ------------------------------ */
 /** Reúne lo registrado en el rango, venga de la base del equipo (modo local) o de la cola sin enviar (modo online). */
-async function reunir(desde, hasta, incluirServidor) {
-  const r = { asistencias: [], salidas: [], asistenciasCurso: [], justificaciones: [], origen: "" };
-  const enRango = (f) => f >= desde && f <= hasta;
+async function reunir(/** @type {any} */ desde, /** @type {any} */ hasta, /** @type {any} */ incluirServidor) {
+  const r = /** @type {any} */ ({ asistencias: [], salidas: [], asistenciasCurso: [], justificaciones: [], origen: "" });
+  const enRango = (/** @type {any} */ f) => f >= desde && f <= hasta;
   if (local()) {
     r.origen = "base local de este equipo";
     r.asistencias = await api.asistenciasRango(DB.cid, desde, hasta);
-    r.asistenciasCurso = (api.db.asistencias_curso || []).filter((x) => enRango(x.fecha));
+    r.asistenciasCurso = (/** @type {any} */ (api).db.asistencias_curso || []).filter((/** @type {any} */ x) => enRango(x.fecha));
     r.justificaciones = await api.justificacionesRango(DB.cid, desde, hasta).catch(() => []);
     return r;
   }
@@ -40,10 +42,10 @@ async function reunir(desde, hasta, incluirServidor) {
 }
 
 async function armarPaquete() {
-  const desde = root().querySelector("#of-desde").value, hasta = root().querySelector("#of-hasta").value;
+  const desde = /** @type {HTMLInputElement} */ (root().querySelector("#of-desde")).value, hasta = /** @type {HTMLInputElement} */ (root().querySelector("#of-hasta")).value;
   if (!desde || !hasta || desde > hasta) throw new Error("Elige un rango de fechas válido (desde ≤ hasta).");
   if (hasta > todayStr()) throw new Error("La fecha final no puede ser futura.");
-  const incluir = root().querySelector("#of-servidor")?.checked;
+  const incluir = /** @type {HTMLInputElement | null} */ (root().querySelector("#of-servidor"))?.checked;
   const datos = await reunir(desde, hasta, incluir);
   const texto = await construirPaquete({
     instituto: { id: DB.cid, nombre: DB.perfil?.colegio || "" },
@@ -54,31 +56,31 @@ async function armarPaquete() {
 }
 
 /* ------------------------------ Importar ------------------------------ */
-async function analizar(file) {
-  const out = root().querySelector("#oi-res");
+async function analizar(/** @type {any} */ file) {
+  const out = /** @type {HTMLElement} */ (root().querySelector("#oi-res"));
   out.innerHTML = '<p class="muted">Leyendo el archivo…</p>';
   pendienteImport = null;
   const v = await validarPaquete(await file.text(), { hoy: todayStr() });
   if (!v.ok) { out.innerHTML = `<p class="err-msg" role="alert">${esc(v.errores.join(" "))}</p>`; return; }
-  const p = v.paquete;
-  const fechas = p.datos.asistencias.map((x) => x.fecha).concat(p.datos.asistencias_curso.map((x) => x.fecha), p.datos.justificaciones.map((x) => x.fecha)).sort();
+  const p = /** @type {any} */ (v.paquete);
+  const fechas = p.datos.asistencias.map((/** @type {any} */ x) => x.fecha).concat(p.datos.asistencias_curso.map((/** @type {any} */ x) => x.fecha), p.datos.justificaciones.map((/** @type {any} */ x) => x.fecha)).sort();
   if (!fechas.length) { out.innerHTML = '<p class="muted">El archivo no trae registros.</p>'; return; }
   // lo ya existente en esas fechas (para no duplicar)
   const desde = fechas[0], hasta = fechas.at(-1);
   const [asis, just] = await Promise.all([api.asistenciasRango(DB.cid, desde, hasta), api.justificacionesRango(DB.cid, desde, hasta).catch(() => [])]);
   const cursosEx = new Set();
   if (p.datos.asistencias_curso.length) {
-    for (const f of [...new Set(p.datos.asistencias_curso.map((x) => x.fecha))]) for (const c of DB.cursos) (await api.asistenciasCursoPorFecha(DB.cid, c.id, f).catch(() => [])).forEach((x) => cursosEx.add(`${x.alumno_id}|${x.curso_id}|${x.fecha}`));
+    for (const f of [...new Set(p.datos.asistencias_curso.map((/** @type {any} */ x) => x.fecha))]) for (const c of DB.cursos) (await api.asistenciasCursoPorFecha(/** @type {string} */ (DB.cid), /** @type {string} */ (c.id), /** @type {string} */ (f)).catch(() => [])).forEach((/** @type {any} */ x) => cursosEx.add(`${x.alumno_id}|${x.curso_id}|${x.fecha}`));
   }
   const plan = planImportacion(p, {
     alumnos: DB.alumnos, cursos: DB.cursos,
     existentes: { asistencias: new Map(asis.map((x) => [`${x.alumno_id}|${x.fecha}`, x])), cursos: cursosEx, just: new Set(just.map((x) => `${x.alumno_id}|${x.fecha}`)) },
   });
   pendienteImport = { paquete: p, plan, nombre: file.name };
-  const r = plan.resumen, otroInstituto = p.instituto?.nombre && DB.perfil?.colegio && p.instituto.nombre !== DB.perfil.colegio;
+  const r = plan.resumen, otroInstituto = p.instituto?.nombre && DB.perfil?.colegio && p.instituto.nombre !== /** @type {any} */ (DB.perfil).colegio;
   out.innerHTML = `
     <div class="alert-box">${icon("info", 15)} Respaldo de <b>${esc(p.instituto?.nombre || "—")}</b> · creado el ${esc(fmtDate(String(p.creado_en).slice(0, 10), { day: "2-digit", month: "long", year: "numeric" }))} · origen: ${esc(p.origen?.detalle || p.origen?.modo || "—")} (${esc(p.origen?.app || "")} ${esc(p.origen?.version || "")})</div>
-    ${otroInstituto ? `<p class="err-msg" role="alert">Este respaldo es de «${esc(p.instituto.nombre)}» y tu instituto es «${esc(DB.perfil.colegio)}». Importa solo si es el mismo instituto.</p>` : ""}
+    ${otroInstituto ? `<p class="err-msg" role="alert">Este respaldo es de «${esc(p.instituto.nombre)}» y tu instituto es «${esc(/** @type {any} */ (DB.perfil).colegio)}». Importa solo si es el mismo instituto.</p>` : ""}
     <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Asistencias nuevas</th><th>Ya estaban</th><th>Salidas que se completan</th><th>Por curso</th><th>Justificaciones</th><th>Sin alumno</th></tr></thead><tbody>
       ${plan.porFecha.map((x) => `<tr><td><strong>${esc(fmtDate(x.fecha, { weekday: "short", day: "2-digit", month: "short", year: "numeric" }))}</strong></td><td>${x.nuevas}</td><td>${x.repetidas}</td><td>${x.salidas}</td><td>${x.curso}</td><td>${x.justificaciones}</td><td>${x.sinAlumno || "—"}</td></tr>`).join("")}</tbody></table></div>
     ${plan.desconocidos.length ? `<p class="muted" style="margin:10px 0 0">Códigos que no existen en este instituto (se omiten): ${esc(plan.desconocidos.slice(0, 12).join(", "))}${plan.desconocidos.length > 12 ? "…" : ""}</p>` : ""}
@@ -89,24 +91,24 @@ async function analizar(file) {
     <p class="err-msg" id="oi-err" hidden></p>`;
 }
 
-async function aplicar(btn) {
+async function aplicar(/** @type {any} */ btn) {
   if (!pendienteImport) return;
-  const { plan } = pendienteImport, err = root().querySelector("#oi-err");
+  const { plan } = pendienteImport, err = /** @type {HTMLElement} */ (root().querySelector("#oi-err"));
   btn.disabled = true; btn.textContent = "Importando…"; err.hidden = true;
   try {
     const base = { colegio_id: DB.cid, registrado_por: DB.userId };
-    const lotes = (a, n = 200) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n));
+    const lotes = (/** @type {any} */ a, n = 200) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n));
     let n = 0;
-    for (const l of lotes(plan.asistencias)) n += await api.registrarMasivo(l.map((x) => ({ ...base, ...x })));
+    for (const l of lotes(plan.asistencias)) n += await api.registrarMasivo(l.map((/** @type {any} */ x) => ({ ...base, ...x })));
     for (const l of lotes(plan.salidas)) await api.registrarSalidas(l);
-    for (const l of lotes(plan.cursos)) await api.registrarMasivoCurso(l.map((x) => ({ ...base, ...x })));
+    for (const l of lotes(plan.cursos)) await api.registrarMasivoCurso(l.map((/** @type {any} */ x) => ({ ...base, ...x })));
     let j = 0;
-    for (const x of plan.justificaciones) { try { await api.guardarJustificacion({ ...base, ...x }); j++; } catch (e) { if (e.code !== "duplicate") throw e; } }
+    for (const x of plan.justificaciones) { try { await api.guardarJustificacion({ ...base, ...x }); j++; } catch (/** @type {any} */ e) { if (e.code !== "duplicate") throw e; } }
     await loadAll();
     pendienteImport = null;
-    root().querySelector("#oi-res").innerHTML = `<div class="alert-box ok">${icon("check", 15)} Listo: <b>${n}</b> asistencias, ${plan.salidas.length} salidas, ${plan.cursos.length} por curso y ${j} justificaciones importadas en sus fechas originales. Puedes repetir la importación sin duplicar.</div>`;
+    /** @type {HTMLElement} */ (root().querySelector("#oi-res")).innerHTML = `<div class="alert-box ok">${icon("check", 15)} Listo: <b>${n}</b> asistencias, ${plan.salidas.length} salidas, ${plan.cursos.length} por curso y ${j} justificaciones importadas en sus fechas originales. Puedes repetir la importación sin duplicar.</div>`;
     toast("Respaldo importado en sus fechas", "success");
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     err.textContent = "No se pudo completar: " + e.message + " Puedes reintentar: lo ya importado no se duplica."; err.hidden = false;
     btn.disabled = false; btn.innerHTML = `${icon("upload", 16)} Importar en sus fechas`;
   }
@@ -115,7 +117,7 @@ async function aplicar(btn) {
 /* ------------------------------ Página ------------------------------ */
 export const offlinePage = {
   id: "respaldo-offline", title: "Respaldo offline", icon: "upload", group: "Sistema", soloAdmin: true,
-  render(el) {
+  render(/** @type {any} */ el) {
     const hoy = todayStr();
     el.innerHTML = `${pageHead("Respaldo offline", "Si no hay internet, exporta lo registrado a un archivo y, cuando vuelva la conexión, impórtalo: cada registro queda en la fecha en que se grabó.")}
       <div class="grid-2">
@@ -134,24 +136,24 @@ export const offlinePage = {
           <div id="oi-res" style="margin-top:14px"></div>
         </section>
       </div>`;
-    el.querySelector("#oi-file").addEventListener("change", (e) => { const f = e.target.files?.[0]; if (f) analizar(f).catch((x) => { el.querySelector("#oi-res").innerHTML = `<p class="err-msg">${esc(x.message)}</p>`; }); });
+    /** @type {HTMLElement} */ (el.querySelector("#oi-file")).addEventListener("change", (/** @type {any} */ e) => { const f = e.target.files?.[0]; if (f) analizar(f).catch((x) => { /** @type {HTMLElement} */ (el.querySelector("#oi-res")).innerHTML = `<p class="err-msg">${esc(x.message)}</p>`; }); });
   },
 };
 
 registerActions({
   "of-ver": async () => {
-    const err = root().querySelector("#of-err"), prev = root().querySelector("#of-prev"); err.hidden = true;
+    const err = /** @type {HTMLElement} */ (root().querySelector("#of-err")), prev = /** @type {HTMLElement} */ (root().querySelector("#of-prev")); err.hidden = true;
     try { const { conteo, desde, hasta } = await armarPaquete(); prev.textContent = `Del ${desde} al ${hasta}: ${conteo.asistencias} asistencias en ${conteo.dias} día(s), ${conteo.asistencias_curso} por curso, ${conteo.justificaciones} justificaciones, ${conteo.alumnos} alumnos.`; }
-    catch (e) { err.textContent = e.message; err.hidden = false; }
+    catch (/** @type {any} */ e) { err.textContent = e.message; err.hidden = false; }
   },
   "of-exportar": async () => {
-    const err = root().querySelector("#of-err"); err.hidden = true;
+    const err = /** @type {HTMLElement} */ (root().querySelector("#of-err")); err.hidden = true;
     try {
       const { texto, desde, hasta, conteo } = await armarPaquete();
       if (!conteo.asistencias && !conteo.asistencias_curso && !conteo.justificaciones) { err.textContent = "No hay registros en ese rango para exportar."; err.hidden = false; return; }
       await downloadFile(nombreArchivo(desde, hasta), texto, "application/octet-stream");
       toast(`Respaldo descargado (${conteo.asistencias} asistencias)`, "success");
-    } catch (e) { err.textContent = e.message; err.hidden = false; }
+    } catch (/** @type {any} */ e) { err.textContent = e.message; err.hidden = false; }
   },
   "of-importar": (el) => aplicar(el),
 });

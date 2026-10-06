@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * pages/instituciones.js — Gestión multi-institución (superadmin)
  */
@@ -12,12 +13,12 @@ import { esc }           from '../utils.js';
 
 let container;
 
-function resolveId(target) {
+function resolveId(/** @type {any} */ target) {
   if (typeof target === 'string') return target;
   return target?.dataset?.id || '';
 }
 
-async function mount(el) {
+async function mount(/** @type {any} */ el) {
   container = el;
   container.innerHTML = `
     <div id="inst-hero-container"></div>
@@ -36,8 +37,8 @@ async function mount(el) {
   await cargar();
 }
 
-function renderHero(stats) {
-  const heroWrap = document.getElementById('inst-hero-container');
+function renderHero(/** @type {any} */ stats) {
+  const heroWrap = /** @type {HTMLElement} */ (document.getElementById('inst-hero-container'));
   if (!heroWrap) return;
 
   const instVal = stats !== null ? stats.totalInst.toLocaleString('es-PE') : '<span class="skeleton inst-stat-skel"></span>';
@@ -109,10 +110,10 @@ function renderSkeletonGrid(count = 6) {
   `;
 }
 
-function renderGrid(items) {
+function renderGrid(/** @type {any} */ items) {
   return `
     <div class="inst-grid" role="list" aria-label="Lista de instituciones">
-      ${items.map(inst => {
+      ${items.map((/** @type {any} */ inst) => {
         const esActual = !!inst.actual;
         const estaActiva = !!inst.activo;
         const fecha = inst.creado_en
@@ -186,7 +187,7 @@ function renderGrid(items) {
 }
 
 async function cargar() {
-  const wrap = document.getElementById('inst-content');
+  const wrap = /** @type {HTMLElement} */ (document.getElementById('inst-content'));
   if (!wrap) return;
 
   renderHero(null);
@@ -208,12 +209,12 @@ async function cargar() {
     }
 
     const totalInst = items.length;
-    const totalAlumnos = items.reduce((acc, cur) => acc + (Number(cur.alumnos) || 0), 0);
-    const totalPersonal = items.reduce((acc, cur) => acc + (Number(cur.personal) || 0), 0);
+    const totalAlumnos = items.reduce((/** @type {any} */ acc, /** @type {any} */ cur) => acc + (Number(cur.alumnos) || 0), 0);
+    const totalPersonal = items.reduce((/** @type {any} */ acc, /** @type {any} */ cur) => acc + (Number(cur.personal) || 0), 0);
 
     renderHero({ totalInst, totalAlumnos, totalPersonal });
     wrap.innerHTML = renderGrid(items);
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     renderHero({ totalInst: 0, totalAlumnos: 0, totalPersonal: 0 });
     const msg = e.message || '';
     if (msg.includes('sa_listar') || msg.includes('011') || msg.includes('does not exist')) {
@@ -224,7 +225,7 @@ async function cargar() {
   }
 }
 
-async function copiarCodigo(target) {
+async function copiarCodigo(/** @type {any} */ target) {
   const codigo = typeof target === 'string' ? target : target?.dataset?.codigo;
   if (!codigo || codigo === '—') return;
   try {
@@ -264,13 +265,13 @@ function abrirCrear() {
   });
 }
 
-async function abrirRenombrar(target) {
+async function abrirRenombrar(/** @type {any} */ target) {
   const id = resolveId(target);
   let nombreActual = '';
   try {
     const lista = await api.saListar();
     const items = typeof lista === 'string' ? JSON.parse(lista) : lista;
-    nombreActual = items.find(i => i.id === id)?.nombre || '';
+    nombreActual = items.find((/** @type {any} */ i) => i.id === id)?.nombre || '';
   } catch { /* */ }
 
   formModal({
@@ -289,7 +290,7 @@ async function abrirRenombrar(target) {
   });
 }
 
-async function confirmarEntrar(target) {
+async function confirmarEntrar(/** @type {any} */ target) {
   const id = resolveId(target);
   if (!(await confirmDialog({
     title: 'Entrar a esta institución',
@@ -301,12 +302,12 @@ async function confirmarEntrar(target) {
   try {
     await api.saEntrar(id);
     location.reload();
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     toast(e.message || 'No se pudo entrar a la institución', 'error');
   }
 }
 
-function abrirAsignarAdmin(target) {
+function abrirAsignarAdmin(/** @type {any} */ target) {
   const id = resolveId(target);
   formModal({
     title: 'Asignar administrador',
@@ -323,12 +324,12 @@ function abrirAsignarAdmin(target) {
   });
 }
 
-async function toggleActivar(target) {
+async function toggleActivar(/** @type {any} */ target) {
   const id = resolveId(target);
   try {
     const lista = await api.saListar();
     const items = typeof lista === 'string' ? JSON.parse(lista) : lista;
-    const inst = items.find(i => i.id === id);
+    const inst = items.find((/** @type {any} */ i) => i.id === id);
     if (!inst) return;
 
     const nuevoEstado = !inst.activo;
@@ -344,7 +345,7 @@ async function toggleActivar(target) {
     await api.saActivar(id, nuevoEstado);
     toast(`Institución ${nuevoEstado ? 'activada' : 'desactivada'}`, 'success');
     await cargar();
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     toast(e.message || 'Error al cambiar estado', 'error');
   }
 }

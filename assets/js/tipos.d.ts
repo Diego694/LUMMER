@@ -519,6 +519,7 @@ export interface AsistenciaHoy extends Asistencia {
 }
 
 export interface DBState {
+  sesionOffline?: boolean;
   cid: string | null;
   rol: Rol | string | null;
   perfil: Perfil | null;
@@ -947,4 +948,11 @@ declare global {
 declare global {
   // eslint-disable-next-line no-var
   var QRCode: any;
+  var Chart: any;
+  var Papa: any;
+  var NDEFReader: any;
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+    jspdf?: any;
+  }
 }

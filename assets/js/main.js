@@ -1,3 +1,4 @@
+// @ts-check
 // Punto de entrada: autenticación, navegación (router por hash), tema y arranque.
 import { api } from "./api.js";
 import { CONFIG, DEMO_USER, isDemoMode } from "./config.js";
@@ -34,6 +35,7 @@ import { diagnosticoPage, erroresPage, respaldoPage } from "./pages/sistema.js";
 import { alumnosPage, comunicadosPage, docentesPage, gradosPage, nivelesPage } from "./pages/mantenimiento.js";
 import { institucionesPage } from "./pages/instituciones.js";
 
+/** @type {any[]} */
 const PAGES = [
   dashboardPage, perfilPage,
   registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
@@ -41,12 +43,13 @@ const PAGES = [
   carnetPage, codigoPage, institutoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
   diagnosticoPage, respaldoPage, offlinePage, historialPage, migrarPage, erroresPage, institucionesPage,
 ];
-const $ = (s) => document.querySelector(s);
+const $ = (/** @type {any} */ s) => document.querySelector(s);
+/** @type {any} */
 let actual = null;
 let logged = false;
 
 /* ------------------------------ Tema ------------------------------ */
-function setTheme(t, persistir = true) {
+function setTheme(/** @type {any} */ t, persistir = true) {
   document.documentElement.setAttribute("data-theme", t);
   if (persistir) try { localStorage.setItem("cv-theme", t); } catch { /* sin storage */ }
   document.querySelectorAll("[data-action=theme]").forEach((b) => { b.innerHTML = icon(t === "dark" ? "sun" : "moon"); b.setAttribute("aria-label", t === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"); });
@@ -55,6 +58,7 @@ function setTheme(t, persistir = true) {
 const temaActual = () => document.documentElement.getAttribute("data-theme") || "light";
 
 /* ------------------- Aviso de solicitudes de ingreso (administrador) ------------------- */
+/** @type {any} */
 let solPrevias = null;
 function pintarSolicitudes() {
   const chip = $("#sol-chip");
@@ -79,9 +83,9 @@ setInterval(() => { if (logged && esAdmin() && !document.hidden && api.mode !== 
 /* ---------------------------- Navegación ---------------------------- */
 const visibles = () => PAGES.filter((p) => (!p.soloAdmin || esAdmin()) && (!p.soloSuper || esSuper()));
 const CHEVRON = '<svg class="icon chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-const gruposAbiertos = () => { try { return JSON.parse(localStorage.getItem("ra-nav-abiertos")) || []; } catch { return []; } };
-const guardarAbiertos = (l) => { try { localStorage.setItem("ra-nav-abiertos", JSON.stringify(l)); } catch { /* sin almacenamiento */ } };
-const slug = (t) => String(t).toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-");
+const gruposAbiertos = () => { try { return JSON.parse(localStorage.getItem("ra-nav-abiertos") || "null") || []; } catch { return []; } };
+const guardarAbiertos = (/** @type {any} */ l) => { try { localStorage.setItem("ra-nav-abiertos", JSON.stringify(l)); } catch { /* sin almacenamiento */ } };
+const slug = (/** @type {any} */ t) => String(t).toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-");
 
 /** Menú por grupos plegables (el estado se recuerda). El grupo de la página abierta siempre se muestra. */
 function buildNav() {
@@ -92,7 +96,7 @@ function buildNav() {
       <div class="nav-items" id="${id}">${visibles().filter((p) => p.group === g).map((p) => `<a class="nav-item" href="#/${p.id}" data-page="${p.id}">${icon(p.icon)}<span>${esc(p.title)}</span></a>`).join("")}</div></div>`;
   }).join("");
 }
-function abrirGrupoDe(item) {
+function abrirGrupoDe(/** @type {any} */ item) {
   const g = item?.closest(".nav-group");
   if (!g || !g.classList.contains("cerrado")) return;
   g.classList.remove("cerrado"); g.querySelector(".nav-group-title")?.setAttribute("aria-expanded", "true");
@@ -111,7 +115,7 @@ async function route() {
   else if (page.soloAdmin && !esAdmin()) { toast("Esa sección es solo para el administrador.", "error"); page = dashboardPage; history.replaceState(null, "", "#/dashboard"); }
   if (actual && actual !== page) await actual.onLeave?.();
   actual = page;
-  document.querySelectorAll(".nav-item").forEach((n) => { const on = n.dataset.page === page.id; n.classList.toggle("active", on); if (on) { n.setAttribute("aria-current", "page"); abrirGrupoDe(n); } else n.removeAttribute("aria-current"); });
+  document.querySelectorAll(".nav-item").forEach((/** @type {any} */ n) => { const on = n.dataset.page === page.id; n.classList.toggle("active", on); if (on) { n.setAttribute("aria-current", "page"); abrirGrupoDe(n); } else n.removeAttribute("aria-current"); });
   $("#topbar-group").textContent = page.group || "Panel";
   $("#topbar-title").textContent = page.title;
   document.title = `${page.title} · ${nombreInstituto()}`;
@@ -119,12 +123,12 @@ async function route() {
   root._repaint = null; root._hist = null;
   toggleSidebar(false);
   try { await page.render(root, params); }
-  catch (e) { console.error(e); root.innerHTML = `<div class="card">${emptyState("No se pudo mostrar la página", e.message, "alert")}</div>`; }
+  catch (/** @type {any} */ e) { console.error(e); root.innerHTML = `<div class="card">${emptyState("No se pudo mostrar la página", e.message, "alert")}</div>`; }
   window.scrollTo(0, 0);
   root.focus({ preventScroll: true });
 }
 
-function toggleSidebar(force) {
+function toggleSidebar(/** @type {any} */ force = undefined) {
   const open = typeof force === "boolean" ? force : !$("#sidebar").classList.contains("open");
   $("#sidebar").classList.toggle("open", open);
   $("#backdrop").classList.toggle("open", open);
@@ -135,6 +139,10 @@ function toggleSidebar(force) {
 /**
  * Entra a la aplicación. `guardado` (perfil de la última sesión) permite abrir SIN red y seguir registrando asistencia:
  * se trabaja con la copia local de los datos y los registros quedan en cola hasta recuperar la conexión.
+ */
+/**
+ * @param {any} user
+ * @param {import('./tipos.d.ts').PerfilGuardado | null} [guardado]
  */
 async function entrar(user, guardado = null) {
   let perfil;
@@ -165,8 +173,9 @@ async function entrar(user, guardado = null) {
 }
 
 /* ---------------------- Indicador de red y envíos ---------------------- */
+/** @type {any} */
 let chipTimer = null, tuvoPendientes = false;
-function pintarChip(s) {
+function pintarChip(/** @type {any} */ s) {
   const c = $("#net-chip"); if (!c) return;
   const dot = '<span class="dot"></span>';
   let clase = "", html = "";
@@ -194,7 +203,7 @@ async function salir() {
 function initLogin() {
   marcaLogin();
   const form = $("#login-form"), err = $("#login-err"), btn = $("#login-btn");
-  $("#pw-toggle")?.addEventListener("click", (e) => {
+  $("#pw-toggle")?.addEventListener("click", (/** @type {any} */ e) => {
     const inp = $("#login-pass"), ver = inp.type === "password";
     inp.type = ver ? "text" : "password";
     e.currentTarget.setAttribute("aria-pressed", String(ver)); e.currentTarget.setAttribute("aria-label", ver ? "Ocultar contraseña" : "Mostrar contraseña");
@@ -204,13 +213,13 @@ function initLogin() {
     $("#demo-hint-creds").textContent = `${DEMO_USER.email} / ${DEMO_USER.password}`;
     $("#login-email").value = DEMO_USER.email; $("#login-pass").value = DEMO_USER.password;
   }
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async (/** @type {any} */ e) => {
     e.preventDefault();
     err.hidden = true; btn.disabled = true; btn.textContent = "Ingresando…";
     try {
       const user = await api.signIn($("#login-email").value.trim(), $("#login-pass").value);
       await entrar(user);
-    } catch (ex) {
+    } catch (/** @type {any} */ ex) {
       err.textContent = ex.code === "auth" ? "Correo o contraseña incorrectos." : ex.message || "No se pudo iniciar sesión.";
       err.hidden = false;
       if (ex.code === "profile") await api.signOut();
@@ -220,17 +229,17 @@ function initLogin() {
 
 registerActions({
   "nav-grupo": (el) => {
-    const g = el.closest(".nav-group"), cerrado = g.classList.toggle("cerrado");
+    const g = /** @type {any} */ (el.closest(".nav-group")), cerrado = g.classList.toggle("cerrado");
     el.setAttribute("aria-expanded", String(!cerrado));
-    const l = gruposAbiertos().filter((x) => x !== g.dataset.grupo); if (!cerrado) l.push(g.dataset.grupo); guardarAbiertos(l);
+    const l = gruposAbiertos().filter((/** @type {any} */ x) => x !== g.dataset.grupo); if (!cerrado) l.push(g.dataset.grupo); guardarAbiertos(l);
   },
   theme: () => setTheme(temaActual() === "dark" ? "light" : "dark"),
   logout: salir,
-  menu: () => toggleSidebar(),
+  menu: () => toggleSidebar(undefined),
   "sync-now": () => { if (estadoSync().error === "sesion") return salir(); sincronizar(); },
   "demo-reset": async () => {
     if (!(await confirmDialog({ title: "Restablecer datos demo", message: "Se descartarán los cambios y se regenerarán los datos de ejemplo.", confirmLabel: "Restablecer" }))) return;
-    api.reset(); await loadAll(); route(); toast("Datos de demostración restablecidos", "success");
+    /** @type {any} */ (api).reset(); await loadAll(); route(); toast("Datos de demostración restablecidos", "success");
   },
 });
 
@@ -250,9 +259,9 @@ async function boot() {
   $("#app-version").textContent = `v${CONFIG.APP_VERSION} · ${globalThis.AndroidBridge ? "app Android" : globalThis.escritorio ? "programa PC" : "web"}`;
   // PWA: instalable y con arranque sin conexión. El SW pide siempre la versión nueva primero (ver sw.js).
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-    navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker no registrado:", e.message));
+    navigator.serviceWorker.register("sw.js").catch((/** @type {any} */ e) => console.warn("Service worker no registrado:", e.message));
   }
-  if (api.mode === "error") { const e = $("#login-err"); e.textContent = api.error.message; e.hidden = false; return; }
+  if (api.mode === "error") { const e = $("#login-err"); e.textContent = /** @type {any} */ (api.error).message; e.hidden = false; return; }
 
   // Envíos pendientes: refrescar datos al terminar y recuperar la sesión si se abrió sin red.
   alSincronizar(async () => { await refreshHoy(); if (actual?.id === "dashboard" || actual?.id === "asist-grado") route(); });
@@ -265,7 +274,7 @@ async function boot() {
   iniciarSync();
 
   let user = null;
-  try { user = await api.init(); } catch (e) { if (!esErrorRed(e)) console.error(e); }
+  try { user = await api.init(); } catch (/** @type {any} */ e) { if (!esErrorRed(e)) console.error(e); }
   const guardado = leerPerfil();
   try {
     if (user) await entrar(user, null);
@@ -273,7 +282,7 @@ async function boot() {
       // Sin sesión válida pero con un perfil guardado en este teléfono: si no hay red, se trabaja sin conexión.
       if (!red.online()) await entrar(guardado.user, guardado);
     }
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     if ((esErrorRed(e) || !red.online()) && guardado) { try { await entrar(guardado.user, guardado); return; } catch (e2) { console.error(e2); } }
     console.error(e); const el = $("#login-err"); el.textContent = e.message; el.hidden = false;
   }

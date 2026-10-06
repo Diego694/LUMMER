@@ -1,3 +1,4 @@
+// @ts-check
 // Sistema: Diagnóstico del dispositivo (para la prueba piloto y soporte), Respaldo de datos y Registro de errores.
 import { api } from "../api.js";
 import { CONFIG } from "../config.js";
@@ -10,16 +11,18 @@ import { rolActual } from "../permisos.js";
 
 /* ============================ Diagnóstico ============================ */
 const ICONO = { ok: "check", warn: "alert", err: "x", info: "info" };
+/** @type {any} */
 let ultimoInforme = [];
 
 async function ejecutarDiagnostico() {
+  /** @type {any[]} */
   const it = [];
-  const add = (nombre, estado, detalle) => it.push({ nombre, estado, detalle });
+  const add = (/** @type {any} */ nombre, /** @type {any} */ estado, /** @type {any} */ detalle) => it.push({ nombre, estado, detalle });
 
   add("Conexión a internet", red.online() ? "ok" : "err", red.online() ? "Hay conexión." : "Sin conexión: los registros se guardan en el teléfono y se envían al reconectar.");
 
   // Servidor y reloj
-  let servidorMs = null, ms = null;
+  let servidorMs = /** @type {any} */ (null), ms = /** @type {any} */ (null);
   try { const t0 = performance.now(); servidorMs = await api.horaServidor(); ms = Math.round(performance.now() - t0); } catch { /* sin red o migración pendiente */ }
   add("Servidor de datos", servidorMs ? (ms > 2500 ? "warn" : "ok") : "err", servidorMs ? `Responde en ${ms} ms.` : "No responde (¿sin red, proyecto pausado o falta la migración 004?).");
   if (servidorMs) {
@@ -39,7 +42,7 @@ async function ejecutarDiagnostico() {
   try {
     const k = "ra-test-almacenamiento"; localStorage.setItem(k, "x".repeat(100 * 1024)); localStorage.removeItem(k);
     let extra = "";
-    if (navigator.storage?.estimate) { const e = await navigator.storage.estimate(); extra = ` · usado ${(e.usage / 1048576).toFixed(1)} MB de ${(e.quota / 1048576).toFixed(0)} MB`; }
+    if (navigator.storage?.estimate) { const e = await navigator.storage.estimate(); extra = ` · usado ${(/** @type {number} */ (e.usage) / 1048576).toFixed(1)} MB de ${(/** @type {number} */ (e.quota) / 1048576).toFixed(0)} MB`; }
     add("Almacenamiento del teléfono", "ok", "Se puede guardar información sin conexión" + extra);
   } catch { add("Almacenamiento del teléfono", "err", "No se puede guardar datos: el modo sin conexión no funcionará (¿navegación privada o memoria llena?)."); }
 
@@ -54,7 +57,7 @@ async function ejecutarDiagnostico() {
   // NFC
   const nfcNativo = globalThis.AndroidBridge?.nfcState?.();
   add("NFC", nfcNativo === "on" || (!nfcNativo && "NDEFReader" in window) ? "ok" : "warn",
-    nfcNativo ? ({ on: "Disponible (lector nativo de la app).", off: "El NFC está desactivado en el teléfono.", none: "El teléfono no tiene NFC." }[nfcNativo])
+    nfcNativo ? ({ on: "Disponible (lector nativo de la app).", off: "El NFC está desactivado en el teléfono.", none: "El teléfono no tiene NFC." }[/** @type {"on"|"off"|"none"} */ (nfcNativo)])
       : ("NDEFReader" in window ? "Disponible en este navegador (Android + Chrome)." : "No disponible aquí. Usa la app Android o el código/QR."));
 
   // Plataforma
@@ -63,27 +66,27 @@ async function ejecutarDiagnostico() {
   const sw = "serviceWorker" in navigator ? (await navigator.serviceWorker.getRegistration().catch(() => null)) : null;
   add("Modo sin conexión (service worker)", sw ? "ok" : "warn", sw ? "Activo: la app abre aunque no haya internet." : "No activo (primera visita, o navegador sin soporte).");
   add("Aplicación", "info", `v${CONFIG.APP_VERSION} · ${globalThis.AndroidBridge ? "app Android" : "web"} · modo ${api.mode}`);
-  add("Sesión", "info", `${DB.perfil?.nombre || "—"} · rol ${rolActual()}${DB.perfil?.carrera ? " · carrera " + DB.perfil.carrera : ""} · ${DB.perfil?.colegio || ""}${DB.sesionOffline ? " · sesión sin conexión" : ""}`);
+  add("Sesión", "info", `${DB.perfil?.nombre || "—"} · rol ${rolActual()}${DB.perfil?.carrera ? " · carrera " + DB.perfil.carrera : ""} · ${DB.perfil?.colegio || ""}${/** @type {any} */ (DB).sesionOffline ? " · sesión sin conexión" : ""}`);
   return it;
 }
 
 export const diagnosticoPage = {
   id: "diagnostico", title: "Diagnóstico", icon: "info", group: "Sistema",
-  async render(root) {
+  async render(/** @type {any} */ root) {
     root.innerHTML = `${pageHead("Diagnóstico del dispositivo", "Comprueba que este teléfono está listo: conexión, hora, cámara, NFC y modo sin conexión. Úsalo en la prueba piloto y para pedir soporte.",
       `<button class="btn btn-outline" data-action="diag-camara">${icon("camera", 16)} Probar cámara</button><button class="btn btn-outline" data-action="diag-copiar">Copiar informe</button><button class="btn btn-primary" data-action="diag-repetir">Volver a comprobar</button>`)}
       <div class="card flush" id="diag-lista">${skeleton(6)}</div>`;
     await pintar(root);
   },
 };
-async function pintar(root) {
-  const box = root.querySelector("#diag-lista");
+async function pintar(/** @type {any} */ root) {
+  const box = /** @type {HTMLElement} */ (root.querySelector("#diag-lista"));
   box.innerHTML = skeleton(6);
   ultimoInforme = await ejecutarDiagnostico();
   if (!box.isConnected) return;
-  const resumen = ultimoInforme.filter((x) => x.estado === "err").length ? "Hay problemas por resolver" : ultimoInforme.filter((x) => x.estado === "warn").length ? "Listo, con avisos" : "Todo en orden";
-  box.innerHTML = `<div class="diag-resumen diag-${ultimoInforme.some((x) => x.estado === "err") ? "err" : ultimoInforme.some((x) => x.estado === "warn") ? "warn" : "ok"}">${esc(resumen)}</div>
-    <ul class="diag-lista">${ultimoInforme.map((x) => `<li class="diag-${x.estado}"><span class="diag-ic">${icon(ICONO[x.estado], 16)}</span><div><strong>${esc(x.nombre)}</strong><small>${esc(x.detalle)}</small></div></li>`).join("")}</ul>`;
+  const resumen = ultimoInforme.filter((/** @type {any} */ x) => x.estado === "err").length ? "Hay problemas por resolver" : ultimoInforme.filter((/** @type {any} */ x) => x.estado === "warn").length ? "Listo, con avisos" : "Todo en orden";
+  box.innerHTML = `<div class="diag-resumen diag-${ultimoInforme.some((/** @type {any} */ x) => x.estado === "err") ? "err" : ultimoInforme.some((/** @type {any} */ x) => x.estado === "warn") ? "warn" : "ok"}">${esc(resumen)}</div>
+    <ul class="diag-lista">${ultimoInforme.map((/** @type {any} */ x) => `<li class="diag-${x.estado}"><span class="diag-ic">${icon(/** @type {any} */ (ICONO)[x.estado], 16)}</span><div><strong>${esc(x.nombre)}</strong><small>${esc(x.detalle)}</small></div></li>`).join("")}</ul>`;
 }
 
 /* ============================== Respaldo ============================== */
@@ -91,7 +94,7 @@ const ultimoRespaldo = () => { try { return localStorage.getItem("ra-ultimo-resp
 
 export const respaldoPage = {
   id: "respaldo", title: "Respaldo", icon: "download", group: "Sistema", soloAdmin: true,
-  render(root) {
+  render(/** @type {any} */ root) {
     const ult = ultimoRespaldo();
     root.innerHTML = `${pageHead("Respaldo de datos", "Descarga una copia completa de la información de tu instituto. Guárdala en un lugar seguro y hazlo con frecuencia.")}
       <div class="grid-2">
@@ -111,7 +114,7 @@ export const respaldoPage = {
   },
 };
 
-async function descargarRespaldo(el) {
+async function descargarRespaldo(/** @type {any} */ el) {
   el.disabled = true;
   try {
     const datos = await api.exportarTodo(DB.cid);
@@ -120,32 +123,32 @@ async function descargarRespaldo(el) {
     await downloadFile(`respaldo_${todayStr()}.json`, JSON.stringify({ meta, datos }, null, 1), "application/json");
     try { localStorage.setItem("ra-ultimo-respaldo", new Date().toISOString()); } catch { /* ok */ }
     toast(`Respaldo descargado (${total} registros)`, "success");
-    respaldoPage.render(document.getElementById("page-root"));
-  } catch (e) { toast("No se pudo generar el respaldo: " + e.message, "error"); el.disabled = false; }
+    respaldoPage.render(/** @type {HTMLElement} */ (document.getElementById("page-root")));
+  } catch (/** @type {any} */ e) { toast("No se pudo generar el respaldo: " + e.message, "error"); el.disabled = false; }
 }
 
 /* ============================== Errores ============================== */
 export const erroresPage = {
   id: "errores", title: "Errores", icon: "alert", group: "Sistema", soloAdmin: true,
-  async render(root) {
+  async render(/** @type {any} */ root) {
     root.innerHTML = `${pageHead("Registro de errores", "Fallos ocurridos en los teléfonos de docentes y estudiantes (sin datos personales). Úsalo para detectar problemas antes de que te los reporten.",
       `<button class="btn btn-ghost-danger" data-action="err-borrar">${icon("trash", 16)} Borrar todos</button>`)}<div class="card flush" id="err-lista">${skeleton(4)}</div>`;
     try {
       const l = await api.erroresRecientes(DB.cid);
-      root.querySelector("#err-lista").innerHTML = l.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>App</th><th>Mensaje</th><th>Pantalla</th><th>Dispositivo</th></tr></thead><tbody>
-        ${l.map((e) => `<tr><td class="nowrap">${esc(new Date(e.creado_en).toLocaleString("es-PE"))}</td><td>${badge(e.app || "—", e.app === "estudiante" ? "amber" : "neutral")}</td>
+      /** @type {HTMLElement} */ (root.querySelector("#err-lista")).innerHTML = l.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>App</th><th>Mensaje</th><th>Pantalla</th><th>Dispositivo</th></tr></thead><tbody>
+        ${l.map((/** @type {any} */ e) => `<tr><td class="nowrap">${esc(new Date(e.creado_en).toLocaleString("es-PE"))}</td><td>${badge(e.app || "—", e.app === "estudiante" ? "amber" : "neutral")}</td>
           <td><details><summary>${esc((e.mensaje || "").slice(0, 110))}</summary><pre class="err-stack">${esc(e.detalle || "(sin detalle)")}</pre></details></td>
           <td class="muted">${esc((e.url || "").replace(/^https?:\/\/[^/]+/, ""))}</td><td class="muted">${esc((e.agente || "").match(/\(([^)]*)\)/)?.[1]?.slice(0, 40) || "")}</td></tr>`).join("")}</tbody></table></div>`
         : emptyState("Sin errores registrados", "Todo funciona bien. Aquí aparecerán los fallos que ocurran en los teléfonos.", "check");
-    } catch (e) { root.querySelector("#err-lista").innerHTML = emptyState("No se pudo cargar", /does not exist|schema cache/i.test(e.message) ? "Falta aplicar la migración 004 en Supabase." : e.message, "alert"); }
+    } catch (/** @type {any} */ e) { /** @type {HTMLElement} */ (root.querySelector("#err-lista")).innerHTML = emptyState("No se pudo cargar", /does not exist|schema cache/i.test(e.message) ? "Falta aplicar la migración 004 en Supabase." : e.message, "alert"); }
   },
 };
 
 /* ============================== Acciones ============================== */
 registerActions({
-  "diag-repetir": () => pintar(document.getElementById("page-root")),
+  "diag-repetir": () => pintar(/** @type {HTMLElement} */ (document.getElementById("page-root"))),
   "diag-copiar": async () => {
-    const t = `Diagnóstico ${new Date().toLocaleString("es-PE")}\n` + ultimoInforme.map((x) => `[${x.estado.toUpperCase()}] ${x.nombre}: ${x.detalle}`).join("\n");
+    const t = `Diagnóstico ${new Date().toLocaleString("es-PE")}\n` + ultimoInforme.map((/** @type {any} */ x) => `[${x.estado.toUpperCase()}] ${x.nombre}: ${x.detalle}`).join("\n");
     try { await navigator.clipboard.writeText(t); toast("Informe copiado", "success"); } catch { toast("No se pudo copiar", "error"); }
   },
   "diag-camara": async () => {
@@ -153,7 +156,7 @@ registerActions({
       const s = await navigator.mediaDevices.getUserMedia({ video: true });
       const t = s.getVideoTracks()[0]; const nombre = t?.label || "cámara"; s.getTracks().forEach((x) => x.stop());
       toast(`Cámara funciona: ${nombre}`, "success");
-    } catch (e) { toast(e.name === "NotAllowedError" ? "Permiso de cámara denegado: actívalo en los ajustes." : "No se pudo abrir la cámara: " + e.message, "error"); }
+    } catch (/** @type {any} */ e) { toast(e.name === "NotAllowedError" ? "Permiso de cámara denegado: actívalo en los ajustes." : "No se pudo abrir la cámara: " + e.message, "error"); }
   },
   "respaldo-json": descargarRespaldo,
   "respaldo-csv-alumnos": async () => {
@@ -162,7 +165,7 @@ registerActions({
       { label: "Apoderado", key: "apoderado" }, { label: "Teléfono apoderado", key: "apoderado_telefono" }, { label: "Correo apoderado", key: "apoderado_email" },
       { label: "DNI", key: "dni" }, { label: "Estado", key: "estado" }, { label: "Aprobado", value: (a) => (a.aprobado === false ? "NO" : "SI") }]));
   },
-  "respaldo-csv-asistencias": async (el) => {
+  "respaldo-csv-asistencias": async (/** @type {any} */ el) => {
     el.disabled = true;
     try {
       const { asistencias } = await api.exportarTodo(DB.cid);
@@ -171,11 +174,11 @@ registerActions({
         { label: "Fecha", key: "fecha" }, { label: "Hora", value: (r) => String(r.hora).slice(0, 5) }, { label: "Código", value: (r) => al.get(r.alumno_id)?.codigo },
         { label: "Alumno", value: (r) => al.get(r.alumno_id)?.nombre }, { label: "Carrera", value: (r) => al.get(r.alumno_id)?.nivel }, { label: "Ciclo", value: (r) => al.get(r.alumno_id)?.grado }, { label: "Origen", key: "origen" }]));
       toast(`${asistencias.length} asistencias exportadas`, "success");
-    } catch (e) { toast("No se pudo exportar: " + e.message, "error"); }
+    } catch (/** @type {any} */ e) { toast("No se pudo exportar: " + e.message, "error"); }
     el.disabled = false;
   },
   "err-borrar": async () => {
     if (!(await confirmDialog({ title: "Borrar registro de errores", message: "Se eliminarán todos los errores registrados. ¿Continuar?", confirmLabel: "Borrar" }))) return;
-    try { await api.borrarErrores(DB.cid); erroresPage.render(document.getElementById("page-root")); toast("Registro vaciado", "success"); } catch (e) { toast(e.message, "error"); }
+    try { await api.borrarErrores(DB.cid); erroresPage.render(/** @type {HTMLElement} */ (document.getElementById("page-root"))); toast("Registro vaciado", "success"); } catch (/** @type {any} */ e) { toast(e.message, "error"); }
   },
 });

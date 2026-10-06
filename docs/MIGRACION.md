@@ -144,9 +144,11 @@ flowchart TD
   - Páginas tipadas con `// @ts-check`: `historial`, `alertas`, `solicitudes`, `migrar`, `perfil`, `avisos`, `periodos`, `codigo`, `personal`, `calendario`, `carnet`, `consultas`, `cursos` e `instituto` (todas en `assets/js/pages/`).
   - Sin cambios de comportamiento: solo anotaciones JSDoc, `catch (/** @type {any} */ e)` y casts en la frontera con el DOM y las librerías externas (QRCode, jsPDF). Se añadieron `QRCode` como global en `tipos.d.ts` y `userEmail` en `DBState`; `Perfil.id` pasó a opcional y `cambiarQrModo` a obligatorio en `Backend`.
 
-- **LOTE 4 (Páginas principales, quiosco y puntos de entrada):**
-  - Páginas complejas: `assets/js/pages/registro.js`, `instituciones.js`, `quiosco.js`, `dashboard.js`, `mantenimiento.js`, `sistema.js`, `reportes.js`, `offline.js`.
-  - Puntos de entrada: `assets/js/main.js`, `assets/js/estudiante/main.js`, `assets/js/apoderado/main.js`.
+- **LOTE 4 (Completado - Páginas principales, quiosco y puntos de entrada):**
+  - Páginas tipadas con `// @ts-check`: `registro`, `instituciones`, `quiosco`, `dashboard`, `mantenimiento`, `sistema`, `reportes` y `offline` (en `assets/js/pages/`).
+  - Puntos de entrada tipados: `assets/js/main.js` y `assets/js/estudiante/main.js`.
+  - Sin cambios de comportamiento: anotaciones JSDoc y casts en la frontera con el DOM y librerías externas (`Chart`, `Papa`, `jsQR`, `NDEFReader`, `AndroidBridge`). Únicos retoques de código: se eliminó la clave duplicada `"grado-new"` de `mantenimiento.js` (la primera definición nunca se ejecutaba, prevalecía la segunda) y se pasó `JSON.parse(x || "null")` en lugar de `JSON.parse(x)` para evitar el `null` en el tipo.
+  - Pendiente: `assets/js/apoderado/main.js` y el resto de módulos sin `@ts-check`.
 
 ---
 
