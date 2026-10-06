@@ -1,4 +1,4 @@
-# Registro Académico — App Android Nativa (Kotlin + Compose)
+# Lummer — App Android Nativa (Kotlin + Compose)
 
 Proyecto nativo Android desarrollado en **Kotlin**, **Jetpack Compose** y **Material 3**, bajo arquitectura **MVVM**, inyección de dependencias con **Hilt** y backend en **Supabase** (Postgrest + Auth + Storage + RPC).
 

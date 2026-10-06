@@ -134,7 +134,7 @@ fun ShellScreen(
                     // Cabecera: Marca = Nombre del instituto (sin logo)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = sesionEstado.nombreInstituto.ifBlank { "Registro Académico" },
+                        text = sesionEstado.nombreInstituto.ifBlank { "Lummer" },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,

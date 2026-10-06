@@ -1,6 +1,6 @@
-<h1 align="center">Registro Académico</h1>
+<h1 align="center">Lummer</h1>
 
-<p align="center"><b>Control de asistencia institucional</b></p>
+<p align="center"><b>Aula y asistencia institucional</b></p>
 
 <p align="center">
   Sistema de control de asistencia para institutos y escuelas, diseñado para operar en zonas con conexión limitada.<br>
@@ -24,7 +24,7 @@
 
 ## Para qué sirve
 
-Registro Académico resuelve la gestión diaria de asistencia y puntualidad en instituciones educativas que requieren fiabilidad operativa sin depender de una conexión permanente a internet. Automatiza el control de ingresos y salidas en accesos y aulas mediante carnets con código QR dinámico de renovación periódica, lectura de tarjetas NFC, registro por código y modo quiosco autónomo. Además, centraliza la estructura académica, consolida reportes oficiales y mantiene el aislamiento total de datos entre múltiples sedes o instituciones.
+Lummer resuelve la gestión diaria de asistencia y puntualidad en instituciones educativas que requieren fiabilidad operativa sin depender de una conexión permanente a internet. Automatiza el control de ingresos y salidas en accesos y aulas mediante carnets con código QR dinámico de renovación periódica, lectura de tarjetas NFC, registro por código y modo quiosco autónomo. Además, centraliza la estructura académica, consolida reportes oficiales y mantiene el aislamiento total de datos entre múltiples sedes o instituciones.
 
 ## A quién está destinado
 

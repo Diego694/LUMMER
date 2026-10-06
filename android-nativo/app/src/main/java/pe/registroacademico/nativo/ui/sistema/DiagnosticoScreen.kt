@@ -174,7 +174,7 @@ class DiagnosticoViewModel @Inject constructor(
                 ItemDiag(
                     nombre = "Aplicación",
                     estado = EstadoDiag.INFO,
-                    detalle = "Registro Académico Nativo · Versión 1.0.0 · Modo Android Nativo Compose"
+                    detalle = "Lummer Nativo · Versión 1.0.0 · Modo Android Nativo Compose"
                 )
             )
 

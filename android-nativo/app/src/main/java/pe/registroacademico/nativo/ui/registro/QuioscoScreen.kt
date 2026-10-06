@@ -104,7 +104,7 @@ fun QuioscoScreen(
                 ) {
                     Column {
                         Text(
-                            text = ctx.sesion.nombreInstituto.ifBlank { "Registro Académico" },
+                            text = ctx.sesion.nombreInstituto.ifBlank { "Lummer" },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

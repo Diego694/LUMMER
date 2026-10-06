@@ -1,4 +1,4 @@
-// Programa de escritorio "Registro Académico" (Windows). Abre la web empaquetada (app/) con todas sus librerías
+// Programa de escritorio "Lummer" (Windows). Abre la web empaquetada (app/) con todas sus librerías
 // incluidas, así que arranca sin internet. El modo online/local lo decide la propia web (assets/js/modo.js);
 // los datos de cada modo viven en el perfil del programa (%APPDATA%) y no se borran al actualizar.
 const { app, BrowserWindow, Menu, protocol, session, shell } = require("electron");
@@ -51,7 +51,7 @@ function servir(req) {
 function crearVentana() {
   const win = new BrowserWindow({
     width: 1360, height: 860, minWidth: 980, minHeight: 640, show: false, backgroundColor: "#F3F5F9",
-    title: "Registro Académico", icon: path.join(__dirname, "build", "icon.png"),
+    title: "Lummer", icon: path.join(__dirname, "build", "icon.png"),
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   Menu.setApplicationMenu(null);

@@ -12,7 +12,7 @@ data class SesionEstado(
     val esSuperadmin: Boolean = false,
     val colegio: Colegio? = null,
     val colegioId: String = "",
-    val nombreInstituto: String = "Registro Académico",
+    val nombreInstituto: String = "Lummer",
     val qrModo: String = "off",
     val carrera: String? = null,
     val nombreUsuario: String = "",

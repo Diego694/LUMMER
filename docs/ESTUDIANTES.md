@@ -3,7 +3,7 @@
 Una segunda app (web + APK) para que cada estudiante se registre con sus propios datos, suba su foto y obtenga un **carnet con código QR único**. El docente lo escanea con su app (cámara, NFC o código manual) y le salta una **alerta con la foto y el nombre con apellidos parcialmente censurados**.
 
 ```
-Estudiante (APK "Lummer Estudiante")            Docente (APK "Asistencia Institucional")
+Estudiante (APK "Lummer Estudiante")            Docente (APK "Lummer Lite")
   1 crea cuenta (correo + contraseña)             ┌─ genera el "código de registro" del instituto
   2 escribe el código del instituto ◄───────────────┘
   3 completa sus datos + autorización

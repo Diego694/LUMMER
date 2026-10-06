@@ -17,7 +17,7 @@ export function nombreInstituto() {
     const v = localStorage.getItem(LS_KEY);
     if (v) return v;
   } catch { /* */ }
-  return 'Registro Académico';
+  return 'Lummer';
 }
 
 /** Pinta el nombre en el menú lateral y el título de la pestaña */
@@ -29,7 +29,7 @@ export function pintarMarca() {
   if (brandStrong) brandStrong.textContent = nombre;
 
   const brandSmall = document.querySelector('.side-brand small');
-  if (brandSmall) brandSmall.textContent = 'Control de asistencia';
+  if (brandSmall) brandSmall.textContent = 'Aula y asistencia';
 
   // Título de la pestaña
   document.title = document.title.includes('·')

@@ -5,7 +5,7 @@
   "description": "Programa de escritorio (Windows) con modo online y modo local sin internet.",
   "main": "main.js",
   "private": true,
-  "author": "Registro Académico",
+  "author": "Lummer",
   "scripts": {
     "preparar": "node scripts/preparar.mjs",
     "start": "electron .",

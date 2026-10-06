@@ -60,7 +60,7 @@ class PerfilRepositoryImpl @Inject constructor(
                 nombre = perfil.nombre,
                 carrera = perfil.carrera,
                 fotoPath = perfil.fotoPath,
-                colegio = colegio?.nombre ?: perfil.colegios?.nombre ?: "Registro Académico",
+                colegio = colegio?.nombre ?: perfil.colegios?.nombre ?: "Lummer",
                 superadmin = esSuper,
                 qrModo = colegio?.qrModo ?: perfil.colegios?.qrModo ?: "off"
             )

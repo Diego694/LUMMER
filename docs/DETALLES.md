@@ -1,4 +1,4 @@
-# Sistema de Registro Académico — documentación técnica detallada
+# Lummer — documentación técnica detallada
 
 > Este documento conserva la descripción completa del proyecto (características, puesta en marcha, estructura y comandos). La presentación breve está en el [README](../README.md).
 

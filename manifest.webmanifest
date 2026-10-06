@@ -1,7 +1,7 @@
 {
-  "name": "Sistema de Registro Académico",
+  "name": "Lummer",
   "short_name": "Asistencia",
-  "description": "Control de asistencia institucional con carnets QR/NFC, dashboard y reportes.",
+  "description": "Lummer: aula virtual y asistencia institucional con carnets QR/NFC, dashboard y reportes.",
   "lang": "es",
   "start_url": "./index.html#/dashboard",
   "scope": "./",

@@ -178,7 +178,7 @@ fun CodigoScreen(
     fun textoCompartir(cod: String): String {
         val inst = ctx.sesion.nombreInstituto.ifBlank { "nuestro instituto" }
         return """
-            Regístrate en *Mi Carnet Institucional* de $inst:
+            Regístrate en *Lummer Estudiante* de $inst:
             1) Crea tu cuenta e ingresa el código del instituto: *$cod*
             2) Completa tus datos y sube tu foto.
             3) Tu carnet con QR se activa cuando el instituto apruebe tu registro.
@@ -206,7 +206,7 @@ fun CodigoScreen(
     ) {
         PageHeader(
             titulo = "Código de registro",
-            subtitulo = "El código que tus estudiantes escriben en Mi Carnet Institucional para registrarse. Tú apruebas cada registro."
+            subtitulo = "El código que tus estudiantes escriben en Lummer Estudiante para registrarse. Tú apruebas cada registro."
         )
 
         when {
