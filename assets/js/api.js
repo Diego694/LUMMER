@@ -293,9 +293,10 @@ class LocalBackend extends DemoBackend {
   async userId() { return "local-user"; }
 }
 
+/** @returns {import('./tipos.d.ts').Api} */
 function crearBackend() {
   try { return modoLocal() ? new LocalBackend() : isDemoMode() ? new DemoBackend() : new SupabaseBackend(); }
-  catch (error) { return { mode: "error", error, init: async () => { throw error; } }; }
+  catch (error) { return /** @type {import('./tipos.d.ts').Api} */ (/** @type {unknown} */ ({ mode: "error", error, init: async () => { throw error; } })); }
 }
 export const api = crearBackend();
 export { DB } from "./state.js";

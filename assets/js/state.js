@@ -1,3 +1,4 @@
+// @ts-check
 // Estado global en memoria de la sesión actual.
 import { api } from "./api.js";
 import { asistenciasPendientesDe, guardarSnapshot, leerSnapshot, salidasPendientesDe } from "./cola.js";
@@ -6,10 +7,21 @@ import { mapaNoLectivos, tablaLimites } from "./calendario.js";
 import { configurarLimites } from "./stats.js";
 import { cicloCorto, compararCiclos, esErrorRed, todayStr } from "./utils.js";
 
+/** @typedef {import('./tipos.d.ts').Alumno} Alumno */
+/** @typedef {import('./tipos.d.ts').Grado} Grado */
+/** @typedef {import('./tipos.d.ts').Nivel} Nivel */
+/** @typedef {import('./tipos.d.ts').Asistencia} Asistencia */
+/** @typedef {import('./tipos.d.ts').DBState} DBState */
+
+/** @type {(() => void) | null} */
 let alCargar = null;
-/** Registra una función que se ejecuta cada vez que se cargan los datos (p. ej. para el aviso de solicitudes). */
+/**
+ * Registra una función que se ejecuta cada vez que se cargan los datos (p. ej. para el aviso de solicitudes).
+ * @param {(() => void) | null} f
+ */
 export const alCargarDatos = (f) => { alCargar = f; };
 
+/** @type {DBState} */
 export const DB = {
   cid: null, rol: null, perfil: null, userId: null,
   alumnos: [], niveles: [], nivelesRaw: [], grados: [], comunicados: [], docentes: [], cursos: [],
@@ -18,10 +30,13 @@ export const DB = {
   sinConexion: false,   // true cuando los datos vienen de la copia local (sin red)
 };
 
+/**
+ * @param {any} d
+ */
 function aplicar(d) {
   DB.alumnos = d.alumnos;
   DB.nivelesRaw = d.niveles;
-  DB.niveles = d.niveles.map((n) => n.nombre);
+  DB.niveles = d.niveles.map((/** @type {Nivel} */ n) => n.nombre);
   DB.grados = d.grados;
   DB.comunicados = d.comunicados;
   DB.docentes = d.docentes;
@@ -56,6 +71,7 @@ export async function loadAll() {
 /** Asistencias de hoy: las del servidor + las guardadas sin conexión aún por enviar (así el duplicado se detecta igual). */
 export async function refreshHoy() {
   const fecha = todayStr();
+  /** @type {Asistencia[]} */
   let servidor;
   try {
     servidor = await api.asistenciasPorFecha(DB.cid, fecha);
@@ -75,8 +91,33 @@ export async function asegurarHoy() {
   if (DB.hoyFecha !== todayStr()) await refreshHoy();
 }
 
+/**
+ * @param {string} [nivel]
+ * @returns {Grado[]}
+ */
 export const gradosDe = (nivel) => DB.grados.filter((g) => !nivel || g.nivel === nivel).sort((a, b) => a.nivel.localeCompare(b.nivel, "es") || compararCiclos(a.nombre, b.nombre));
+
+/**
+ * @param {string} id
+ * @returns {Alumno | undefined}
+ */
 export const alumnoPorId = (id) => DB.alumnos.find((a) => a.id === id);
+
+/**
+ * @param {string} c
+ * @returns {Alumno | undefined}
+ */
 export const alumnoPorCodigo = (c) => DB.alumnos.find((a) => a.codigo === c);
+
+/**
+ * @param {boolean} [conTodos]
+ * @returns {{ value: string; label: string }[]}
+ */
 export const opcionesNivel = (conTodos) => [...(conTodos ? [{ value: "", label: "Todas las carreras" }] : []), ...DB.niveles.map((n) => ({ value: n, label: n }))];
-export const opcionesGrado = (nivel, conTodos) => [...(conTodos ? [{ value: "", label: "Todos los ciclos" }] : []), ...gradosDe(nivel).map((g) => ({ value: g.nombre, label: cicloCorto(g.nombre, nivel) }))];
+
+/**
+ * @param {string} [nivel]
+ * @param {boolean} [conTodos]
+ * @returns {{ value: string; label: string }[]}
+ */
+export const opcionesGrado = (nivel, conTodos) => [...(conTodos ? [{ value: "", label: "Todos los ciclos" }] : []), ...gradosDe(nivel).map((g) => ({ value: g.nombre, label: cicloCorto(g.nombre, nivel || "") }))];

@@ -132,6 +132,10 @@ test("matrizAsistencia: P/T/J/F, solo cuenta días de clase y calcula porcentaje
   same(m.resumen, { alumnos: 3, dias: 2, pct: 67 });
 });
 test("matrizAsistencia sin registros no divide por cero", () => same(matrizAsistencia([A(1)], [], [], ["d1"], "08:00").filas[0].pct, 0));
+test("matrizAsistencia: tardanza cuenta como presente (1 día con hora tardía ⇒ p=1, t=1, pct 100)", () => {
+  const m = matrizAsistencia([A(1)], [X(1, "d1", "08:30")], [], ["d1"], "08:00");
+  same([m.filas[0].p, m.filas[0].t, m.filas[0].pct], [1, 1, 100]);
+});
 test("numeroWhatsApp / enlaceWhatsApp: formato peruano e internacional", () => {
   same([numeroWhatsApp("999 888 777"), numeroWhatsApp("+51 999-888-777"), numeroWhatsApp("+34 600 111 222"), numeroWhatsApp("51999888777"), numeroWhatsApp("")], ["51999888777", "51999888777", "34600111222", "51999888777", ""]);
   same(enlaceWhatsApp("999888777", "Hola & chao"), "https://wa.me/51999888777?text=Hola%20%26%20chao");

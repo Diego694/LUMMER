@@ -23,4 +23,18 @@
     <string name="error_email_invalid">Formato de correo electrónico inválido</string>
     <string name="error_password_required">La contraseña es obligatoria</string>
     <string name="error_password_short">La contraseña debe tener al menos 6 caracteres</string>
+
+    <!-- Quiosco y Escaneo QR (Flavor Docente) -->
+    <string name="scanner_title">Escáner de Carnet</string>
+    <string name="scanner_instruction">Apunta la cámara al código QR del carnet estudiantil</string>
+    <string name="scanner_permission_title">Permiso de cámara necesario</string>
+    <string name="scanner_permission_desc">Para escanear los códigos QR de los carnets de los estudiantes y registrar su asistencia, la aplicación necesita acceder a la cámara de este dispositivo.</string>
+    <string name="scanner_grant_permission">Conceder permiso</string>
+    <string name="scanner_permission_denied">El permiso de cámara fue denegado. Habilítalo en los ajustes del dispositivo para utilizar el escáner.</string>
+    <string name="scanner_camera_error">No se pudo inicializar la cámara. Por favor reintente.</string>
+    <string name="scanner_retry">Reintentar</string>
+    <string name="scanner_torch_on">Encender linterna</string>
+    <string name="scanner_torch_off">Apagar linterna</string>
+    <string name="scanner_back">Volver</string>
+    <string name="btn_scanner">Abrir Escáner de Asistencia</string>
 </resources>

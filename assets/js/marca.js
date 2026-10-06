@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * marca.js — Nombre de la institución en la interfaz
  *
@@ -12,7 +13,10 @@ const LS_KEY = 'ra-ultimo-instituto';
 /** Devuelve el nombre de la institución actual */
 export function nombreInstituto() {
   if (DB.perfil?.colegio) return DB.perfil.colegio;
-  try { return localStorage.getItem(LS_KEY); } catch { /* */ }
+  try {
+    const v = localStorage.getItem(LS_KEY);
+    if (v) return v;
+  } catch { /* */ }
   return 'Registro Académico';
 }
 

@@ -207,7 +207,8 @@ export function matrizAsistencia(alumnos, asistencias, justificaciones, dias, li
       const hora = asis.get(`${alumno.id}|${d}`);
       if (hora !== undefined) {
         if (esTardanza(hora, limite, alumno.nivel)) { celdas[d] = "T"; t++; }
-        else { celdas[d] = "P"; p++; }
+        else celdas[d] = "P";
+        p++;
       } else if (just.has(`${alumno.id}|${d}`)) {
         celdas[d] = "J"; j++;
       } else {

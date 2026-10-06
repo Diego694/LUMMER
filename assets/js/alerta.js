@@ -1,3 +1,4 @@
+// @ts-check
 // Alerta de asistencia para el docente: foto del estudiante + nombre con apellidos parcialmente censurados (privacidad).
 import { api } from "./api.js";
 import { CONFIG } from "./config.js";
@@ -5,6 +6,9 @@ import { esTardanza } from "./stats.js";
 import { censurarNombre, esc, etiquetaCiclo, initials } from "./utils.js";
 import { icon } from "./ui.js";
 
+/** @typedef {import('./tipos.d.ts').Alumno} Alumno */
+
+/** @type {Record<string, { clase: string, titulo: string, ic: string }>} */
 const TIPOS = {
   ok: { clase: "ok", titulo: "Asistencia registrada", ic: "check" },
   offline: { clase: "warn", titulo: "Guardado sin conexión · se enviará solo", ic: "clock" },
@@ -17,10 +21,16 @@ const TIPOS = {
   dup_salida: { clase: "warn", titulo: "Ya tenía salida", ic: "info" },
   inactivo: { clase: "err", titulo: "Alumno inactivo — no se registra", ic: "alert" },
 };
+/** @type {ReturnType<typeof setTimeout> | null} */
 let timer = null;
 let version = 0;
 
-/** tipo: ok | dup | pendiente | inactivo. Se cierra sola a los 5 s o al tocarla. */
+/**
+ * tipo: ok | dup | pendiente | inactivo. Se cierra sola a los 5 s o al tocarla.
+ * @param {Alumno} alumno
+ * @param {{ tipo?: string, hora?: string, detalle?: string }} [opciones]
+ * @returns {Promise<void>}
+ */
 export async function mostrarAlertaAsistencia(alumno, { tipo = "ok", hora = "", detalle = "" } = {}) {
   const t = TIPOS[tipo] || TIPOS.ok;
   const mia = ++version;
@@ -30,7 +40,7 @@ export async function mostrarAlertaAsistencia(alumno, { tipo = "ok", hora = "", 
     el.id = "asistencia-alert";
     el.className = "asistencia-alert";
     el.setAttribute("role", "alert");
-    el.addEventListener("click", () => el.classList.remove("show"));
+    el.addEventListener("click", () => el?.classList.remove("show"));
     document.body.appendChild(el);
   }
   const registrada = tipo === "ok" || tipo === "offline";   // (la salida no es puntualidad)
@@ -43,8 +53,8 @@ export async function mostrarAlertaAsistencia(alumno, { tipo = "ok", hora = "", 
       <strong>${esc(censurarNombre(alumno))}</strong>
       <small>${esc(etiquetaCiclo(alumno.nivel, alumno.grado))}${hora ? " · " + esc(hora.slice(0, 5)) : ""}${registrada ? (tarde ? " · Tardanza" : " · Puntual") : ""}${detalle ? " · " + esc(detalle) : ""}</small>
     </div>`;
-  clearTimeout(timer);
-  timer = setTimeout(() => el.classList.remove("show"), 5000);
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(() => el?.classList.remove("show"), 5000);
   try {
     const url = await api.fotoUrl(alumno);
     const box = document.getElementById("alert-photo");

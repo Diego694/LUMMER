@@ -24,18 +24,31 @@ export function planFusion(local, remoto) {
   const codigos = new Set(R("alumnos").map((a) => a.codigo));
   const clavesC = new Set(R("comunicados").map((c) => `${c.fecha}|${c.titulo}`));
   const clavesCu = new Set(R("cursos").map((c) => `${c.nivel}|${c.grado || ""}|${String(c.nombre).toLowerCase()}`));
+  const niveles = L("niveles").filter((n) => !nombresN.has(n.nombre));
+  const grados = L("grados").filter((g) => !clavesG.has(`${g.nivel}|${g.nombre}`));
+  const alumnos = L("alumnos").filter((a) => !codigos.has(a.codigo));
+  const alumnosExistentes = L("alumnos").filter((a) => codigos.has(a.codigo)).length;
+  const comunicados = L("comunicados").filter((c) => !clavesC.has(`${c.fecha}|${c.titulo}`));
+  const cursos = L("cursos").filter((c) => !clavesCu.has(`${c.nivel}|${c.grado || ""}|${String(c.nombre).toLowerCase()}`));
+  const asistencias = L("asistencias");
+  /** @type {PlanFusion} */
   const plan = {
-    niveles: L("niveles").filter((n) => !nombresN.has(n.nombre)),
-    grados: L("grados").filter((g) => !clavesG.has(`${g.nivel}|${g.nombre}`)),
-    alumnos: L("alumnos").filter((a) => !codigos.has(a.codigo)),
-    alumnosExistentes: L("alumnos").filter((a) => codigos.has(a.codigo)).length,
-    comunicados: L("comunicados").filter((c) => !clavesC.has(`${c.fecha}|${c.titulo}`)),
-    cursos: L("cursos").filter((c) => !clavesCu.has(`${c.nivel}|${c.grado || ""}|${String(c.nombre).toLowerCase()}`)),
-    asistencias: L("asistencias"),
-  };
-  plan.resumen = {
-    niveles: plan.niveles.length, grados: plan.grados.length, alumnos: plan.alumnos.length, alumnosExistentes: plan.alumnosExistentes,
-    asistencias: plan.asistencias.length, comunicados: plan.comunicados.length, cursos: plan.cursos.length,
+    niveles,
+    grados,
+    alumnos,
+    alumnosExistentes,
+    comunicados,
+    cursos,
+    asistencias,
+    resumen: {
+      niveles: niveles.length,
+      grados: grados.length,
+      alumnos: alumnos.length,
+      alumnosExistentes,
+      asistencias: asistencias.length,
+      comunicados: comunicados.length,
+      cursos: cursos.length,
+    },
   };
   return plan;
 }

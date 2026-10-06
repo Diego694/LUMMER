@@ -9,20 +9,11 @@ plugins {
 
 // Lectura de configuración pública de Supabase desde assets/js/config.js
 val configFile = rootProject.file("../assets/js/config.js")
-val (supabaseUrl, supabaseAnonKey) = if (configFile.exists()) {
-    val content = configFile.readText()
-    val urlMatch = Regex("""const\s+URL_PRODUCCION\s*=\s*["']([^"']+)["']""").find(content)
-    val keyMatch = Regex("""const\s+KEY_PRODUCCION\s*=\s*["']([^"']+)["']""").find(content)
-    Pair(
-        urlMatch?.groupValues?.get(1) ?: "https://wotumvamyglfquahdnet.supabase.co",
-        keyMatch?.groupValues?.get(1) ?: "sb_publishable_V0wt4JdNVXHc20_0tJWBHA_D47gcmbf"
-    )
-} else {
-    Pair(
-        "https://wotumvamyglfquahdnet.supabase.co",
-        "sb_publishable_V0wt4JdNVXHc20_0tJWBHA_D47gcmbf"
-    )
-}
+val configText = if (configFile.exists()) configFile.readText() else ""
+val supabaseUrl: String = Regex("""const\s+URL_PRODUCCION\s*=\s*["']([^"']+)["']""").find(configText)?.groupValues?.get(1)
+    ?: "https://wotumvamyglfquahdnet.supabase.co"
+val supabaseAnonKey: String = Regex("""const\s+KEY_PRODUCCION\s*=\s*["']([^"']+)["']""").find(configText)?.groupValues?.get(1)
+    ?: "sb_publishable_V0wt4JdNVXHc20_0tJWBHA_D47gcmbf"
 
 android {
     namespace = "pe.registroacademico.nativo"
@@ -46,7 +37,7 @@ android {
         create("docente") {
             dimension = "perfil"
             applicationIdSuffix = ".docente"
-            resValue("string", "app_name", "Registro Académico")
+            resValue("string", "app_name", "Registro Acad\u00e9mico")
         }
         create("estudiante") {
             dimension = "perfil"
@@ -100,6 +91,12 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)
     debugImplementation(libs.compose.ui.tooling)
+
+    // CameraX & ML Kit Barcode Scanning
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.mlkit.barcode.scanning)
 
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
