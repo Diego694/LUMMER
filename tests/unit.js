@@ -271,6 +271,7 @@ import { DB } from "../assets/js/state.js";
 import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
 import { vocabulario } from "../assets/js/estudiante/api.js";
+import { validarArchivoAula, rutaArchivoAula } from "../assets/js/api-aula.js";
 
 test("permisos · puede: rol docente no puede acciones de administración", () => {
   const previo = DB.perfil;
@@ -315,6 +316,19 @@ test("estudiante api · vocabulario: reemplaza términos colegiales por instituc
   same(vocabulario("Error en el colegio: Nivel o grado no existe"), "Error en el instituto: Carrera o ciclo no existe");
   same(vocabulario("Colegio registrado"), "Instituto registrado");
   same(vocabulario(""), "");
+});
+
+test("aula · validarArchivoAula: acepta documentos válidos y rechaza tipo, tamaño y vacíos", () => {
+  assert(validarArchivoAula({ name: "guia.PDF", size: 1024 }) === null, "pdf válido");
+  assert(/no permitido/.test(String(validarArchivoAula({ name: "virus.exe", size: 10 }))), "exe rechazado");
+  assert(/10 MB/.test(String(validarArchivoAula({ name: "a.pdf", size: 11 * 1024 * 1024 }))), "más de 10 MB rechazado");
+  assert(validarArchivoAula({ name: "a.pdf", size: 0 }) !== null, "vacío rechazado");
+});
+
+test("aula · rutaArchivoAula: <colegio>/<curso>/ y nombre sin acentos ni caracteres raros", () => {
+  const r = rutaArchivoAula("col-1", "cur-2", "Guía de Matemática #1.pdf");
+  assert(r.startsWith("col-1/cur-2/"), "carpetas colegio/curso");
+  assert(/^col-1\/cur-2\/[^/]+-Guia-de-Matematica-1\.pdf$/.test(r), "nombre limpio: " + r);
 });
 
 /* render */

@@ -21,7 +21,7 @@ export const esSuper = () => DB.perfil?.superadmin === true;
 /** Acciones (data-action) que solo puede hacer el administrador. */
 export const ACCIONES_ADMIN = [
   "nivel-new", "nivel-del", "grado-new", "grado-del", "ciclos-new", "al-new", "al-edit", "al-del", "al-import", "al-revisar", "sol-ver", "sol-ok", "sol-no", "sol-actualizar", "of-ver", "of-exportar", "of-importar",
-  "co-del", "cd-generar", "cd-regenerar", "pers-crear", "pers-existente", "pers-pass", "pers-edit", "pers-del", "curso-new", "curso-edit", "curso-del",
+  "co-del", "cd-generar", "cd-regenerar", "pers-crear", "pers-existente", "pers-pass", "pers-edit", "pers-del", "curso-new", "curso-edit", "curso-del", "aula-docentes",
   "just-del", "err-borrar", "respaldo-json", "respaldo-csv-alumnos", "respaldo-csv-asistencias", "inst-nombre-cambiar", "inst-qr-guardar",
 ];
 const SET = new Set(ACCIONES_ADMIN);

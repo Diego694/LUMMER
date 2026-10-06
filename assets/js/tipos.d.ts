@@ -150,6 +150,42 @@ export interface Curso {
   activo?: boolean;
 }
 
+// Aula (migración 013): archivo subido al bucket «cursos»
+export interface ArchivoAula {
+  archivo_path: string | null;
+  archivo_nombre: string | null;
+  archivo_bytes: number | null;
+}
+
+// Material de un curso (documento, enlace o aviso), agrupado por tema
+export interface CursoMaterial extends Partial<ArchivoAula> {
+  id?: string;
+  colegio_id?: string;
+  curso_id: string;
+  tema: string;
+  tipo: 'documento' | 'enlace' | 'aviso';
+  titulo: string;
+  descripcion: string;
+  url?: string | null;
+  publicado: boolean;
+  creado_por?: string | null;
+  creado_en?: string;
+}
+
+// Actividad de un curso con fecha límite
+export interface CursoActividad extends Partial<ArchivoAula> {
+  id?: string;
+  colegio_id?: string;
+  curso_id: string;
+  titulo: string;
+  instrucciones: string;
+  fecha_limite?: string | null;
+  puntaje_max: number;
+  publicado: boolean;
+  creado_por?: string | null;
+  creado_en?: string;
+}
+
 // Asistencia por curso
 export interface AsistenciaCurso {
   id?: string;
@@ -728,6 +764,14 @@ export interface Api {
   ajustesLista(cid?: string | null): Promise<{ periodos: Periodo[]; calendario: DiaCalendario[]; horarios: Horario[] }>;
   auditoriaLista(cid?: string | null, opts?: { limite?: number; tabla?: string; accion?: string }): Promise<Auditoria[]>;
   cursosLista(cid?: string | null): Promise<Curso[]>;
+  aulaMateriales(cursoId: string): Promise<CursoMaterial[]>;
+  aulaActividades(cursoId: string): Promise<CursoActividad[]>;
+  aulaGuardar(tabla: 'curso_materiales' | 'curso_actividades', row: Record<string, any>, archivo?: File): Promise<void>;
+  aulaEliminar(tabla: 'curso_materiales' | 'curso_actividades', fila: { id: string; archivo_path?: string | null }): Promise<void>;
+  aulaUrlArchivo(path: string): Promise<string>;
+  aulaDocentes(cursoId: string): Promise<{ user_id: string }[]>;
+  aulaAsignarDocente(cursoId: string, userId: string): Promise<void>;
+  aulaQuitarDocente(cursoId: string, userId: string): Promise<void>;
   justificacionesRango(cid: string | null | undefined, desde: string, hasta: string): Promise<Justificacion[]>;
   guardarJustificacion(row: Partial<Justificacion> & { alumno_id: string; fecha: string }): Promise<void>;
   eliminarJustificacion(id: string | number): Promise<void>;
