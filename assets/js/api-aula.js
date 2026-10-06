@@ -182,9 +182,12 @@ export async function miEntregaDe(sb, actividadId) {
  * @returns {Promise<void>}
  */
 export async function entregarSb(sb, user, actividad, texto, file) {
-  if (!texto.trim() && !file) throw err("Escribe una respuesta o adjunta un archivo.");
+  // Al reenviar sin archivo nuevo se conserva el anterior (la función SQL reemplaza todo el registro)
+  const previa = await miEntregaDe(sb, String(actividad.id)).catch(() => null);
+  if (!texto.trim() && !file && !previa?.archivo_path) throw err("Escribe una respuesta o adjunta un archivo.");
   /** @type {Partial<ArchivoAula>} */
   let adjunto = {};
+  if (!file && previa?.archivo_path) adjunto = { archivo_path: previa.archivo_path, archivo_nombre: previa.archivo_nombre, archivo_bytes: previa.archivo_bytes };
   if (file) {
     const problema = validarArchivoAula(file);
     if (problema) throw err(problema);
@@ -194,8 +197,9 @@ export async function entregarSb(sb, user, actividad, texto, file) {
     adjunto = { archivo_path: path, archivo_nombre: file.name, archivo_bytes: file.size };
   }
   const { error } = await sb.rpc("entregar_actividad", { p_actividad: actividad.id, p_texto: texto, p_archivo_path: adjunto.archivo_path ?? null, p_archivo_nombre: adjunto.archivo_nombre ?? null, p_archivo_bytes: adjunto.archivo_bytes ?? null });
+  if (!error && file && previa?.archivo_path) await sb.storage.from(BUCKET_AULA).remove([previa.archivo_path]).catch(() => { /* huérfano: no bloquea */ });
   if (error) {
-    if (adjunto.archivo_path) await sb.storage.from(BUCKET_AULA).remove([adjunto.archivo_path]).catch(() => { /* huérfano: no bloquea */ });
+    if (file && adjunto.archivo_path) await sb.storage.from(BUCKET_AULA).remove([adjunto.archivo_path]).catch(() => { /* huérfano: no bloquea */ });
     throw err(error.message, error.code);
   }
 }
@@ -317,12 +321,12 @@ export const aulaDemo = {
  * @param {File} [file]
  */
 export function entregarDemo(db, alumno, actividad, texto, file) {
-  if (!texto.trim() && !file) throw err("Escribe una respuesta o adjunta un archivo.");
-  if (file) { const problema = validarArchivoAula(file); if (problema) throw err(problema); }
   const l = tabla(db, "curso_entregas");
   const previa = l.find((/** @type {any} */ e) => e.actividad_id === actividad.id && e.alumno_id === alumno.id);
+  if (!texto.trim() && !file && !previa?.archivo_nombre) throw err("Escribe una respuesta o adjunta un archivo.");
+  if (file) { const problema = validarArchivoAula(file); if (problema) throw err(problema); }
   if (previa?.nota != null) throw err("La entrega ya fue calificada y no se puede cambiar.");
-  const datos = { texto, archivo_path: null, archivo_nombre: file?.name ?? null, archivo_bytes: file?.size ?? null, enviado_en: new Date().toISOString(),
+  const datos = { texto, archivo_path: null, archivo_nombre: file ? file.name : previa?.archivo_nombre ?? null, archivo_bytes: file ? file.size : previa?.archivo_bytes ?? null, enviado_en: new Date().toISOString(),
     tardia: !!actividad.fecha_limite && Date.now() > new Date(actividad.fecha_limite).getTime() };
   if (previa) Object.assign(previa, datos);
   else l.push({ id: uid(), curso_id: actividad.curso_id, actividad_id: actividad.id, alumno_id: alumno.id, nota: null, comentario: "", ...datos });

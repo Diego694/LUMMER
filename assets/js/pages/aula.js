@@ -259,11 +259,15 @@ function filaEntrega(e) {
     </div></li>`;
 }
 
+function textoResumen() {
+  const calificadas = entregas.filter((e) => e.nota != null).length;
+  return `${entregas.length} entrega${entregas.length === 1 ? "" : "s"} · ${calificadas} calificada${calificadas === 1 ? "" : "s"}`;
+}
+
 /** @param {HTMLElement} cuerpo */
 function pintarEntregas(cuerpo) {
-  const calificadas = entregas.filter((e) => e.nota != null).length;
   cuerpo.innerHTML = entregas.length
-    ? `<p class="muted">${entregas.length} entrega${entregas.length === 1 ? "" : "s"} · ${calificadas} calificada${calificadas === 1 ? "" : "s"}</p><ul class="aula-entregas">${entregas.map(filaEntrega).join("")}</ul>`
+    ? `<p class="muted">${textoResumen()}</p><ul class="aula-entregas">${entregas.map(filaEntrega).join("")}</ul>`
     : emptyState("Aún no hay entregas", "Cuando los estudiantes entreguen, aparecerán aquí para calificarlas.", "listCheck");
 }
 
@@ -295,8 +299,11 @@ async function calificar(btn) {
   try {
     await api.aulaCalificar(e.id, nota, comentario);
     Object.assign(e, { nota, comentario });
+    // Solo se repinta esta fila: así no se pierden las notas que el docente está escribiendo en las demás
     const cuerpo = /** @type {HTMLElement} */ (fila.closest(".modal-body"));
-    pintarEntregas(cuerpo);
+    fila.outerHTML = filaEntrega(e);
+    const resumen = cuerpo.querySelector(".muted");
+    if (resumen) resumen.textContent = textoResumen();
     toast(nota == null ? "Calificación quitada" : "Nota guardada", "success");
   } catch (/** @type {any} */ ex) { toast("No se pudo guardar: " + ex.message, "error"); /** @type {HTMLButtonElement} */ (btn).disabled = false; }
 }
