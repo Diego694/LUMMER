@@ -15,9 +15,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.jan.supabase.auth.status.SessionStatus
 import pe.registroacademico.nativo.data.AuthRepository
-import pe.registroacademico.nativo.ui.escaner.EscanerScreen
-import pe.registroacademico.nativo.ui.inicio.InicioScreen
 import pe.registroacademico.nativo.ui.login.LoginScreen
+import pe.registroacademico.nativo.ui.shell.ShellScreen
 
 @Composable
 fun AppNav(authRepository: AuthRepository) {
@@ -38,7 +37,7 @@ fun AppNav(authRepository: AuthRepository) {
         }
         else -> {
             val isAuthenticated = sessionStatus is SessionStatus.Authenticated || authRepository.currentSession != null
-            val startDestination = if (isAuthenticated) "inicio" else "login"
+            val startDestination = if (isAuthenticated) "shell" else "login"
 
             val navController = rememberNavController()
 
@@ -49,31 +48,18 @@ fun AppNav(authRepository: AuthRepository) {
                 composable("login") {
                     LoginScreen(
                         onLoginSuccess = {
-                            navController.navigate("inicio") {
+                            navController.navigate("shell") {
                                 popUpTo("login") { inclusive = true }
                             }
                         }
                     )
                 }
-                composable("inicio") {
-                    InicioScreen(
+                composable("shell") {
+                    ShellScreen(
                         onSignOut = {
                             navController.navigate("login") {
-                                popUpTo("inicio") { inclusive = true }
+                                popUpTo("shell") { inclusive = true }
                             }
-                        },
-                        onAbrirEscaner = {
-                            navController.navigate("escaner")
-                        }
-                    )
-                }
-                composable("escaner") {
-                    EscanerScreen(
-                        onCodigoEscaneado = { _ ->
-                            // Lectura de código QR para registro de asistencia
-                        },
-                        onVolver = {
-                            navController.popBackStack()
                         }
                     )
                 }
