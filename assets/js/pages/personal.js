@@ -1,3 +1,4 @@
+// @ts-check
 // Personal y accesos (solo administrador): crea las cuentas de los docentes (correo + contraseña), asigna su rol,
 // cambia contraseñas y quita accesos, todo desde el panel. Crear cuentas lo hace la Edge Function «gestionar-personal».
 import { api } from "../api.js";
@@ -10,16 +11,18 @@ const ROLES = [
   { value: "Coordinador", label: "Coordinador — como docente, solo su carrera" },
   { value: "Administrador", label: "Administrador — acceso total" },
 ];
+/** @type {Record<string, string>} */
 const TONO = { administrador: "navy", docente: "green", coordinador: "amber" };
+/** @type {any[]} */
 let lista = [];
 
-const carreras = () => [{ value: "", label: "—" }, ...DB.niveles.map((n) => ({ value: n.nombre || n, label: n.nombre || n }))];
-const root = () => document.getElementById("page-root");
+const carreras = () => [{ value: "", label: "—" }, ...DB.niveles.map((/** @type {any} */ n) => ({ value: n.nombre || n, label: n.nombre || n }))];
+const root = () => /** @type {HTMLElement} */ (document.getElementById("page-root"));
 
 async function cargar() {
-  const cont = root().querySelector("#pers-tbl");
+  const cont = /** @type {HTMLElement} */ (root().querySelector("#pers-tbl"));
   try { lista = await api.personalListar(); }
-  catch (e) {
+  catch (/** @type {any} */ e) {
     cont.innerHTML = emptyState("No se pudo cargar el personal", /does not exist|function|schema cache/i.test(e.message) ? "Falta aplicar la migración 005 (supabase/migrations/005_personal_avisos.sql)." : e.message, "alert");
     return;
   }
@@ -30,7 +33,7 @@ async function cargar() {
       <button class="icon-only" title="Cambiar rol" aria-label="Cambiar rol de ${esc(p.email)}" data-action="pers-edit" data-email="${esc(p.email)}">${icon("edit", 16)}</button>
       <button class="icon-only danger" title="Quitar acceso" aria-label="Quitar acceso a ${esc(p.email)}" data-action="pers-del" data-id="${p.id}">${icon("trash", 16)}</button></td></tr>`).join("")}</tbody></table></div>`
     : emptyState("Sin personal", "Crea la primera cuenta con «Crear usuario».", "users");
-  cont.querySelectorAll(".avatar[data-foto]").forEach(async (el) => {
+  cont.querySelectorAll(".avatar[data-foto]").forEach(async (/** @type {any} */ el) => {
     if (!el.dataset.foto) return;
     const url = await api.fotoPersonalUrl(el.dataset.foto).catch(() => null);
     if (url) { el.style.backgroundImage = `url("${url}")`; el.style.backgroundSize = "cover"; el.textContent = ""; }
@@ -50,13 +53,14 @@ function formCrear() {
     ],
     onSubmit: async (v) => {
       if ((v.password || "").length < 8) throw new Error("La contraseña debe tener al menos 8 caracteres.");
-      await api.personalCrear(v);
+      await api.personalCrear(/** @type {any} */ (v));
       toast("Usuario creado. Entrégale su correo y contraseña.", "success");
       await cargar();
     },
   });
 }
 
+/** @param {any} p */
 function formRol(p) {
   formModal({
     title: "Dar acceso a una cuenta existente",
@@ -73,6 +77,7 @@ function formRol(p) {
 
 export const personalPage = {
   id: "personal", title: "Personal y accesos", icon: "users", group: "Gestión", soloAdmin: true,
+  /** @param {HTMLElement} el */
   async render(el) {
     el.innerHTML = `${pageHead("Personal y accesos", "Crea las cuentas de tus docentes y define qué puede hacer cada uno.",
       `<button class="btn btn-outline" data-action="pers-existente">Dar acceso a cuenta existente</button><button class="btn btn-primary" data-action="pers-crear">${icon("plus", 16)} Crear usuario</button>`)}
@@ -86,8 +91,8 @@ export const personalPage = {
 registerActions({
   "pers-crear": () => formCrear(),
   "pers-existente": () => formRol(null),
-  "pers-edit": (el) => formRol(lista.find((x) => x.email === el.dataset.email)),
-  "pers-pass": (el) => {
+  "pers-edit": (/** @type {HTMLElement} */ el) => formRol(lista.find((x) => x.email === el.dataset.email)),
+  "pers-pass": (/** @type {HTMLElement} */ el) => {
     const p = lista.find((x) => x.id === el.dataset.id);
     formModal({
       title: `Nueva contraseña para ${p?.email || ""}`, submitLabel: "Cambiar contraseña",
@@ -99,10 +104,10 @@ registerActions({
       },
     });
   },
-  "pers-del": async (el) => {
+  "pers-del": async (/** @type {HTMLElement} */ el) => {
     const p = lista.find((x) => x.id === el.dataset.id);
     if (!(await confirmDialog({ title: "Quitar acceso", message: `¿Quitar el acceso de <b>${esc(p?.email || "")}</b>? Deja de poder entrar al sistema. Su cuenta se elimina por completo.`, confirmLabel: "Quitar acceso" }))) return;
     try { await api.personalEliminar(p.id); toast("Acceso quitado", "success"); await cargar(); }
-    catch (e) { toast(e.message, "error"); }
+    catch (/** @type {any} */ e) { toast(e.message, "error"); }
   },
 });

@@ -1,3 +1,4 @@
+// @ts-check
 // Código de registro del instituto: lo que los estudiantes escriben en "Mi Carnet Institucional" para registrarse.
 // Página propia para generarlo, copiarlo y compartirlo en un toque.
 import { api } from "../api.js";
@@ -12,6 +13,7 @@ const generar = () => [...crypto.getRandomValues(new Uint8Array(8))].map((b) => 
 const portalUrl = () => new URL("estudiante/", location.href.split("#")[0].split("?")[0]).href;
 
 /** Copia al portapapeles (con alternativa para WebView/HTTP, donde navigator.clipboard puede no estar disponible). */
+/** @param {string} texto */
 async function copiar(texto) {
   try { await navigator.clipboard.writeText(texto); return true; } catch { /* alternativa */ }
   const t = document.createElement("textarea");
@@ -22,6 +24,7 @@ async function copiar(texto) {
   return ok;
 }
 
+/** @param {string} codigo */
 function textoCompartir(codigo) {
   const apk = CONFIG.APK_ESTUDIANTE_URL;
   return [
@@ -33,12 +36,14 @@ function textoCompartir(codigo) {
   ].filter(Boolean).join("\n");
 }
 
+/** @type {string | null} */
 let actual = null;
 
 export const codigoPage = {
   id: "codigo", title: "Código de registro", icon: "qr", group: "Gestión",
+  /** @param {HTMLElement} root */
   async render(root) {
-    actual = await api.getCodigoRegistro(DB.cid);
+    actual = await api.getCodigoRegistro(/** @type {string} */ (DB.cid));
     const pend = DB.alumnos.filter((a) => a.aprobado === false).length;
     root.innerHTML = `
       ${pageHead("Código de registro", "El código que tus estudiantes escriben en <b>Mi Carnet Institucional</b> para registrarse. Tú apruebas cada registro.")}
@@ -57,8 +62,9 @@ export const codigoPage = {
   },
 };
 
+/** @param {HTMLElement} root */
 function pintar(root) {
-  const el = root.querySelector("#cd-card");
+  const el = /** @type {HTMLElement} */ (root.querySelector("#cd-card"));
   el.innerHTML = actual
     ? `<span class="muted">Código vigente</span>
        <div class="codigo-box codigo-grande"><code id="cd-code">${esc(actual)}</code></div>
@@ -78,30 +84,34 @@ function pintar(root) {
        <button class="btn btn-primary btn-block" data-action="cd-generar">${icon("plus", 16)} Generar código ahora</button>
        <p class="err-msg" id="cd-err" role="alert" hidden></p>`;
   const f = el.querySelector("#cd-form");
-  if (f) f.addEventListener("submit", async (e) => { e.preventDefault(); await guardarCodigo(root, f.querySelector("input").value.trim().toUpperCase()); });
+  if (f) f.addEventListener("submit", async (e) => { e.preventDefault(); await guardarCodigo(root, /** @type {HTMLInputElement} */ (f.querySelector("input")).value.trim().toUpperCase()); });
 }
 
+/**
+ * @param {HTMLElement} root
+ * @param {string} codigo
+ */
 async function guardarCodigo(root, codigo) {
   if (!/^[A-Z0-9]{6,20}$/.test(codigo)) { toast("El código debe tener de 6 a 20 letras o números, sin espacios.", "error"); return; }
   try {
-    await api.setCodigoRegistro(DB.cid, codigo);
+    await api.setCodigoRegistro(/** @type {string} */ (DB.cid), codigo);
     actual = codigo;
     pintar(root);
     toast("Código guardado", "success");
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     const falta = /codigo_registro|column|does not exist/i.test(e.message);
     toast(falta ? "Falta aplicar la migración del portal de estudiantes (supabase/migrations/002_estudiantes.sql)." : e.message, "error");
   }
 }
 
 registerActions({
-  "cd-generar": () => guardarCodigo(document.getElementById("page-root"), generar()),
+  "cd-generar": () => guardarCodigo(/** @type {HTMLElement} */ (document.getElementById("page-root")), generar()),
   "cd-regenerar": async () => {
     if (!(await confirmDialog({ title: "Regenerar código", message: "El código actual dejará de funcionar. ¿Generar uno nuevo?", confirmLabel: "Regenerar", danger: false }))) return;
-    await guardarCodigo(document.getElementById("page-root"), generar());
+    await guardarCodigo(/** @type {HTMLElement} */ (document.getElementById("page-root")), generar());
   },
-  "cd-copiar": async () => { const ok = await copiar(actual); toast(ok ? "Código copiado" : "No se pudo copiar: selecciónalo y cópialo manualmente", ok ? "success" : "error"); },
-  "cd-copiar-msg": async () => { const ok = await copiar(textoCompartir(actual)); toast(ok ? "Mensaje copiado: pégalo en WhatsApp, correo o donde quieras" : "No se pudo copiar", ok ? "success" : "error"); },
+  "cd-copiar": async () => { const ok = await copiar(/** @type {string} */ (actual)); toast(ok ? "Código copiado" : "No se pudo copiar: selecciónalo y cópialo manualmente", ok ? "success" : "error"); },
+  "cd-copiar-msg": async () => { const ok = await copiar(textoCompartir(/** @type {string} */ (actual))); toast(ok ? "Mensaje copiado: pégalo en WhatsApp, correo o donde quieras" : "No se pudo copiar", ok ? "success" : "error"); },
   // bindActions cancela el clic del enlace (preventDefault), así que la navegación se hace aquí.
   "al-pend": () => { try { sessionStorage.setItem("ra-alumnos-filtro", "pend"); } catch { /* sin storage */ } location.hash = "#/alumnos"; },
 });

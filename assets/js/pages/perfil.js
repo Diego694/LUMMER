@@ -1,3 +1,4 @@
+// @ts-check
 // Mi perfil: cada persona del personal sube su foto, corrige su nombre y cambia su contraseña.
 import { api } from "../api.js";
 import { DB } from "../state.js";
@@ -18,6 +19,7 @@ export async function pintarAvatar() {
   } catch { /* sin foto: iniciales */ }
 }
 
+/** @param {HTMLElement} root */
 async function pintarFotoGrande(root) {
   const box = root.querySelector("#perfil-foto");
   if (!box) return;
@@ -29,8 +31,9 @@ async function pintarFotoGrande(root) {
 
 export const perfilPage = {
   id: "perfil", title: "Mi perfil", icon: "userCheck", group: "Principal",
+  /** @param {HTMLElement} root */
   async render(root) {
-    const p = DB.perfil || {};
+    const p = /** @type {any} */ (DB.perfil || {});
     root.innerHTML = `${pageHead("Mi perfil", "Tu foto, tu nombre y tu contraseña.")}
       <div class="grid-2">
         <section class="card center-col">
@@ -56,35 +59,37 @@ export const perfilPage = {
       </div>`;
     pintarFotoGrande(root);
 
-    root.querySelector("#perfil-file").addEventListener("change", async (e) => {
-      const f = e.target.files?.[0]; e.target.value = "";
+    /** @type {HTMLInputElement} */ (root.querySelector("#perfil-file")).addEventListener("change", async (e) => {
+      const inp = /** @type {HTMLInputElement} */ (e.target);
+      const f = inp.files?.[0]; inp.value = "";
       if (!f) return;
       try {
         const blob = await archivoACuadrado(f);
-        DB.perfil.foto_path = await api.subirFotoPerfil(DB.userId, blob);
+        /** @type {any} */ (DB.perfil).foto_path = await api.subirFotoPerfil(/** @type {string} */ (DB.userId), /** @type {Blob} */ (blob));
         await pintarFotoGrande(root); pintarAvatar();
         toast("Foto actualizada", "success");
-      } catch (ex) { toast("No se pudo subir la foto: " + ex.message, "error"); }
+      } catch (/** @type {any} */ ex) { toast("No se pudo subir la foto: " + ex.message, "error"); }
     });
-    root.querySelector("#perfil-nombre").addEventListener("submit", async (e) => {
+    /** @type {HTMLElement} */ (root.querySelector("#perfil-nombre")).addEventListener("submit", async (e) => {
       e.preventDefault();
-      const n = root.querySelector("#perfil-n").value.trim();
+      const n = /** @type {HTMLInputElement} */ (root.querySelector("#perfil-n")).value.trim();
       if (!n) return;
       try {
         await api.actualizarMiPerfil(n);
-        DB.perfil.nombre = n;
-        document.getElementById("user-name").textContent = n;
-        if (!DB.perfil.foto_path) pintarAvatar();
+        const perfil = /** @type {any} */ (DB.perfil);
+        perfil.nombre = n;
+        /** @type {HTMLElement} */ (document.getElementById("user-name")).textContent = n;
+        if (!perfil.foto_path) pintarAvatar();
         toast("Nombre guardado", "success");
-      } catch (ex) { toast(ex.message, "error"); }
+      } catch (/** @type {any} */ ex) { toast(ex.message, "error"); }
     });
-    root.querySelector("#perfil-pass").addEventListener("submit", async (e) => {
+    /** @type {HTMLFormElement} */ (root.querySelector("#perfil-pass")).addEventListener("submit", async (e) => {
       e.preventDefault();
-      const a = root.querySelector("#perfil-p1").value, b = root.querySelector("#perfil-p2").value;
+      const a = /** @type {HTMLInputElement} */ (root.querySelector("#perfil-p1")).value, b = /** @type {HTMLInputElement} */ (root.querySelector("#perfil-p2")).value;
       if (a.length < 8) return toast("La contraseña debe tener al menos 8 caracteres.", "error");
       if (a !== b) return toast("Las contraseñas no coinciden.", "error");
-      try { await api.cambiarPassword(a); e.target.reset(); toast("Contraseña cambiada", "success"); }
-      catch (ex) { toast(ex.message, "error"); }
+      try { await api.cambiarPassword(a); /** @type {HTMLFormElement} */ (e.target).reset(); toast("Contraseña cambiada", "success"); }
+      catch (/** @type {any} */ ex) { toast(ex.message, "error"); }
     });
   },
 };

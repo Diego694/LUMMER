@@ -1,3 +1,4 @@
+// @ts-check
 // Periodos académicos y cambio de ciclo (administrador): cierra el periodo, pasa a cada alumno al ciclo siguiente
 // (mismo salón), da por egresados a los del VI ciclo y abre el nuevo periodo. El historial de asistencia se conserva.
 import { api } from "../api.js";
@@ -6,18 +7,19 @@ import { DB, loadAll } from "../state.js";
 import { badge, emptyState, formModal, icon, openModal, pageHead, registerActions, toast } from "../ui.js";
 import { esc, fmtDate, todayStr } from "../utils.js";
 
-const root = () => document.getElementById("page-root");
+const root = () => /** @type {HTMLElement} */ (document.getElementById("page-root"));
 const activo = () => DB.periodos.find((p) => p.activo) || null;
 
+/** @param {HTMLElement} el */
 function pintar(el) {
   const act = activo();
   const pasados = DB.periodos.filter((p) => !p.activo).sort((a, b) => b.inicio.localeCompare(a.inicio));
-  el.querySelector("#per-actual").innerHTML = act
+  /** @type {HTMLElement} */ (el.querySelector("#per-actual")).innerHTML = act
     ? `<div class="per-actual"><div><span class="muted">Periodo vigente</span><h2 style="margin:2px 0">${esc(act.nombre)}</h2><small class="muted">Desde ${esc(fmtDate(act.inicio, { day: "2-digit", month: "long", year: "numeric" }))}</small></div>
        <button class="btn btn-primary" data-action="per-cerrar">${icon("flip", 16)} Cerrar periodo y pasar de ciclo</button></div>`
     : `${emptyState("Sin periodo vigente", "Define el periodo actual (por ejemplo «2026-II»): los reportes y las alertas de inasistencia cuentan desde su inicio.", "calendar")}
        <div class="btn-row center"><button class="btn btn-primary" data-action="per-nuevo">${icon("plus", 16)} Definir periodo actual</button></div>`;
-  el.querySelector("#per-hist").innerHTML = pasados.length
+  /** @type {HTMLElement} */ (el.querySelector("#per-hist")).innerHTML = pasados.length
     ? `<div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Inicio</th><th>Cierre</th><th>Pasaron de ciclo</th><th>Egresaron</th></tr></thead><tbody>
        ${pasados.map((p) => `<tr><td><strong>${esc(p.nombre)}</strong></td><td>${esc(fmtDate(p.inicio))}</td><td>${p.cerrado_en ? esc(fmtDate(String(p.cerrado_en).slice(0, 10))) : "—"}</td>
          <td>${p.resumen ? badge(String(p.resumen.movidos ?? 0), "green") : "—"}</td><td>${p.resumen ? badge(String(p.resumen.egresados ?? 0), "navy") : "—"}</td></tr>`).join("")}</tbody></table></div>`
@@ -26,6 +28,7 @@ function pintar(el) {
 
 export const periodosPage = {
   id: "periodos", title: "Periodos y cambio de ciclo", icon: "history", group: "Gestión", soloAdmin: true,
+  /** @param {HTMLElement} el */
   render(el) {
     el.innerHTML = `${pageHead("Periodos y cambio de ciclo", "Cierra el periodo y pasa a los alumnos al ciclo siguiente, sin perder el historial.")}
       <section class="card" id="per-actual"></section>
@@ -52,8 +55,9 @@ function modalCierre() {
       <p class="err-msg" id="pc-err" role="alert" hidden></p>`,
     footer: `<button class="btn btn-outline" data-close2>Cancelar</button><button class="btn btn-primary" id="pc-aplicar">Aplicar cambio de ciclo</button>`,
   });
-  const $ = (s) => m.el.querySelector(s);
-  m.el.querySelector("[data-close2]").addEventListener("click", m.close);
+  /** @param {string} s */
+  const $ = (s) => /** @type {any} */ (m.el.querySelector(s));
+  $("[data-close2]").addEventListener("click", m.close);
   const plan = () => planPromocion(DB.alumnos, DB.grados, $("#pc-carrera").value ? [$("#pc-carrera").value] : []);
   const mostrar = () => {
     const p = plan();
@@ -64,6 +68,7 @@ function modalCierre() {
   };
   $("#pc-carrera").addEventListener("change", mostrar); mostrar();
   $("#pc-aplicar").addEventListener("click", async () => {
+    /** @param {string} t */
     const err = (t) => { $("#pc-err").textContent = t; $("#pc-err").hidden = !t; };
     const nombre = $("#pc-nombre").value.trim(), inicio = $("#pc-inicio").value;
     if (!nombre || !inicio) return err("Escribe el nombre y la fecha de inicio del nuevo periodo.");
@@ -85,7 +90,7 @@ function modalCierre() {
       await loadAll();
       m.close(); pintar(root());
       toast(`Listo: ${p.mover.length} pasaron de ciclo y ${p.egresan.length} egresaron.`, "success");
-    } catch (e) { err("No se pudo completar: " + e.message); btn.disabled = false; btn.textContent = "Aplicar cambio de ciclo"; }
+    } catch (/** @type {any} */ e) { err("No se pudo completar: " + e.message); btn.disabled = false; btn.textContent = "Aplicar cambio de ciclo"; }
   });
   void act;
 }
@@ -98,7 +103,7 @@ registerActions({
     ],
     onSubmit: async (v) => {
       try { await api.save("periodos", { colegio_id: DB.cid, nombre: v.nombre, inicio: v.inicio, activo: true }); }
-      catch (e) { throw new Error(e.code === "duplicate" ? "Ya existe un periodo con ese nombre." : e.message); }
+      catch (/** @type {any} */ e) { throw new Error(e.code === "duplicate" ? "Ya existe un periodo con ese nombre." : e.message); }
       await loadAll(); pintar(root()); toast("Periodo definido", "success");
     },
   }),

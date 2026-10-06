@@ -1,3 +1,4 @@
+// @ts-check
 // Carnets institucionales con QR: vista previa, descarga PNG/PDF y descarga masiva.
 import { CONFIG } from "../config.js";
 import { DB, alumnoPorId, opcionesGrado, opcionesNivel } from "../state.js";
@@ -5,10 +6,15 @@ import { emptyState, formModal, icon, pageHead, registerActions, toast } from ".
 import { debounce, downloadFile, esc, etiquetaCiclo, initials, norm } from "../utils.js";
 import { qrModoEfectivo } from "../qr-seguro.js";
 
+/** @type {{ q: string, sel: import("../tipos.d.ts").Alumno | null | undefined }} */
 let cq = { q: "", sel: null };
 
 export const carnetPage = {
   id: "carnet", title: "Carnet", icon: "idCard", group: "Gestión",
+  /**
+   * @param {HTMLElement & { _repaint?: () => void }} root
+   * @param {{ id?: string }} [params]
+   */
   render(root, params = {}) {
     if (params.id) cq.sel = alumnoPorId(params.id) || cq.sel;
     const avisoObligatorio = qrModoEfectivo(DB.perfil?.qr_modo) === "obligatorio"
@@ -22,38 +28,51 @@ export const carnetPage = {
         <section class="card center-col"><div id="carnet-preview"></div><div class="btn-row center" id="carnet-actions" hidden>
           <button class="btn btn-navy" data-action="carnet-png">${icon("download", 16)} Imagen PNG</button><button class="btn btn-teal" data-action="carnet-pdf">${icon("download", 16)} PDF</button></div></section>
       </div>`;
-    root.querySelector("#carnet-q").addEventListener("input", debounce((e) => { cq.q = e.target.value; lista(); }, 150));
+    /** @type {HTMLInputElement} */ (root.querySelector("#carnet-q")).addEventListener("input", debounce((/** @type {Event} */ e) => { cq.q = /** @type {HTMLInputElement} */ (e.target).value; lista(); }, 150));
     lista(); preview();
     function lista() {
       const q = norm(cq.q);
       const l = DB.alumnos.filter((a) => !q || norm(`${a.nombre} ${a.codigo}`).includes(q)).slice(0, 80);
-      root.querySelector("#carnet-list").innerHTML = l.length ? l.map((a) => `<button class="pick ${cq.sel?.id === a.id ? "active" : ""}" data-action="carnet-pick" data-id="${a.id}">
+      /** @type {HTMLElement} */ (root.querySelector("#carnet-list")).innerHTML = l.length ? l.map((a) => `<button class="pick ${cq.sel?.id === a.id ? "active" : ""}" data-action="carnet-pick" data-id="${a.id}">
         <span class="avatar">${esc(initials(a.nombre))}</span><span><strong>${esc(a.nombre)}</strong><small class="mono">${esc(a.codigo)} · ${esc(a.grado)}</small></span></button>`).join("") : emptyState("Sin alumnos", "Ajusta tu búsqueda.", "search");
     }
     function preview() {
-      const holder = root.querySelector("#carnet-preview"), actions = root.querySelector("#carnet-actions");
+      const holder = /** @type {HTMLElement} */ (root.querySelector("#carnet-preview")), actions = /** @type {HTMLElement} */ (root.querySelector("#carnet-actions"));
       if (!cq.sel) { holder.innerHTML = emptyState("Selecciona un alumno", "Aquí verás la vista previa del carnet.", "idCard"); actions.hidden = true; return; }
       const a = cq.sel;
       holder.innerHTML = `<div class="carnet-preview"><div class="c-head">${esc(DB.perfil?.colegio || CONFIG.APP_NAME)} · Carnet institucional</div>
         <div class="c-name">${esc(a.nombre)}</div><div class="c-code">${esc(a.codigo)}</div>
         <div class="c-info"><span>${esc(etiquetaCiclo(a.nivel, a.grado))}</span></div><div class="c-qr" id="carnet-qr"></div></div>`;
-      new QRCode(holder.querySelector("#carnet-qr"), { text: a.codigo, width: 112, height: 112, correctLevel: QRCode.CorrectLevel.M });
+      new QRCode(/** @type {HTMLElement} */ (holder.querySelector("#carnet-qr")), { text: a.codigo, width: 112, height: 112, correctLevel: QRCode.CorrectLevel.M });
       actions.hidden = false;
     }
     root._repaint = () => { lista(); preview(); };
   },
 };
 
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x
+ * @param {number} y
+ * @param {number} w
+ * @param {number} h
+ * @param {number} r
+ */
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
 
 /** Dibuja el carnet en un canvas 560×340 (el QR se genera fuera de pantalla). */
+/**
+ * @param {import("../tipos.d.ts").Alumno} a
+ * @param {{ opaque?: boolean }} [opts]
+ * @returns {Promise<HTMLCanvasElement>}
+ */
 export function carnetCanvas(a, { opaque = false } = {}) {
   return new Promise((resolve) => {
     const canvas = document.createElement("canvas"); canvas.width = 560; canvas.height = 340;
-    const ctx = canvas.getContext("2d");
+    const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
     if (opaque) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 560, 340); } // JPEG no tiene transparencia
     const g = ctx.createLinearGradient(0, 0, 560, 340); g.addColorStop(0, "#16223D"); g.addColorStop(1, "#22335A");
     ctx.fillStyle = g; roundRect(ctx, 0, 0, 560, 340, 24); ctx.fill();
@@ -74,14 +93,14 @@ export function carnetCanvas(a, { opaque = false } = {}) {
   });
 }
 
-const pdfDoc = () => new window.jspdf.jsPDF({ orientation: "landscape", unit: "pt", format: [360, 220] });
+const pdfDoc = () => new /** @type {any} */ (window).jspdf.jsPDF({ orientation: "landscape", unit: "pt", format: [360, 220] });
 
 registerActions({
-  "carnet-pick": (el) => { cq.sel = alumnoPorId(el.dataset.id); document.getElementById("page-root")._repaint(); },
+  "carnet-pick": (/** @type {HTMLElement} */ el) => { cq.sel = alumnoPorId(/** @type {string} */ (el.dataset.id)); /** @type {any} */ (document.getElementById("page-root"))._repaint(); },
   "carnet-png": async () => {
     if (!cq.sel) return;
     const c = await carnetCanvas(cq.sel);
-    await downloadFile(`carnet-${cq.sel.codigo}.png`, await new Promise((r) => c.toBlob(r, "image/png")));
+    await downloadFile(`carnet-${cq.sel.codigo}.png`, await new Promise((r) => c.toBlob((b) => r(/** @type {Blob} */ (b)), "image/png")));
   },
   "carnet-pdf": async () => {
     if (!cq.sel) return;
@@ -89,6 +108,10 @@ registerActions({
     await downloadFile(`carnet-${cq.sel.codigo}.pdf`, pdf.output("blob"));
   },
   "carnet-masivo": () => {
+    /**
+     * @param {string} n
+     * @param {string} g
+     */
     const cuenta = (n, g) => DB.alumnos.filter((a) => (!n || a.nivel === n) && (!g || a.grado === g));
     const m = formModal({
       title: "Descarga masiva de carnets", submitLabel: "Generar PDF",
@@ -110,8 +133,8 @@ registerActions({
         toast("Descarga completada", "success");
       },
     });
-    const nota = document.createElement("p"); nota.className = "muted"; m.el.querySelector(".form-grid").after(nota);
-    function actualiza() { const f = m.el.querySelector("#modal-form").elements; nota.textContent = `${cuenta(f.nivel.value, f.grado.value).length} alumno(s) coinciden con este filtro.`; }
+    const nota = document.createElement("p"); nota.className = "muted"; /** @type {Element} */ (m.el.querySelector(".form-grid")).after(nota);
+    function actualiza() { const f = /** @type {any} */ (m.el.querySelector("#modal-form")).elements; nota.textContent = `${cuenta(f.nivel.value, f.grado.value).length} alumno(s) coinciden con este filtro.`; }
     actualiza();
   },
 });

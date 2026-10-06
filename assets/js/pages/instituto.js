@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * pages/instituto.js — Mi instituto (nombre, código y seguridad del QR)
  */
@@ -9,8 +10,10 @@ import { qrModoEfectivo } from '../qr-seguro.js';
 import { registerActions, formModal, pageHead, toast, icon } from '../ui.js';
 import { esc }           from '../utils.js';
 
+/** @type {HTMLElement} */
 let container;
 
+/** @param {HTMLElement} el */
 async function mount(el) {
   container = el;
   container.innerHTML = pageHead('Mi instituto',
@@ -92,6 +95,7 @@ async function cargar() {
   `;
 }
 
+/** @param {HTMLElement} [btn] */
 async function guardarQrModo(btn) {
   const cid = DB.cid || DB.perfil?.colegio_id;
   if (!cid) {
@@ -99,17 +103,17 @@ async function guardarQrModo(btn) {
     return;
   }
   const sel = document.querySelector('input[name="qr_modo"]:checked');
-  const modo = sel ? sel.value : 'obligatorio';
-  if (btn) btn.disabled = true;
+  const modo = sel ? /** @type {HTMLInputElement} */ (sel).value : 'obligatorio';
+  if (btn) /** @type {HTMLButtonElement} */ (btn).disabled = true;
   try {
     await api.cambiarQrModo(cid, modo);
     if (DB.perfil) DB.perfil.qr_modo = modo;
-    guardarPerfil({ id: DB.userId, email: DB.userEmail }, DB.perfil);
+    guardarPerfil({ id: /** @type {string} */ (DB.userId), email: DB.userEmail }, /** @type {any} */ (DB.perfil));
     toast('Seguridad del QR actualizada', 'success');
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     toast('Error: ' + e.message, 'error');
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) /** @type {HTMLButtonElement} */ (btn).disabled = false;
   }
 }
 

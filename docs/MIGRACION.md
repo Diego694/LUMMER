@@ -140,19 +140,12 @@ flowchart TD
   - Ampliación de `assets/js/tipos.d.ts`: nuevos contratos (`Backend`, `BackendEstudiante`, `SupabaseClient`, `DemoDB`, `LogCliente`, `IntentoPin`, `IntentoLogin`, modales y formularios de UI, tipos de QR seguro, `Window.supabase`).
   - Cobertura de tests unitarios: 5 nuevos tests en `tests/unit.js` para lógica pura tipada (permisos por rol, normalización de roles admin, `qrModoEfectivo`, `codigoApoderado` de 12 caracteres hex, `vocabulario` institucional). Total: 56 tests unitarios pasando.
 
-- **LOTE 3 (Siguiente lote - Páginas pequeñas):**
-  - `assets/js/pages/historial.js` (45 lín)
-  - `assets/js/pages/alertas.js` (52 lín)
-  - `assets/js/pages/solicitudes.js` (62 lín)
-  - `assets/js/pages/migrar.js` (61 lín)
-  - `assets/js/pages/perfil.js` (95 lín)
-  - `assets/js/pages/avisos.js` (90 lín)
-  - `assets/js/pages/periodos.js` (107 lín)
-  - `assets/js/pages/codigo.js` (108 lín)
-  - `assets/js/pages/personal.js` (109 lín)
+- **LOTE 3 (Completado - Páginas pequeñas):**
+  - Páginas tipadas con `// @ts-check`: `historial`, `alertas`, `solicitudes`, `migrar`, `perfil`, `avisos`, `periodos`, `codigo`, `personal`, `calendario`, `carnet`, `consultas`, `cursos` e `instituto` (todas en `assets/js/pages/`).
+  - Sin cambios de comportamiento: solo anotaciones JSDoc, `catch (/** @type {any} */ e)` y casts en la frontera con el DOM y las librerías externas (QRCode, jsPDF). Se añadieron `QRCode` como global en `tipos.d.ts` y `userEmail` en `DBState`; `Perfil.id` pasó a opcional y `cambiarQrModo` a obligatorio en `Backend`.
 
 - **LOTE 4 (Páginas principales, quiosco y puntos de entrada):**
-  - Páginas complejas: `assets/js/pages/registro.js`, `instituciones.js`, `quiosco.js`, `dashboard.js`, `mantenimiento.js`, `sistema.js`, `reportes.js`, `offline.js`, `cursos.js`, `consultas.js`, `carnet.js`, `instituto.js`.
+  - Páginas complejas: `assets/js/pages/registro.js`, `instituciones.js`, `quiosco.js`, `dashboard.js`, `mantenimiento.js`, `sistema.js`, `reportes.js`, `offline.js`.
   - Puntos de entrada: `assets/js/main.js`, `assets/js/estudiante/main.js`, `assets/js/apoderado/main.js`.
 
 ---

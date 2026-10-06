@@ -523,6 +523,7 @@ export interface DBState {
   rol: Rol | string | null;
   perfil: Perfil | null;
   userId: string | null;
+  userEmail?: string;
   alumnos: Alumno[];
   niveles: string[];
   nivelesRaw: Nivel[];
@@ -763,7 +764,7 @@ export interface Api {
   saEntrar(id: string): Promise<any>;
   saAsignarAdmin(id: string, email: string): Promise<any>;
   renombrarInstituto(cid: string, nombre: string): Promise<void>;
-  cambiarQrModo?(cid: string, modo: string): Promise<void>;
+  cambiarQrModo(cid: string, modo: string): Promise<void>;
 
   estadoSolicitud?(token: string): Promise<{ aprobado?: boolean } | null>;
 }
@@ -941,3 +942,9 @@ declare global {
   var supabase: any;
 }
 
+
+// Librerías cargadas por <script> clásico (sin tipos instalados)
+declare global {
+  // eslint-disable-next-line no-var
+  var QRCode: any;
+}
