@@ -233,24 +233,22 @@ fun DiagnosticoScreen(
             titulo = "Diagnóstico del dispositivo",
             subtitulo = "Comprueba que este dispositivo está listo: conexión, hora, servidor y datos.",
             acciones = {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = { copiarInforme() },
-                        modifier = Modifier.defaultMinSize(minHeight = 48.dp)
-                    ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Copiar informe")
-                    }
+                OutlinedButton(
+                    onClick = { copiarInforme() },
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                ) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Copiar informe")
+                }
 
-                    Button(
-                        onClick = { viewModel.ejecutar(cid, ctx.sesion) },
-                        modifier = Modifier.defaultMinSize(minHeight = 48.dp)
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Volver a comprobar")
-                    }
+                Button(
+                    onClick = { viewModel.ejecutar(cid, ctx.sesion) },
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Volver a comprobar")
                 }
             }
         )

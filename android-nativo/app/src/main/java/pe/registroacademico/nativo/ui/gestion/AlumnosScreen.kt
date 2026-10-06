@@ -53,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -303,31 +304,51 @@ fun AlumnosScreen(
             placeholder = "Buscar por nombre, código, apoderado…"
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            val opcionesNivel = listOf(OpcionDropdown("", "Todas las carreras")) +
-                uiState.niveles.map { OpcionDropdown(it.nombre, it.nombre) }
+        val opcionesNivel = listOf(OpcionDropdown("", "Todas las carreras")) +
+            uiState.niveles.map { OpcionDropdown(it.nombre, it.nombre) }
 
-            Box(modifier = Modifier.weight(1f)) {
+        val gradosFiltrados = if (uiState.filtroNivel.isBlank()) {
+            uiState.grados
+        } else {
+            uiState.grados.filter { it.nivel == uiState.filtroNivel }
+        }
+        val opcionesGrado = listOf(OpcionDropdown("", "Todos los ciclos")) +
+            gradosFiltrados.map { OpcionDropdown(it.nombre, CiclosUtils.cicloCorto(it.nombre, it.nivel)) }
+
+        val screenWidth = LocalConfiguration.current.screenWidthDp
+        if (screenWidth >= 600) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    DropdownSelector(
+                        etiqueta = "Carrera",
+                        opciones = opcionesNivel,
+                        seleccion = uiState.filtroNivel,
+                        onSeleccionar = { viewModel.setFiltroNivel(it) }
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    DropdownSelector(
+                        etiqueta = "Ciclo",
+                        opciones = opcionesGrado,
+                        seleccion = uiState.filtroGrado,
+                        onSeleccionar = { viewModel.setFiltroGrado(it) }
+                    )
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 DropdownSelector(
                     etiqueta = "Carrera",
                     opciones = opcionesNivel,
                     seleccion = uiState.filtroNivel,
                     onSeleccionar = { viewModel.setFiltroNivel(it) }
                 )
-            }
-
-            val gradosFiltrados = if (uiState.filtroNivel.isBlank()) {
-                uiState.grados
-            } else {
-                uiState.grados.filter { it.nivel == uiState.filtroNivel }
-            }
-            val opcionesGrado = listOf(OpcionDropdown("", "Todos los ciclos")) +
-                gradosFiltrados.map { OpcionDropdown(it.nombre, CiclosUtils.cicloCorto(it.nombre, it.nivel)) }
-
-            Box(modifier = Modifier.weight(1f)) {
                 DropdownSelector(
                     etiqueta = "Ciclo",
                     opciones = opcionesGrado,

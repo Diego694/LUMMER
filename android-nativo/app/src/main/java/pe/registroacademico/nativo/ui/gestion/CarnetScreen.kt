@@ -177,7 +177,8 @@ fun CarnetScreen(
                     Text(
                         text = "Con QR obligatorio los carnets impresos con QR fijo no se aceptan por cámara; usa NFC/código o pide al estudiante abrir su carnet dinámico en la app.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -383,7 +384,8 @@ fun TarjetaCarnet(
                         color = Color(0xFFE8A33D),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        letterSpacing = 1.sp
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.weight(1f)
                     )
                     Text(
                         text = "CARNET",

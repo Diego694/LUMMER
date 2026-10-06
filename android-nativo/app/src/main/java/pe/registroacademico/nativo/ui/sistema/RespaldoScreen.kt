@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -176,57 +177,111 @@ fun RespaldoScreen(
                     )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            viewModel.exportar(
-                                colegioId = cid,
-                                nombreColegio = ctx.sesion.nombreInstituto,
-                                onSuccess = { json, tablas, reg ->
-                                    ctx.scope.launch {
-                                        ctx.snackbarHostState.showSnackbar("Respaldo generado con éxito ($reg registros)")
+                val isCompact = LocalConfiguration.current.screenWidthDp < 600
+                if (isCompact) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                viewModel.exportar(
+                                    colegioId = cid,
+                                    nombreColegio = ctx.sesion.nombreInstituto,
+                                    onSuccess = { json, tablas, reg ->
+                                        ctx.scope.launch {
+                                            ctx.snackbarHostState.showSnackbar("Respaldo generado con éxito ($reg registros)")
+                                        }
+                                        compartirJson(json)
+                                    },
+                                    onError = { err ->
+                                        ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
                                     }
-                                    compartirJson(json)
-                                },
-                                onError = { err ->
-                                    ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
-                                }
-                            )
-                        },
-                        enabled = !state.exportando,
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
-                    ) {
-                        if (state.exportando) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                                )
+                            },
+                            enabled = !state.exportando,
+                            modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp)
+                        ) {
+                            if (state.exportando) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Generar y compartir JSON")
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.exportar(
+                                    colegioId = cid,
+                                    nombreColegio = ctx.sesion.nombreInstituto,
+                                    onSuccess = { json, _, _ ->
+                                        copiarJson(json)
+                                    },
+                                    onError = { err ->
+                                        ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
+                                    }
+                                )
+                            },
+                            enabled = !state.exportando,
+                            modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Generar y compartir JSON")
+                            Text("Copiar JSON")
                         }
                     }
-
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.exportar(
-                                colegioId = cid,
-                                nombreColegio = ctx.sesion.nombreInstituto,
-                                onSuccess = { json, _, _ ->
-                                    copiarJson(json)
-                                },
-                                onError = { err ->
-                                    ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
-                                }
-                            )
-                        },
-                        enabled = !state.exportando,
-                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Copiar JSON")
+                        Button(
+                            onClick = {
+                                viewModel.exportar(
+                                    colegioId = cid,
+                                    nombreColegio = ctx.sesion.nombreInstituto,
+                                    onSuccess = { json, tablas, reg ->
+                                        ctx.scope.launch {
+                                            ctx.snackbarHostState.showSnackbar("Respaldo generado con éxito ($reg registros)")
+                                        }
+                                        compartirJson(json)
+                                    },
+                                    onError = { err ->
+                                        ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
+                                    }
+                                )
+                            },
+                            enabled = !state.exportando,
+                            modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                        ) {
+                            if (state.exportando) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Generar y compartir JSON")
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.exportar(
+                                    colegioId = cid,
+                                    nombreColegio = ctx.sesion.nombreInstituto,
+                                    onSuccess = { json, _, _ ->
+                                        copiarJson(json)
+                                    },
+                                    onError = { err ->
+                                        ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
+                                    }
+                                )
+                            },
+                            enabled = !state.exportando,
+                            modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Copiar JSON")
+                        }
                     }
                 }
             }

@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -353,39 +354,37 @@ fun CalendarioScreen(
                 SectionCard(
                     titulo = "Feriados y días sin clases",
                     acciones = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = {
-                                    val anioActual = hoy.take(4).toIntOrNull() ?: 2026
-                                    viewModel.cargarFeriadosPeru(
-                                        colegioId = cid,
-                                        anio = anioActual,
-                                        onSuccess = { count ->
-                                            ctx.scope.launch {
-                                                ctx.snackbarHostState.showSnackbar(
-                                                    if (count > 0) "$count feriados cargados para $anioActual"
-                                                    else "Los feriados de $anioActual ya estaban cargados"
-                                                )
-                                            }
-                                        },
-                                        onError = { err ->
-                                            ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
+                        OutlinedButton(
+                            onClick = {
+                                val anioActual = hoy.take(4).toIntOrNull() ?: 2026
+                                viewModel.cargarFeriadosPeru(
+                                    colegioId = cid,
+                                    anio = anioActual,
+                                    onSuccess = { count ->
+                                        ctx.scope.launch {
+                                            ctx.snackbarHostState.showSnackbar(
+                                                if (count > 0) "$count feriados cargados para $anioActual"
+                                                else "Los feriados de $anioActual ya estaban cargados"
+                                            )
                                         }
-                                    )
-                                },
-                                modifier = Modifier.defaultMinSize(minHeight = 48.dp)
-                            ) {
-                                Text("Cargar feriados Perú")
-                            }
+                                    },
+                                    onError = { err ->
+                                        ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
+                                    }
+                                )
+                            },
+                            modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                        ) {
+                            Text("Cargar feriados Perú")
+                        }
 
-                            Button(
-                                onClick = { showDiaModal = true },
-                                modifier = Modifier.defaultMinSize(minHeight = 48.dp)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Agregar fecha")
-                            }
+                        Button(
+                            onClick = { showDiaModal = true },
+                            modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Agregar fecha")
                         }
                     }
                 ) {
@@ -806,64 +805,128 @@ private fun FilaHorario(
     onEditar: () -> Unit,
     onEliminar: (() -> Unit)?
 ) {
+    val isCompact = LocalConfiguration.current.screenWidthDp < 600
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = etiqueta,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                if (horario != null) {
+        if (isCompact) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column {
                     Text(
-                        text = "Inicio: ${horario.horaIngreso} · Puntual hasta $limite · Tardanza ${if (hasta != null) "hasta $hasta" else "sin tope"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium
+                        text = etiqueta,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "${if (desde != null) "Ingreso desde $desde · " else ""}Salida desde ${permanencia / 60}h después del ingreso${if (salida != null) " · fin $salida" else ""}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    Text(
-                        text = if (esGeneral) "Sin definir: se usa 08:00 por defecto" else "Usa el horario general",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (horario != null) {
+                        Text(
+                            text = "Inicio: ${horario.horaIngreso} · Puntual hasta $limite · Tardanza ${if (hasta != null) "hasta $hasta" else "sin tope"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "${if (desde != null) "Ingreso desde $desde · " else ""}Salida desde ${permanencia / 60}h después del ingreso${if (salida != null) " · fin $salida" else ""}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = if (esGeneral) "Sin definir: se usa 08:00 por defecto" else "Usa el horario general",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = onEditar,
+                        modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                    ) {
+                        Text(if (horario != null) "Cambiar" else "Definir")
+                    }
+
+                    if (onEliminar != null) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = onEliminar,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Quitar horario de $etiqueta",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
             }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(
-                    onClick = onEditar,
-                    modifier = Modifier.defaultMinSize(minHeight = 44.dp)
-                ) {
-                    Text(if (horario != null) "Cambiar" else "Definir")
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = etiqueta,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (horario != null) {
+                        Text(
+                            text = "Inicio: ${horario.horaIngreso} · Puntual hasta $limite · Tardanza ${if (hasta != null) "hasta $hasta" else "sin tope"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "${if (desde != null) "Ingreso desde $desde · " else ""}Salida desde ${permanencia / 60}h después del ingreso${if (salida != null) " · fin $salida" else ""}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = if (esGeneral) "Sin definir: se usa 08:00 por defecto" else "Usa el horario general",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
-                if (onEliminar != null) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    IconButton(
-                        onClick = onEliminar,
-                        modifier = Modifier.size(48.dp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(
+                        onClick = onEditar,
+                        modifier = Modifier.defaultMinSize(minHeight = 44.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Quitar horario de $etiqueta",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                        Text(if (horario != null) "Cambiar" else "Definir")
+                    }
+
+                    if (onEliminar != null) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = onEliminar,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Quitar horario de $etiqueta",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }

@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -56,6 +58,7 @@ import pe.registroacademico.nativo.ui.components.SnackbarHelper
 import pe.registroacademico.nativo.ui.components.TipoEstadoBadge
 import pe.registroacademico.nativo.ui.shell.PantallaCtx
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SolicitudesScreen(
     ctx: PantallaCtx,
@@ -201,10 +204,10 @@ fun SolicitudesScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            Row(
+                            FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 OutlinedButton(
                                     onClick = { viewModel.abrirRevision(alumno) },
@@ -219,8 +222,6 @@ fun SolicitudesScreen(
                                     Text("Ver")
                                 }
 
-                                Spacer(modifier = Modifier.width(8.dp))
-
                                 OutlinedButton(
                                     onClick = { viewModel.solicitarRechazo(alumno) },
                                     colors = ButtonDefaults.outlinedButtonColors(
@@ -230,8 +231,6 @@ fun SolicitudesScreen(
                                 ) {
                                     Text("Rechazar")
                                 }
-
-                                Spacer(modifier = Modifier.width(8.dp))
 
                                 Button(
                                     onClick = {

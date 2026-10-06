@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -226,72 +227,138 @@ fun PersonalScreen(
             }
             else -> {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val isCompact = LocalConfiguration.current.screenWidthDp < 600
                     uiState.lista.forEach { p ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = p.nombre ?: p.email ?: "Sin nombre",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    if (!p.email.isNullOrBlank()) {
+                            val rol = p.rol.orEmpty()
+                            val badgeTipo = when {
+                                rol.contains("admin", ignoreCase = true) -> TipoEstadoBadge.AZUL
+                                rol.contains("coord", ignoreCase = true) -> TipoEstadoBadge.AMBAR
+                                else -> TipoEstadoBadge.VERDE
+                            }
+
+                            if (isCompact) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Column {
                                         Text(
-                                            text = p.email,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            text = p.nombre ?: p.email ?: "Sin nombre",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
                                         )
+                                        if (!p.email.isNullOrBlank()) {
+                                            Text(
+                                                text = p.email,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (!p.carrera.isNullOrBlank()) {
+                                            Text(
+                                                text = "Carrera: ${p.carrera}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
-                                    if (!p.carrera.isNullOrBlank()) {
-                                        Text(
-                                            text = "Carrera: ${p.carrera}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        EstadoBadge(texto = rol.ifBlank { "Docente" }, tipo = badgeTipo)
+
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            IconButton(
+                                                onClick = { itemParaEditar = p },
+                                                modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                            ) {
+                                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar acceso de ${p.email}")
+                                            }
+
+                                            IconButton(
+                                                onClick = { itemParaQuitar = p },
+                                                modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "Quitar acceso a ${p.email}",
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
                                     }
                                 }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
+                            } else {
                                 Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    val rol = p.rol.orEmpty()
-                                    val badgeTipo = when {
-                                        rol.contains("admin", ignoreCase = true) -> TipoEstadoBadge.AZUL
-                                        rol.contains("coord", ignoreCase = true) -> TipoEstadoBadge.AMBAR
-                                        else -> TipoEstadoBadge.VERDE
-                                    }
-                                    EstadoBadge(texto = rol.ifBlank { "Docente" }, tipo = badgeTipo)
-
-                                    IconButton(
-                                        onClick = { itemParaEditar = p },
-                                        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar acceso de ${p.email}")
-                                    }
-
-                                    IconButton(
-                                        onClick = { itemParaQuitar = p },
-                                        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Quitar acceso a ${p.email}",
-                                            tint = MaterialTheme.colorScheme.error
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = p.nombre ?: p.email ?: "Sin nombre",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
                                         )
+                                        if (!p.email.isNullOrBlank()) {
+                                            Text(
+                                                text = p.email,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (!p.carrera.isNullOrBlank()) {
+                                            Text(
+                                                text = "Carrera: ${p.carrera}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        EstadoBadge(texto = rol.ifBlank { "Docente" }, tipo = badgeTipo)
+
+                                        IconButton(
+                                            onClick = { itemParaEditar = p },
+                                            modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar acceso de ${p.email}")
+                                        }
+
+                                        IconButton(
+                                            onClick = { itemParaQuitar = p },
+                                            modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Quitar acceso a ${p.email}",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
                                     }
                                 }
                             }

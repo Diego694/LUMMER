@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -209,52 +210,95 @@ fun DocentesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                val isCompact = LocalConfiguration.current.screenWidthDp < 600
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     docentesFiltrados.forEach { docente ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = docente.nombre,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    if (docente.carrera.isNotBlank()) {
+                            val esCoord = docente.rol.contains("coordinador", ignoreCase = true)
+
+                            if (isCompact) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Column {
                                         Text(
-                                            text = "Carrera: ${docente.carrera}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            text = docente.nombre,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        if (docente.carrera.isNotBlank()) {
+                                            Text(
+                                                text = "Carrera: ${docente.carrera}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        EstadoBadge(
+                                            texto = docente.rol,
+                                            tipo = if (esCoord) TipoEstadoBadge.AMBAR else TipoEstadoBadge.VERDE
+                                        )
+
+                                        EstadoBadge(
+                                            texto = if (docente.tieneCuenta) "Con acceso" else "Sin cuenta",
+                                            tipo = if (docente.tieneCuenta) TipoEstadoBadge.AZUL else TipoEstadoBadge.NEUTRAL
                                         )
                                     }
                                 }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
+                            } else {
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    val esCoord = docente.rol.contains("coordinador", ignoreCase = true)
-                                    EstadoBadge(
-                                        texto = docente.rol,
-                                        tipo = if (esCoord) TipoEstadoBadge.AMBAR else TipoEstadoBadge.VERDE
-                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = docente.nombre,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        if (docente.carrera.isNotBlank()) {
+                                            Text(
+                                                text = "Carrera: ${docente.carrera}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
 
-                                    EstadoBadge(
-                                        texto = if (docente.tieneCuenta) "Con acceso" else "Sin cuenta",
-                                        tipo = if (docente.tieneCuenta) TipoEstadoBadge.AZUL else TipoEstadoBadge.NEUTRAL
-                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        EstadoBadge(
+                                            texto = docente.rol,
+                                            tipo = if (esCoord) TipoEstadoBadge.AMBAR else TipoEstadoBadge.VERDE
+                                        )
+
+                                        EstadoBadge(
+                                            texto = if (docente.tieneCuenta) "Con acceso" else "Sin cuenta",
+                                            tipo = if (docente.tieneCuenta) TipoEstadoBadge.AZUL else TipoEstadoBadge.NEUTRAL
+                                        )
+                                    }
                                 }
                             }
                         }

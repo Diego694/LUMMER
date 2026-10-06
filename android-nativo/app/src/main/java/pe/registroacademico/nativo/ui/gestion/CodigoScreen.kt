@@ -51,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -274,26 +275,49 @@ fun CodigoScreen(
                                 )
                             }
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = { copiarAlPortapapeles(codActual, "Código") },
-                                    modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
-                                ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Copiar código")
-                                }
+                            val isCompact = LocalConfiguration.current.screenWidthDp < 600
+                            if (isCompact) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(
+                                        onClick = { copiarAlPortapapeles(codActual, "Código") },
+                                        modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp)
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Copiar código")
+                                    }
 
-                                OutlinedButton(
-                                    onClick = { compartirWhatsApp(codActual) },
-                                    modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                                    OutlinedButton(
+                                        onClick = { compartirWhatsApp(codActual) },
+                                        modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp)
+                                    ) {
+                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("WhatsApp")
+                                    }
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("WhatsApp")
+                                    Button(
+                                        onClick = { copiarAlPortapapeles(codActual, "Código") },
+                                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Copiar código")
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = { compartirWhatsApp(codActual) },
+                                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 48.dp)
+                                    ) {
+                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("WhatsApp")
+                                    }
                                 }
                             }
 

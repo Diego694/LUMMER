@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -153,37 +154,62 @@ fun HistorialScreen(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             )
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                val opcionesTablas = listOf(OpcionDropdown("", "Todas las secciones")) +
-                        TABLAS_MAP.map { (k, v) -> OpcionDropdown(k, v) }
+            val isCompact = LocalConfiguration.current.screenWidthDp < 600
+            val opcionesTablas = listOf(OpcionDropdown("", "Todas las secciones")) +
+                    TABLAS_MAP.map { (k, v) -> OpcionDropdown(k, v) }
+            val opcionesAccion = listOf(
+                OpcionDropdown("", "Todas las acciones"),
+                OpcionDropdown("INSERT", "Creó (INSERT)"),
+                OpcionDropdown("UPDATE", "Modificó (UPDATE)"),
+                OpcionDropdown("DELETE", "Eliminó (DELETE)")
+            )
 
-                DropdownSelector(
-                    etiqueta = "Sección",
-                    opciones = opcionesTablas,
-                    seleccion = filtroTabla,
-                    onSeleccionar = { filtroTabla = it },
-                    modifier = Modifier.weight(1f)
-                )
+            if (isCompact) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    DropdownSelector(
+                        etiqueta = "Sección",
+                        opciones = opcionesTablas,
+                        seleccion = filtroTabla,
+                        onSeleccionar = { filtroTabla = it },
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-                val opcionesAccion = listOf(
-                    OpcionDropdown("", "Todas las acciones"),
-                    OpcionDropdown("INSERT", "Creó (INSERT)"),
-                    OpcionDropdown("UPDATE", "Modificó (UPDATE)"),
-                    OpcionDropdown("DELETE", "Eliminó (DELETE)")
-                )
+                    DropdownSelector(
+                        etiqueta = "Acción",
+                        opciones = opcionesAccion,
+                        seleccion = filtroAccion,
+                        onSeleccionar = { filtroAccion = it },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    DropdownSelector(
+                        etiqueta = "Sección",
+                        opciones = opcionesTablas,
+                        seleccion = filtroTabla,
+                        onSeleccionar = { filtroTabla = it },
+                        modifier = Modifier.weight(1f)
+                    )
 
-                DropdownSelector(
-                    etiqueta = "Acción",
-                    opciones = opcionesAccion,
-                    seleccion = filtroAccion,
-                    onSeleccionar = { filtroAccion = it },
-                    modifier = Modifier.weight(1f)
-                )
+                    DropdownSelector(
+                        etiqueta = "Acción",
+                        opciones = opcionesAccion,
+                        seleccion = filtroAccion,
+                        onSeleccionar = { filtroAccion = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 

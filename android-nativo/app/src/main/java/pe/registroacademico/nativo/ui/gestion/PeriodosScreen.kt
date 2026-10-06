@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -340,35 +341,70 @@ fun PeriodosScreen(
                 // Periodo actual
                 SectionCard(titulo = "Periodo vigente") {
                     val act = state.periodoActivo
+                    val isCompact = LocalConfiguration.current.screenWidthDp < 600
                     if (act != null) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = act.nombre,
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "Desde ${act.inicio}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Button(
-                                onClick = { showCierreModal = true },
-                                modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                        if (isCompact) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.History,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Cerrar periodo y pasar de ciclo")
+                                Column {
+                                    Text(
+                                        text = act.nombre,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Desde ${act.inicio}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Button(
+                                    onClick = { showCierreModal = true },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .defaultMinSize(minHeight = 48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.History,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Cerrar periodo y pasar de ciclo")
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = act.nombre,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Desde ${act.inicio}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Button(
+                                    onClick = { showCierreModal = true },
+                                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.History,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Cerrar periodo y pasar de ciclo")
+                                }
                             }
                         }
                     } else {
@@ -397,6 +433,7 @@ fun PeriodosScreen(
                             icono = Icons.Default.History
                         )
                     } else {
+                        val isCompact = LocalConfiguration.current.screenWidthDp < 600
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             state.periodosPasados.forEach { p ->
                                 Card(
@@ -405,38 +442,74 @@ fun PeriodosScreen(
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                     )
                                 ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = p.nombre,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Text(
-                                                text = "Inicio: ${p.inicio} · Cierre: ${p.fin ?: p.cerradoEn?.take(10) ?: "—"}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                    if (isCompact) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = p.nombre,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Text(
+                                                    text = "Inicio: ${p.inicio} · Cierre: ${p.fin ?: p.cerradoEn?.take(10) ?: "—"}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+
+                                            val movidos = p.resumen?.get("movidos")?.jsonPrimitive?.content ?: "0"
+                                            val egresados = p.resumen?.get("egresados")?.jsonPrimitive?.content ?: "0"
+
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                pe.registroacademico.nativo.ui.components.EstadoBadge(
+                                                    texto = "Pasaron: $movidos",
+                                                    tipo = pe.registroacademico.nativo.ui.components.TipoEstadoBadge.VERDE
+                                                )
+                                                pe.registroacademico.nativo.ui.components.EstadoBadge(
+                                                    texto = "Egresaron: $egresados",
+                                                    tipo = pe.registroacademico.nativo.ui.components.TipoEstadoBadge.AZUL
+                                                )
+                                            }
                                         }
+                                    } else {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = p.nombre,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Text(
+                                                    text = "Inicio: ${p.inicio} · Cierre: ${p.fin ?: p.cerradoEn?.take(10) ?: "—"}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
 
-                                        val movidos = p.resumen?.get("movidos")?.jsonPrimitive?.content ?: "0"
-                                        val egresados = p.resumen?.get("egresados")?.jsonPrimitive?.content ?: "0"
+                                            val movidos = p.resumen?.get("movidos")?.jsonPrimitive?.content ?: "0"
+                                            val egresados = p.resumen?.get("egresados")?.jsonPrimitive?.content ?: "0"
 
-                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            pe.registroacademico.nativo.ui.components.EstadoBadge(
-                                                texto = "Pasaron: $movidos",
-                                                tipo = pe.registroacademico.nativo.ui.components.TipoEstadoBadge.VERDE
-                                            )
-                                            pe.registroacademico.nativo.ui.components.EstadoBadge(
-                                                texto = "Egresaron: $egresados",
-                                                tipo = pe.registroacademico.nativo.ui.components.TipoEstadoBadge.AZUL
-                                            )
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                pe.registroacademico.nativo.ui.components.EstadoBadge(
+                                                    texto = "Pasaron: $movidos",
+                                                    tipo = pe.registroacademico.nativo.ui.components.TipoEstadoBadge.VERDE
+                                                )
+                                                pe.registroacademico.nativo.ui.components.EstadoBadge(
+                                                    texto = "Egresaron: $egresados",
+                                                    tipo = pe.registroacademico.nativo.ui.components.TipoEstadoBadge.AZUL
+                                                )
+                                            }
                                         }
                                     }
                                 }

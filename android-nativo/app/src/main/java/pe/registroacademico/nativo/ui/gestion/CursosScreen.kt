@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -206,73 +207,139 @@ fun CursosScreen(
                 )
             }
             else -> {
+                val isCompact = LocalConfiguration.current.screenWidthDp < 600
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     uiState.cursos.forEach { curso ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = curso.nombre,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    val detalleCiclo = if (!curso.grado.isNullOrBlank()) {
-                                        CiclosUtils.etiquetaCiclo(curso.nivel, curso.grado)
-                                    } else "${curso.nivel} · todos los ciclos"
+                            val activo = curso.activo != false
+                            val detalleCiclo = if (!curso.grado.isNullOrBlank()) {
+                                CiclosUtils.etiquetaCiclo(curso.nivel, curso.grado)
+                            } else "${curso.nivel} · todos los ciclos"
 
-                                    Text(
-                                        text = detalleCiclo,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    if (!curso.docente.isNullOrBlank()) {
+                            if (isCompact) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Column {
                                         Text(
-                                            text = "Docente: ${curso.docente}",
+                                            text = curso.nombre,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = detalleCiclo,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
+                                        if (!curso.docente.isNullOrBlank()) {
+                                            Text(
+                                                text = "Docente: ${curso.docente}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        EstadoBadge(
+                                            texto = if (activo) "Activo" else "Inactivo",
+                                            tipo = if (activo) TipoEstadoBadge.VERDE else TipoEstadoBadge.NEUTRAL
+                                        )
+
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            IconButton(
+                                                onClick = { cursoParaEditar = curso },
+                                                modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                            ) {
+                                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar ${curso.nombre}")
+                                            }
+
+                                            IconButton(
+                                                onClick = { cursoParaEliminar = curso },
+                                                modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "Eliminar ${curso.nombre}",
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
                                     }
                                 }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
+                            } else {
                                 Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    val activo = curso.activo != false
-                                    EstadoBadge(
-                                        texto = if (activo) "Activo" else "Inactivo",
-                                        tipo = if (activo) TipoEstadoBadge.VERDE else TipoEstadoBadge.NEUTRAL
-                                    )
-
-                                    IconButton(
-                                        onClick = { cursoParaEditar = curso },
-                                        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar ${curso.nombre}")
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = curso.nombre,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = detalleCiclo,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        if (!curso.docente.isNullOrBlank()) {
+                                            Text(
+                                                text = "Docente: ${curso.docente}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
 
-                                    IconButton(
-                                        onClick = { cursoParaEliminar = curso },
-                                        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Eliminar ${curso.nombre}",
-                                            tint = MaterialTheme.colorScheme.error
+                                        EstadoBadge(
+                                            texto = if (activo) "Activo" else "Inactivo",
+                                            tipo = if (activo) TipoEstadoBadge.VERDE else TipoEstadoBadge.NEUTRAL
                                         )
+
+                                        IconButton(
+                                            onClick = { cursoParaEditar = curso },
+                                            modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar ${curso.nombre}")
+                                        }
+
+                                        IconButton(
+                                            onClick = { cursoParaEliminar = curso },
+                                            modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Eliminar ${curso.nombre}",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
                                     }
                                 }
                             }

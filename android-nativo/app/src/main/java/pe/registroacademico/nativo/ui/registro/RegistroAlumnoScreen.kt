@@ -3,6 +3,8 @@ package pe.registroacademico.nativo.ui.registro
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -63,6 +65,7 @@ import pe.registroacademico.nativo.ui.components.SnackbarHelper
 import pe.registroacademico.nativo.ui.components.TipoEstadoBadge
 import pe.registroacademico.nativo.ui.shell.PantallaCtx
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RegistroAlumnoScreen(
     ctx: PantallaCtx,
@@ -153,11 +156,12 @@ fun RegistroAlumnoScreen(
         }
 
         // Filtros de asistencia
-        Row(
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             FilterChip(
                 selected = uiState.filtroAsistencia == "todos",
