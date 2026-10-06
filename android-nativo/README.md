@@ -9,9 +9,10 @@ Este módulo reside de forma independiente en `android-nativo/` y reemplaza prog
 ## 1. Requisitos del entorno de compilación
 
 - **JDK:** Java 21 (configurado en `JAVA_HOME`).
-- **Gradle:** 8.9 (sin wrapper en el repositorio; el orquestador usa su distribución local).
-- **Android SDK:** `platforms;android-34` y `build-tools;34.0.0` (configurado en `ANDROID_HOME`).
-- **Nivel de SDK:** `compileSdk 34`, `targetSdk 34`, `minSdk 24`.
+- **Gradle:** 9.6.0 (sin wrapper en el repositorio; el orquestador usa su distribución local).
+- **Android SDK:** `platforms;android-37.0` y `build-tools;37.0.0` (configurado en `ANDROID_HOME`).
+- **Nivel de SDK:** `compileSdk 37`, `targetSdk 37`, `minSdk 24`.
+- **Toolchain:** Android Gradle Plugin 9.4.1 (Kotlin 2.4.20 integrado), KSP 2.3.12, Hilt 2.60.1, Compose BOM 2026.09.00, Supabase BOM 3.8.0, Room 2.8.5, WorkManager 2.12.0, DataStore 1.2.1.
 
 ---
 
