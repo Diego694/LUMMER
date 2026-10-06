@@ -213,7 +213,7 @@ body.rol-limitado [data-admin-link]{display:none!important}
 .matriz table{font-size:12.5px;border-collapse:separate;border-spacing:2px}.matriz th.c,.matriz td.c{text-align:center;padding:7px 5px;min-width:30px;border-radius:5px}.matriz .sticky{position:sticky;left:0;background:var(--panel);z-index:2;min-width:190px;box-shadow:1px 0 0 var(--line);transition:box-shadow .15s}
 .matriz.is-scrolled .sticky{box-shadow:5px 0 12px -2px rgba(0,0,0,.25),1px 0 0 var(--line)}
 .celda-P{background:var(--teal-soft);color:var(--teal);font-weight:700}.celda-T{background:var(--amber-soft);color:var(--amber-dark);font-weight:700}.celda-J{background:var(--blue-soft);color:var(--chart-navy);font-weight:700}.celda-F{background:var(--red-soft);color:var(--red);font-weight:700}
-.stack{white-space:pre-wrap;word-break:break-word;font:11.5px 'JetBrains Mono',monospace;background:var(--hover-bg);padding:10px;border-radius:8px;max-height:220px;overflow:auto;margin:8px 0 0}
+.err-stack{white-space:pre-wrap;word-break:break-word;font:11.5px 'JetBrains Mono',monospace;background:var(--hover-bg);padding:10px;border-radius:8px;max-height:220px;overflow:auto;margin:8px 0 0}
 .plano{margin:8px 0 0;padding-left:20px;line-height:1.6}.plano li{margin-bottom:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .carrera-card{margin-bottom:16px}.carrera-card .card-head{padding:16px 20px;margin:0;border-bottom:1px solid var(--line)}
