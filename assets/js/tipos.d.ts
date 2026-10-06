@@ -970,6 +970,10 @@ export interface BackendEstudiante {
   estadoSolicitud(token: string): Promise<EstadoSolicitudResult | null>;
   subirFoto(user: { id: string }, blob: Blob): Promise<{ foto_path?: string; foto_data?: string } | Alumno>;
   fotoUrl(alumno: { id?: string; foto_path?: string | null; foto_data?: string | null }): Promise<string | null>;
+  aulaCursos(user: { id: string }): Promise<Curso[]>;
+  aulaMateriales(cursoId: string): Promise<CursoMaterial[]>;
+  aulaActividades(cursoId: string): Promise<CursoActividad[]>;
+  aulaUrlArchivo(path: string): Promise<string>;
 }
 
 declare global {

@@ -6,6 +6,7 @@ import { bindActions, confirmDialog, icon, openModal, registerActions, toast } f
 import { ahora, cicloCorto, compararCiclos, downloadFile, esc, etiquetaCiclo, initials, sincronizarReloj } from "../utils.js";
 import { enviarPendientes, iniciarLogErrores } from "../errlog.js";
 import { activarAvisos, desactivarAvisos, detenerVigilancia, pedirPermisoNotificacion, permisoNotificacion, vigilarAprobacion } from "../notificaciones.js";
+import { iniciarAulaEstudiante } from "./aula.js";
 import { VENTANA_MS, generarQR, qrModoEfectivo, segundosRestantes } from "../qr-seguro.js";
 
 const $ = (/** @type {any} */ s, r = document) => r.querySelector(s);
@@ -243,6 +244,7 @@ async function vistaCarnet(recienCreado = false) {
     <div class="est-actions">
       <button class="btn btn-primary" data-action="foto">${icon("camera", 16)} ${a.foto_path ? "Cambiar foto" : "Agregar foto"}</button>
       <button class="btn btn-outline" data-action="descargar">${icon("download", 16)} Descargar carnet</button>
+      ${aprobado ? `<button class="btn btn-teal" data-action="est-aula">${icon("book", 16)} Mis cursos</button>` : ""}
     </div>
     ${a.codigo_apoderado ? `<section class="est-card ap-codigo"><strong>Código para tu apoderado</strong><div class="codigo-box"><code id="ap-code">${esc(a.codigo_apoderado.replace(/(.{4})(?=.)/g, "$1-"))}</code></div>
       <p class="muted" style="margin:6px 0 10px">Con este código tu apoderado puede ver tu asistencia, sin cuenta.</p>
@@ -433,6 +435,8 @@ async function carnetCanvas(/** @type {any} */ a, /** @type {any} */ colegio, mo
   }
   return c;
 }
+
+iniciarAulaEstudiante({ api, get user() { return user; }, root, volver: () => vistaCarnet() });
 
 registerActions({
   theme: () => setTheme(tema === "dark" ? "light" : "dark"),

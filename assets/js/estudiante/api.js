@@ -6,6 +6,7 @@
 import { CONFIG, DEMO_SCHOOL_CODE, isDemoMode } from "../config.js";
 import { buildDemoDB } from "../demo-data.js";
 import { uid } from "../utils.js";
+import { materialesDe, actividadesDe, urlArchivoAula } from "../api-aula.js";
 
 /** @typedef {import('../tipos.d.ts').Alumno} Alumno */
 /** @typedef {import('../tipos.d.ts').BackendEstudiante} BackendEstudiante */
@@ -181,6 +182,20 @@ class DemoEstudiante {
     const a = db.alumnos.find((x) => x.user_id === user.id);
     return a ? { alumno: a, colegio: db.colegio.nombre, qr_modo: db.colegio.qr_modo || "obligatorio" } : null;
   }
+  /* Aula (migración 013): cursos de su carrera y ciclo, con el material publicado */
+  /** @param {{ id: string }} user */
+  async aulaCursos(user) {
+    const db = this.load();
+    const a = db.alumnos.find((x) => x.user_id === user.id);
+    if (!a) return [];
+    return (db.cursos || []).filter((c) => c.activo !== false && c.nivel === a.nivel && (!c.grado || c.grado === a.grado));
+  }
+  /** @param {string} cursoId */
+  async aulaMateriales(cursoId) { const db = /** @type {any} */ (this.load()); return (db.curso_materiales || []).filter((/** @type {any} */ m) => m.curso_id === cursoId && m.publicado !== false); }
+  /** @param {string} cursoId */
+  async aulaActividades(cursoId) { const db = /** @type {any} */ (this.load()); return (db.curso_actividades || []).filter((/** @type {any} */ m) => m.curso_id === cursoId && m.publicado !== false); }
+  /** @returns {Promise<string>} */
+  async aulaUrlArchivo() { throw err("En el modo demostración los archivos no se guardan."); }
   /**
    * @param {{ id: string }} user
    * @param {Blob} blob
@@ -300,6 +315,18 @@ class SupabaseEstudiante {
   async tokenAvisos() { try { return await this.#rpc("token_avisos", {}); } catch { return null; } }
   /** @param {string} token */
   async estadoSolicitud(token) { const { data, error } = await this.sb.rpc("estado_solicitud", { p_token: token }); return error ? null : data; }
+  /* Aula (migración 013): la política RLS solo deja ver los cursos de su carrera y ciclo */
+  async aulaCursos() {
+    const { data, error } = await this.sb.from("cursos").select("*").eq("activo", true).order("nombre");
+    if (error) throw err(error.message, error.code);
+    return data;
+  }
+  /** @param {string} cursoId */
+  aulaMateriales(cursoId) { return materialesDe(this.sb, cursoId); }
+  /** @param {string} cursoId */
+  aulaActividades(cursoId) { return actividadesDe(this.sb, cursoId); }
+  /** @param {string} path */
+  aulaUrlArchivo(path) { return urlArchivoAula(this.sb, path); }
   /**
    * @param {{ id: string }} user
    * @param {Blob} blob

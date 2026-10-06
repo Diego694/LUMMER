@@ -45,3 +45,11 @@ body.est{min-height:100vh;display:flex;flex-direction:column}
 .link-btn{background:none;border:0;padding:0;font:inherit;text-decoration:underline;cursor:pointer}
 .link-peligro{color:#C1443A}
 .captcha{display:flex;justify-content:center;margin:10px 0}
+.aula-est-lista{display:grid;gap:10px;margin-top:14px}
+.aula-est-curso{display:flex;flex-direction:column;gap:2px;text-align:start;padding:14px 16px;min-height:44px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink)}
+.aula-est-curso small{color:var(--ink-soft)}
+.aula-est-curso:hover{border-color:var(--navy)}
+.aula-est-h{font-size:16px;margin:18px 0 8px}.aula-est-tema{font-size:13px;color:var(--ink-soft);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.aula-est-items{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.aula-est-item{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.aula-est-item small{display:block;color:var(--ink-soft)}.aula-est-item p{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}

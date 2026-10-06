@@ -15,7 +15,7 @@ const SHELL = [
   "assets/js/marca.js", "assets/js/pages/instituciones.js", "assets/js/pages/instituto.js",
   // Portal del estudiante
   "estudiante/", "estudiante/manifest.webmanifest", "apoderado/", "assets/js/apoderado/main.js", "assets/css/estudiante.css", "assets/css/diseno.css",
-  "assets/js/estudiante/main.js", "assets/js/estudiante/api.js",
+  "assets/js/estudiante/main.js", "assets/js/estudiante/api.js", "assets/js/estudiante/aula.js",
 ];
 const CDN = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
 
