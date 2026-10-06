@@ -24,7 +24,7 @@ export const CONFIG = {
   SUPABASE_ANON_KEY: OVERRIDE ? OVERRIDE.key : KEY_PRODUCCION,
 
   APP_NAME: "Sistema de Registro Académico",
-  // Enlace de descarga del APK "Mi Carnet Institucional" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.
+  // Enlace de descarga del APK "Lummer Estudiante" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.
   APK_ESTUDIANTE_URL: "https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/download/apk-latest/carnet-estudiante.apk",
   // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
   APP_VERSION: "4.0.0",

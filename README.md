@@ -114,7 +114,7 @@ Cada institución educativa opera de forma independiente dentro de la base de da
 El docente inicia sesión en su dispositivo y accede a *Registro por QR* para escanear los carnets de los alumnos al ingreso, o activa el *Modo quiosco* en el aula para autoservicio. Si imparte una materia específica, selecciona el curso activo antes de registrar. Durante la jornada, puede asentar licencias o permisos en *Justificaciones* y revisar las inasistencias en *Avisos a apoderados* para enviar recordatorios a las familias en un solo paso.
 
 ### Uso del estudiante
-El estudiante ingresa a *Mi Carnet Institucional* desde la web o la app Lite, crea su cuenta y escribe el código de su instituto. Una vez aprobada su solicitud, accede a su carnet con código QR dinámico que renueva su firma cada 30 segundos para identificarse en puerta. Además, puede consultar su historial de asistencia y obtener el código de consulta para su apoderado.
+El estudiante ingresa a *Lummer Estudiante* desde la web o la app Lite, crea su cuenta y escribe el código de su instituto. Una vez aprobada su solicitud, accede a su carnet con código QR dinámico que renueva su firma cada 30 segundos para identificarse en puerta. Además, puede consultar su historial de asistencia y obtener el código de consulta para su apoderado.
 
 ## Aplicaciones y descargas
 
@@ -124,7 +124,7 @@ El estudiante ingresa a *Mi Carnet Institucional* desde la web o la app Lite, cr
 | App Android Nativa | Android 7.0 o superior (probada en Android 17); Kotlin, Compose, CameraX y Room | [Descargar APK (`app-latest`)](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/app-latest) |
 | App Android Lite | Android 7.0 o superior; versión ligera basada en WebView para docentes | [Descargar APK (`apk-latest`)](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) |
 | Programa de PC Windows | Windows 10 o superior; instalador o portable con modo online y base local | [Descargar EXE (`pc-latest`)](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/pc-latest) |
-| Portal del estudiante (*Mi Carnet Institucional*) | Acceso web para estudiantes y aplicación móvil dedicada | [Portal web](https://diego694.github.io/Sistema-de-control-de-asistencia/estudiante/) · [Descargar APK](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) |
+| Portal del estudiante (*Lummer Estudiante*) | Acceso web para estudiantes y aplicación móvil dedicada | [Portal web](https://diego694.github.io/Sistema-de-control-de-asistencia/estudiante/) · [Descargar APK](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) |
 
 Para instalar archivos APK en Android por primera vez, es necesario habilitar la opción de fuentes desconocidas en los ajustes del sistema. En Windows, si el filtro SmartScreen muestra una advertencia al abrir el ejecutable debido a la ausencia de un certificado comercial, seleccione *Más información* y confirme pulsando *Ejecutar de todas formas*.
 

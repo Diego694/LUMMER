@@ -19,7 +19,7 @@
 | Asistencia por Alumno | Historial de 30 días hábiles, % de asistencia y CSV. |
 | Carnet | Vista previa; PNG; PDF; *Descarga masiva* por carrera/ciclo. |
 | Alumnos | Alta/edición/baja, búsqueda sin tildes, paginación e **Importar CSV**. Accesos directos a carnet e historial. |
-| **Código de registro** | Genera, copia y comparte (WhatsApp, QR del portal) el código que los estudiantes usan en *Mi Carnet Institucional*. También puedes escribir un código propio. |
+| **Código de registro** | Genera, copia y comparte (WhatsApp, QR del portal) el código que los estudiantes usan en *Lummer Estudiante*. También puedes escribir un código propio. |
 | **Carreras** | Carreras o programas de estudio (por ejemplo MECANICA ELECTRICA, APSTI). |
 | **Ciclos y salones** | Cada ciclo/salón es independiente. **Crear ciclos** genera varios de una vez (ver abajo). |
 | Docentes · Comunicados | Mantenimiento de personal y avisos. |

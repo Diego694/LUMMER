@@ -15,7 +15,7 @@ Un solo programa (`Registro-Academico-PC-Portable.exe`, o el instalador) para do
 Cambia de modo con el selector **Modo online | Modo local** de la pantalla de inicio o con el botón del menú lateral. **Siempre pide confirmación.** Cada modo guarda sus datos por separado: **al cambiar no se borra nada**, y lo que ingresaste en local sigue ahí cuando vuelvas.
 
 ## Datos y respaldo
-Los datos locales viven en el perfil del programa (`%APPDATA%\Registro Academico`). Haz copias con **Sistema → Respaldo** (JSON). Los datos locales **no se sincronizan solos con Supabase**: son una base aparte.
+Los datos locales viven en el perfil del programa (`%APPDATA%\Lummer`). Haz copias con **Sistema → Respaldo** (JSON). Los datos locales **no se sincronizan solos con Supabase**: son una base aparte.
 
 ## Qué incluye sin internet
 La web completa y sus librerías (gráficos, QR, lector de cámara, PDF, CSV). Los avisos por WhatsApp abren el navegador y sí requieren internet.

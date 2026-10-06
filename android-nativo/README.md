@@ -8,7 +8,7 @@ Este módulo reside de forma independiente en `android-nativo/` y reproduce la t
 > **Estado del proyecto:** **Completa y lista para release (v4.0.0)**.
 > - Probada satisfactoriamente en hardware real en todas sus pantallas y flujos.
 > - Se distribuye como la **Release Principal** en GitHub (`app-latest` / `registro-academico.apk`) para el perfil **Docente** (`pe.registroacademico.nativo.docente`).
-> - El perfil **Estudiante** aún no está portado a Compose; los estudiantes continúan accediendo vía el portal web y la app Lite («Mi Carnet Institucional»).
+> - El perfil **Estudiante** aún no está portado a Compose; los estudiantes continúan accediendo vía el portal web y la app Lite («Lummer Estudiante»).
 > - La app anterior WebView (`android/`) se mantiene como versión **Lite** y convive instalada sin interferencias.
 
 ---
