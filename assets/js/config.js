@@ -24,10 +24,10 @@ export const CONFIG = {
   // Enlace de descarga del APK "Mi Carnet Institucional" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.
   APK_ESTUDIANTE_URL: "https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/download/apk-latest/carnet-estudiante.apk",
   // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
-  APP_VERSION: "3.1.2",
-  // QR del carnet: "off" = QR estático (el código del alumno) · "opcional" = el estudiante muestra un QR firmado que cambia
-  // cada 30 s y el docente acepta ambos · "obligatorio" = la cámara solo acepta QR dinámicos (NFC y código manual siguen valiendo).
-  QR_MODO: "off",
+  APP_VERSION: "3.2.0",
+  // QR del carnet: valor de respaldo si la institución no tiene uno configurado (manda la configuración de cada institución en Mi instituto).
+  // "off" = QR estático (código del alumno) · "opcional" = dinámico o estático · "obligatorio" = solo dinámico (NFC y código manual siguen valiendo).
+  QR_MODO: "obligatorio",
   // Verificación anti-bots en el registro de estudiantes (Cloudflare Turnstile). Vacío = desactivada. Requiere activarla
   // también en Supabase → Authentication → Attack Protection (ver docs/SEGURIDAD.md).
   TURNSTILE_SITEKEY: "",

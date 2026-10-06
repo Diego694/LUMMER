@@ -7,7 +7,7 @@ import { badge, emptyState, icon, pageHead, registerActions, toast } from "../ui
 import { horarioDe } from "../calendario.js";
 import { decidirAccion, esTardanza } from "../stats.js";
 import { emitir, guardarAsistencias, red, registrarEnvio } from "../sync.js";
-import { verificarQR } from "../qr-seguro.js";
+import { qrModoEfectivo, verificarQR } from "../qr-seguro.js";
 import { mostrarAlertaAsistencia } from "../alerta.js";
 import { cargarCursoHoy, cursosActivos, etiquetaCurso, registrarEnCurso } from "./cursos.js";
 import { ahora, censurarNombre, debounce, esErrorRed, esc, etiquetaCiclo, initials, norm, nowHHMM, todayStr } from "../utils.js";
@@ -144,7 +144,7 @@ const MOTIVO_QR = {
 };
 
 /**
- * Del texto leído (QR, NFC o código) al alumno, validando el QR dinámico según CONFIG.QR_MODO.
+ * Del texto leído (QR, NFC o código) al alumno, validando el QR dinámico según DB.perfil.qr_modo.
  * Devuelve { alumno } o { rechazo: { motivo, mensaje, alumno? } }.
  */
 export async function resolverAlumno(texto, origen = "manual") {
@@ -152,7 +152,7 @@ export async function resolverAlumno(texto, origen = "manual") {
   if (origen === "qr") {
     const v = await verificarQR(texto, alumnoPorCodigo, ahora().getTime());
     if (v.estatico) {
-      if (CONFIG.QR_MODO === "obligatorio" && alumnoPorCodigo(texto)) return { rechazo: { motivo: "estatico", mensaje: "QR estático no permitido: el estudiante debe abrir su carnet en la app (se puede usar NFC o código manual)." } };
+      if (qrModoEfectivo(DB.perfil?.qr_modo) === "obligatorio" && alumnoPorCodigo(texto)) return { rechazo: { motivo: "estatico", mensaje: "QR estático no permitido: el estudiante debe abrir su carnet en la app (se puede usar NFC o código manual)." } };
     } else if (!v.ok) return { rechazo: { motivo: v.motivo, mensaje: MOTIVO_QR[v.motivo], alumno: v.alumno || null } };
     else codigo = v.alumno.codigo;
   }

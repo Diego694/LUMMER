@@ -3,6 +3,7 @@ import { CONFIG } from "../config.js";
 import { DB, alumnoPorId, opcionesGrado, opcionesNivel } from "../state.js";
 import { emptyState, formModal, icon, pageHead, registerActions, toast } from "../ui.js";
 import { debounce, downloadFile, esc, etiquetaCiclo, initials, norm } from "../utils.js";
+import { qrModoEfectivo } from "../qr-seguro.js";
 
 let cq = { q: "", sel: null };
 
@@ -10,8 +11,12 @@ export const carnetPage = {
   id: "carnet", title: "Carnet", icon: "idCard", group: "Gestión",
   render(root, params = {}) {
     if (params.id) cq.sel = alumnoPorId(params.id) || cq.sel;
+    const avisoObligatorio = qrModoEfectivo(DB.perfil?.qr_modo) === "obligatorio"
+      ? `<div class="demo-hint" role="note" style="margin:0 0 16px;display:flex;align-items:center;gap:10px">${icon("info", 18)} <span>Con QR obligatorio los carnets impresos con QR fijo no se aceptan por cámara; usa NFC/código o pide al estudiante abrir su carnet en la app.</span></div>`
+      : "";
     root.innerHTML = `
       ${pageHead("Carnet", "Genera el carnet con código QR de cada alumno.", `<button class="btn btn-navy" data-action="carnet-masivo">${icon("download", 16)} Descarga masiva</button>`)}
+      ${avisoObligatorio}
       <div class="grid-2 split">
         <section class="card flush"><div class="pad"><div class="search"><span class="search-ic">${icon("search", 16)}</span><input class="input" id="carnet-q" placeholder="Buscar alumno…" value="${esc(cq.q)}" aria-label="Buscar alumno"></div></div><div id="carnet-list" class="pick-list"></div></section>
         <section class="card center-col"><div id="carnet-preview"></div><div class="btn-row center" id="carnet-actions" hidden>
@@ -55,9 +60,8 @@ export function carnetCanvas(a, { opaque = false } = {}) {
     ctx.fillStyle = "rgba(232,163,61,.16)"; ctx.beginPath(); ctx.arc(540, 20, 110, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#E8A33D"; ctx.font = "bold 15px Arial";
     ctx.fillText(`${(DB.perfil?.colegio || CONFIG.APP_NAME).toUpperCase()} · CARNET INSTITUCIONAL`.slice(0, 54), 30, 44);
-    ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 26px Arial"; ctx.fillText(a.nombre.slice(0, 32), 30, 100);
-    ctx.fillStyle = "#B8C2DC"; ctx.font = "16px monospace"; ctx.fillText(a.codigo, 30, 128);
-    ctx.fillStyle = "#CFD7EA"; ctx.font = "14px Arial"; ctx.fillText(etiquetaCiclo(a.nivel, a.grado), 30, 160);
+    ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 26px Arial"; ctx.fillText(a.nombre.slice(0, 32), 30, 104);
+    ctx.fillStyle = "#CFD7EA"; ctx.font = "14px Arial"; ctx.fillText(etiquetaCiclo(a.nivel, a.grado), 30, 144);
     const tmp = document.createElement("div"); tmp.style.cssText = "position:absolute;left:-9999px";
     document.body.appendChild(tmp);
     new QRCode(tmp, { text: a.codigo, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });

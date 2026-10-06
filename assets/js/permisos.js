@@ -18,7 +18,7 @@ export const esSuper = () => DB.perfil?.superadmin === true;
 export const ACCIONES_ADMIN = [
   "nivel-new", "nivel-del", "grado-new", "grado-del", "ciclos-new", "al-new", "al-edit", "al-del", "al-import", "al-revisar", "sol-ver", "sol-ok", "sol-no", "sol-actualizar", "of-ver", "of-exportar", "of-importar",
   "co-del", "cd-generar", "cd-regenerar", "pers-crear", "pers-existente", "pers-pass", "pers-edit", "pers-del", "curso-new", "curso-edit", "curso-del",
-  "just-del", "err-borrar", "respaldo-json", "respaldo-csv-alumnos", "respaldo-csv-asistencias", "inst-nombre-cambiar",
+  "just-del", "err-borrar", "respaldo-json", "respaldo-csv-alumnos", "respaldo-csv-asistencias", "inst-nombre-cambiar", "inst-qr-guardar",
 ];
 const SET = new Set(ACCIONES_ADMIN);
 export const puede = (accion) => esAdmin() || !SET.has(accion);

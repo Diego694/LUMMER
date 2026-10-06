@@ -408,4 +408,34 @@ begin
   perform t.eq((select nombre from colegios where id = 'bbbbbbbb-0000-0000-0000-000000000001'), 'Instituto B Renombrado', 'admin normal renombra su propio colegio');
 end $$;
 
+-- ===== 22. QR dinámico por institución =====
+do $$ begin
+  -- (a) valor por defecto 'obligatorio' en colegios existentes
+  perform t.root();
+  perform t.eq((select qr_modo from colegios where id = 'aaaaaaaa-0000-0000-0000-000000000001'), 'obligatorio', 'valor por defecto obligatorio en colegios existentes');
+
+  -- (b) valor inválido ('xyz') falla
+  perform t.falla($q$update colegios set qr_modo = 'xyz' where id = 'aaaaaaaa-0000-0000-0000-000000000001'$q$, 'valor invalido de qr_modo falla check');
+
+  -- Asegurar que admin A está en su colegio original y que est1 está vinculado a un alumno de ese colegio
+  update perfiles set colegio_id = 'aaaaaaaa-0000-0000-0000-000000000001' where id = '00000000-0000-0000-0000-0000000000a1';
+  update alumnos set user_id = '00000000-0000-0000-0000-0000000000e1' where id = '11111111-0000-0000-0000-000000000001';
+
+  -- (c) el admin cambia el modo de SU colegio a 'opcional' y mi_registro del estudiante lo refleja
+  perform t.act('00000000-0000-0000-0000-0000000000a1');
+  perform t.eq(t.dml($q$update colegios set qr_modo = 'opcional' where id = 'aaaaaaaa-0000-0000-0000-000000000001'$q$)::text, '1', 'admin cambia el modo de su colegio a opcional');
+  perform t.act('00000000-0000-0000-0000-0000000000e1');
+  perform t.eq((public.mi_registro()->>'qr_modo'), 'opcional', 'mi_registro del estudiante refleja qr_modo');
+
+  -- (d) un docente NO cambia el modo (dml devuelve 0 filas o falla)
+  perform t.act('00000000-0000-0000-0000-0000000000d1');
+  perform t.eq(t.dml($q$update colegios set qr_modo = 'obligatorio' where id = 'aaaaaaaa-0000-0000-0000-000000000001'$q$)::text, '0', 'docente no cambia qr_modo');
+
+  -- (e) el admin de otro colegio no cambia el modo del colegio ajeno
+  perform t.act('00000000-0000-0000-0000-0000000000a2');
+  perform t.eq(t.dml($q$update colegios set qr_modo = 'obligatorio' where id = 'aaaaaaaa-0000-0000-0000-000000000001'$q$)::text, '0', 'admin de otro colegio no cambia qr_modo ajeno');
+
+  perform t.root();
+end $$;
+
 select 'TODAS LAS PRUEBAS DE SEGURIDAD PASARON' as resultado;

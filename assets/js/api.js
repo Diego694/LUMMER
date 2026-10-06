@@ -49,7 +49,7 @@ class DemoBackend {
     return { id: "demo-user", email: DEMO_USER.email };
   }
   async signOut() { localStorage.removeItem(this.SESSION); }
-  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: this.db.perfil_nombre || "Administrador demo", carrera: null, foto_path: this.db.foto_perfil ? "local" : null, colegio: this.db.colegio.nombre, superadmin: true }; }
+  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: this.db.perfil_nombre || "Administrador demo", carrera: null, foto_path: this.db.foto_perfil ? "local" : null, colegio: this.db.colegio.nombre, superadmin: true, qr_modo: this.db.colegio.qr_modo || "obligatorio" }; }
   async userId() { return "demo-user"; }
   /** Hora "del servidor". En demo se puede simular un reloj de teléfono desfasado con localStorage ra-sim-desfase-ms. */
   async horaServidor() { return Date.now() + (Number(localStorage.getItem("ra-sim-desfase-ms")) || 0); }
@@ -161,8 +161,17 @@ class SupabaseBackend {
   async signOut() { await this.sb.auth.signOut(); }
   async userId() { return (await this.sb.auth.getUser()).data.user?.id; }
   async getProfile(user) {
-    const { data, error } = await this.sb.from("perfiles").select("*, colegios(nombre)").eq("id", user.id).single();
-    if (error || !data) throw err("No se encontró un perfil de instituto para esta cuenta.", "profile");
+    let data;
+    let qrModoFallback = false;
+    const res = await this.sb.from("perfiles").select("*, colegios(nombre, qr_modo)").eq("id", user.id).single();
+    if (res.error || !res.data) {
+      const resFallback = await this.sb.from("perfiles").select("*, colegios(nombre)").eq("id", user.id).single();
+      if (resFallback.error || !resFallback.data) throw err("No se encontró un perfil de instituto para esta cuenta.", "profile");
+      data = resFallback.data;
+      qrModoFallback = true;
+    } else {
+      data = res.data;
+    }
     let superadmin = false;
     try {
       const { data: sa, error: saErr } = await this.sb.rpc("es_superadmin");
@@ -176,6 +185,8 @@ class SupabaseBackend {
       foto_path: data.foto_path ?? null,
       colegio: data.colegios?.nombre ?? "",
       superadmin,
+      // Sin migración 012 no hay secretos de alumnos, así que 'off' es el fallback correcto
+      qr_modo: qrModoFallback ? "off" : (data.colegios?.qr_modo || "off"),
     };
   }
 
@@ -281,14 +292,14 @@ class LocalBackend extends DemoBackend {
   nuevaDB() {
     const id = "local-instituto";
     return {
-      colegio: { id, nombre: "Mi instituto (modo local)", codigo_registro: "LOCAL" },
+      colegio: { id, nombre: "Mi instituto (modo local)", codigo_registro: "LOCAL", qr_modo: "obligatorio" },
       niveles: [], grados: [], alumnos: [], asistencias: [], docentes: [], comunicados: [], cursos: [],
     };
   }
   async init() { return { id: "local-user", email: "local@este-equipo" }; }
   async signIn() { return { id: "local-user", email: "local@este-equipo" }; }
   async signOut() { /* sin cuentas: nada que cerrar */ }
-  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: this.db.perfil_nombre || "Administrador (local)", carrera: null, foto_path: this.db.foto_perfil ? "local" : null, colegio: this.db.colegio.nombre, superadmin: false }; }
+  async getProfile() { return { colegio_id: this.db.colegio.id, rol: "Administrador", nombre: this.db.perfil_nombre || "Administrador (local)", carrera: null, foto_path: this.db.foto_perfil ? "local" : null, colegio: this.db.colegio.nombre, superadmin: false, qr_modo: this.db.colegio.qr_modo || "obligatorio" }; }
   async esSuperadmin() { return false; }
   async userId() { return "local-user"; }
 }

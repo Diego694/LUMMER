@@ -19,6 +19,7 @@ import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
@@ -78,6 +79,10 @@ public class MainActivity extends Activity implements NfcAdapter.ReaderCallback 
         web = new WebView(this);
         web.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         web.setBackgroundColor(getResources().getColor(R.color.navy, getTheme()));
+
+        if (BuildConfig.CONFIG_KEY.equals("estudiante")) {
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+        }
         setContentView(web);
 
         WebSettings s = web.getSettings();
