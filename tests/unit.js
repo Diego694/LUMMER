@@ -271,7 +271,7 @@ import { DB } from "../assets/js/state.js";
 import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
 import { vocabulario } from "../assets/js/estudiante/api.js";
-import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso, periodoDe, periodosDe } from "../assets/js/api-aula.js";
+import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso, periodoDe, periodosDe, agendaEstudiante } from "../assets/js/api-aula.js";
 
 test("permisos · puede: rol docente no puede acciones de administración", () => {
   const previo = DB.perfil;
@@ -377,6 +377,18 @@ test("aula · periodos: las actividades antiguas cuentan como periodo 1 y el pro
   same(libroNotas(alu, acts.filter((a) => periodoDe(a) === 1), ent)[0].promedio, 10, "periodo 1");
   same(libroNotas(alu, acts.filter((a) => periodoDe(a) === 2), ent)[0].promedio, 16.67, "(20+5)/(20+10)*20");
   same(libroNotas(alu, acts, ent)[0].promedio, 14, "(10+20+5)/50*20");
+});
+
+test("aula · agendaEstudiante separa por entregar, vencidas y entregadas con su orden", () => {
+  const ahora = new Date("2026-06-10T12:00:00Z").getTime();
+  const it = (id, f, entrega = null) => ({ actividad: { id, fecha_limite: f }, entrega });
+  const r = agendaEstudiante([
+    it("sinfecha", null), it("lejos", "2026-06-30T00:00:00Z"), it("cerca", "2026-06-11T00:00:00Z"),
+    it("v-vieja", "2026-05-01T00:00:00Z"), it("v-reciente", "2026-06-09T00:00:00Z"), it("hecha", "2026-05-01T00:00:00Z", { nota: null }),
+  ], ahora);
+  same(r.porEntregar.map((x) => x.actividad.id), ["cerca", "lejos", "sinfecha"], "próxima primero, sin fecha al final");
+  same(r.vencidas.map((x) => x.actividad.id), ["v-reciente", "v-vieja"], "la más reciente primero");
+  same(r.entregadas.map((x) => x.actividad.id), ["hecha"], "entregada aunque venció");
 });
 
 /* render */

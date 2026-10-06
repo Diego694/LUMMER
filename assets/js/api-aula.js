@@ -194,6 +194,30 @@ export function libroNotas(alumnos, actividades, entregas) {
 }
 
 /**
+ * Agenda del estudiante: reparte las actividades de todos sus cursos en «por entregar» (la más próxima primero; las
+ * sin fecha al final), «vencidas sin entregar» (la más reciente primero) y «entregadas».
+ * @template {{ actividad: { fecha_limite?: string | null }, entrega: unknown }} T
+ * @param {T[]} items
+ * @param {number} [ahora]
+ * @returns {{ porEntregar: T[], vencidas: T[], entregadas: T[] }}
+ */
+export function agendaEstudiante(items, ahora = Date.now()) {
+  /** @param {T} it */
+  const limite = (it) => (it.actividad.fecha_limite ? new Date(it.actividad.fecha_limite).getTime() : Infinity);
+  /** @type {T[]} */ const porEntregar = [];
+  /** @type {T[]} */ const vencidas = [];
+  /** @type {T[]} */ const entregadas = [];
+  for (const it of items) {
+    if (it.entrega) entregadas.push(it);
+    else if (limite(it) < ahora) vencidas.push(it);
+    else porEntregar.push(it);
+  }
+  porEntregar.sort((a, b) => (limite(a) < limite(b) ? -1 : limite(a) > limite(b) ? 1 : 0));
+  vencidas.sort((a, b) => (limite(a) < limite(b) ? 1 : limite(a) > limite(b) ? -1 : 0));
+  return { porEntregar, vencidas, entregadas };
+}
+
+/**
  * Entregas de una actividad con el nombre del alumno (solo las ve quien gestiona el curso).
  * @param {any} sb
  * @param {string} actividadId

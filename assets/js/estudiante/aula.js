@@ -1,6 +1,6 @@
 // @ts-check
 // Aula del estudiante: sus cursos (carrera y ciclo), con el material y las actividades que publican los docentes.
-import { libroNotas, periodoDe, periodosDe, validarArchivoAula } from "../api-aula.js";
+import { agendaEstudiante, libroNotas, periodoDe, periodosDe, validarArchivoAula } from "../api-aula.js";
 import { badge, emptyState, icon, openModal, registerActions, skeleton, toast } from "../ui.js";
 import { esc } from "../utils.js";
 
@@ -28,7 +28,7 @@ export function iniciarAulaEstudiante(ctx) {
     `<div class="est-card"><button type="button" class="btn btn-outline btn-sm" data-action="${accion}">${icon("history", 15)} ${etiqueta}</button><h1 style="margin-top:12px">${esc(titulo)}</h1>`;
 
   async function lista() {
-    ctx.root().innerHTML = `${cabecera("Mis cursos", "est-aula-volver", "Mi carnet")}<div id="aula-est">${skeleton(3)}</div></div>`;
+    ctx.root().innerHTML = `${cabecera("Mis cursos", "est-aula-volver", "Mi carnet")}<p><button type="button" class="btn btn-teal btn-sm" data-action="est-aula-pendientes">${icon("calendar", 15)} Mis pendientes</button></p><div id="aula-est">${skeleton(3)}</div></div>`;
     const caja = /** @type {HTMLElement} */ (ctx.root().querySelector("#aula-est"));
     try {
       cursos = await ctx.api.aulaCursos(ctx.user);
@@ -37,6 +37,29 @@ export function iniciarAulaEstudiante(ctx) {
         : emptyState("Aún no hay cursos", "Tu instituto todavía no publicó cursos para tu carrera y ciclo.", "book");
     } catch (/** @type {any} */ e) {
       caja.innerHTML = emptyState("No se pudieron cargar tus cursos", e.message || "Revisa tu conexión e inténtalo de nuevo.", "alert");
+    }
+  }
+
+  /** Actividades de todos mis cursos, agrupadas por lo que falta entregar. */
+  async function pendientes() {
+    ctx.root().innerHTML = `${cabecera("Mis pendientes", "est-aula-lista", "Mis cursos")}<div id="aula-est">${skeleton(4)}</div></div>`;
+    const caja = /** @type {HTMLElement} */ (ctx.root().querySelector("#aula-est"));
+    try {
+      if (!cursos.length) cursos = await ctx.api.aulaCursos(ctx.user);
+      const items = (await Promise.all(cursos.map(async (c) => {
+        const acts = await ctx.api.aulaActividades(String(c.id));
+        return Promise.all(acts.map(async (a) => ({ actividad: a, curso: c, entrega: await ctx.api.aulaMiEntrega(String(a.id)).catch(() => null) })));
+      }))).flat();
+      const { porEntregar, vencidas, entregadas } = agendaEstudiante(items);
+      /** @param {typeof items} lista @param {string} etiqueta @param {string} color */
+      const grupo = (lista, etiqueta, color) => lista.length ? `<h2 class="aula-est-h">${etiqueta} (${lista.length})</h2><ul class="aula-est-items">${lista.map((it) => `<li class="aula-est-item"><div><strong>${esc(it.actividad.titulo)}</strong>
+          <small>${esc(it.curso.nombre)} · ${it.actividad.fecha_limite ? `Hasta ${esc(fechaLimite(it.actividad.fecha_limite))}` : "Sin fecha límite"} ${badge(etiqueta, color)}${it.entrega?.nota != null ? ` ${badge(`Nota: ${it.entrega.nota} / ${it.actividad.puntaje_max}`, "green")}` : ""}</small></div>
+          <button class="btn btn-outline btn-sm" type="button" data-action="est-aula-curso" data-id="${esc(String(it.curso.id))}">${it.entrega ? "Ver curso" : "Entregar"}</button></li>`).join("")}</ul>` : "";
+      caja.innerHTML = items.length
+        ? (grupo(vencidas, "Vencidas sin entregar", "red") + grupo(porEntregar, "Por entregar", "amber") + grupo(entregadas, "Entregadas", "green"))
+        : emptyState("Sin actividades", "Tus docentes aún no publicaron actividades.", "calendar");
+    } catch (/** @type {any} */ e) {
+      caja.innerHTML = emptyState("No se pudieron cargar tus pendientes", e.message || "Revisa tu conexión e inténtalo de nuevo.", "alert");
     }
   }
 
@@ -128,6 +151,7 @@ export function iniciarAulaEstudiante(ctx) {
     "est-aula-entregar": (/** @type {HTMLElement} */ b) => formularioEntrega(b.dataset.id || ""),
     "est-aula": lista,
     "est-aula-lista": lista,
+    "est-aula-pendientes": pendientes,
     "est-aula-volver": () => ctx.volver(),
     "est-aula-curso": (/** @type {HTMLElement} */ b) => curso(b.dataset.id || ""),
     "est-aula-abrir": async (/** @type {HTMLElement} */ b) => {
