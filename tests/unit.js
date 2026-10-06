@@ -271,7 +271,7 @@ import { DB } from "../assets/js/state.js";
 import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
 import { vocabulario } from "../assets/js/estudiante/api.js";
-import { validarArchivoAula, rutaArchivoAula } from "../assets/js/api-aula.js";
+import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota } from "../assets/js/api-aula.js";
 
 test("permisos · puede: rol docente no puede acciones de administración", () => {
   const previo = DB.perfil;
@@ -316,6 +316,13 @@ test("estudiante api · vocabulario: reemplaza términos colegiales por instituc
   same(vocabulario("Error en el colegio: Nivel o grado no existe"), "Error en el instituto: Carrera o ciclo no existe");
   same(vocabulario("Colegio registrado"), "Instituto registrado");
   same(vocabulario(""), "");
+});
+
+test("aula · rutaEntrega y validarNota", () => {
+  const r = rutaEntrega("col", "cur", "uid", "Mi Tarea.pdf");
+  assert(/^col\/cur\/entregas\/uid\/[^/]+\.pdf$/.test(r), "ruta de entrega: " + r);
+  assert(validarNota(15, 20) === null && validarNota(0, 20) === null && validarNota(20, 20) === null, "notas válidas");
+  assert(validarNota(21, 20) !== null && validarNota(-1, 20) !== null && validarNota(NaN, 20) !== null, "notas inválidas");
 });
 
 test("aula · validarArchivoAula: acepta documentos válidos y rechaza tipo, tamaño y vacíos", () => {

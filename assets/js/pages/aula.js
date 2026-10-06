@@ -3,7 +3,7 @@
 // cada docente asignado publica en SUS cursos. La seguridad real está en la base (migración 013); aquí solo se ocultan
 // los botones que fallarían.
 import { api } from "../api.js";
-import { validarArchivoAula } from "../api-aula.js";
+import { validarArchivoAula, validarNota } from "../api-aula.js";
 import { DB } from "../state.js";
 import { esAdmin } from "../permisos.js";
 import { badge, confirmDialog, emptyState, icon, openModal, pageHead, registerActions, skeleton, toast } from "../ui.js";
@@ -11,6 +11,7 @@ import { esc, etiquetaCiclo, fmtDate } from "../utils.js";
 
 /** @typedef {import('../tipos.d.ts').CursoMaterial} CursoMaterial */
 /** @typedef {import('../tipos.d.ts').CursoActividad} CursoActividad */
+/** @typedef {import('../tipos.d.ts').CursoEntrega} CursoEntrega */
 
 /** @type {{ cursoId: string, tab: "material" | "actividades" }} */
 const st = { cursoId: "", tab: "material" };
@@ -111,7 +112,8 @@ function htmlActividades() {
         <small>${a.fecha_limite ? `Entrega hasta ${esc(fechaLimite(a.fecha_limite))}` : "Sin fecha límite"} · ${a.puntaje_max} pts ${vencida ? badge("Vencida", "red") : ""}</small>
         ${a.archivo_nombre ? `<small>${esc(a.archivo_nombre)} · ${kb(a.archivo_bytes)}</small>` : ""}</div></div>
       <div class="log-right nowrap">${a.archivo_path ? `<button class="btn btn-outline btn-sm" data-action="aula-abrir" data-path="${esc(a.archivo_path)}">${icon("download", 16)} Abrir</button>` : ""}
-        ${gestiona ? `<button class="icon-only" aria-label="Editar ${esc(a.titulo)}" data-action="aula-act-edit" data-id="${a.id}">${icon("edit", 16)}</button>
+        ${gestiona ? `<button class="btn btn-outline btn-sm" data-action="aula-entregas" data-id="${a.id}">${icon("listCheck", 16)} Entregas</button>
+        <button class="icon-only" aria-label="Editar ${esc(a.titulo)}" data-action="aula-act-edit" data-id="${a.id}">${icon("edit", 16)}</button>
         <button class="icon-only danger" aria-label="Eliminar ${esc(a.titulo)}" data-action="aula-act-del" data-id="${a.id}">${icon("trash", 16)}</button>` : ""}</div></li>`;
   }).join("")}</ul>`;
 }
@@ -235,7 +237,73 @@ async function gestionarDocentes() {
   });
 }
 
+/* ------------------------------ Entregas y notas (migración 014) ------------------------------ */
+/** @type {CursoEntrega[]} */
+let entregas = [];
+/** @type {CursoActividad | undefined} */
+let actEntregas;
+
+/** @param {CursoEntrega} e */
+function filaEntrega(e) {
+  const max = actEntregas?.puntaje_max ?? 20;
+  return `<li class="aula-entrega" data-entrega="${e.id}">
+    <div><strong>${esc(e.alumnos?.nombre || "Estudiante")}</strong> ${e.tardia ? badge("Tardía", "amber") : ""} ${e.nota == null ? badge("Sin calificar", "neutral") : badge(`${e.nota} / ${max}`, "green")}
+      <small>Enviada ${esc(fechaLimite(e.enviado_en))}</small>
+      ${e.texto ? `<p class="aula-entrega-texto">${esc(e.texto)}</p>` : ""}
+      ${e.archivo_nombre ? `<small>${icon("file", 14)} ${esc(e.archivo_nombre)} · ${kb(e.archivo_bytes)}</small>` : ""}</div>
+    <div class="aula-nota">
+      ${e.archivo_path ? `<button class="btn btn-outline btn-sm" type="button" data-action="aula-abrir" data-path="${esc(e.archivo_path)}">${icon("download", 16)} Abrir</button>` : ""}
+      <label>Nota (0–${max})<input type="number" min="0" max="${max}" step="0.5" inputmode="decimal" name="nota" value="${e.nota ?? ""}"></label>
+      <label>Comentario<input type="text" name="comentario" maxlength="2000" value="${esc(e.comentario || "")}"></label>
+      <button class="btn btn-primary btn-sm" type="button" data-action="aula-calificar" data-id="${e.id}">Guardar nota</button>
+    </div></li>`;
+}
+
+/** @param {HTMLElement} cuerpo */
+function pintarEntregas(cuerpo) {
+  const calificadas = entregas.filter((e) => e.nota != null).length;
+  cuerpo.innerHTML = entregas.length
+    ? `<p class="muted">${entregas.length} entrega${entregas.length === 1 ? "" : "s"} · ${calificadas} calificada${calificadas === 1 ? "" : "s"}</p><ul class="aula-entregas">${entregas.map(filaEntrega).join("")}</ul>`
+    : emptyState("Aún no hay entregas", "Cuando los estudiantes entreguen, aparecerán aquí para calificarlas.", "listCheck");
+}
+
+/** @param {CursoActividad | undefined} act */
+async function verEntregas(act) {
+  if (!act?.id) return;
+  actEntregas = act;
+  const m = openModal({ title: `Entregas · ${act.titulo}`, wide: true, body: skeleton(3), footer: `<button class="btn btn-outline" type="button" data-cancel>Cerrar</button>` });
+  m.el.querySelector("[data-cancel]")?.addEventListener("click", m.close);
+  const cuerpo = /** @type {HTMLElement} */ (m.el.querySelector(".modal-body"));
+  try { entregas = await api.aulaEntregas(act.id); pintarEntregas(cuerpo); }
+  catch (/** @type {any} */ e) {
+    const sinMigracion = /does not exist|schema cache|curso_entregas/i.test(e.message || "");
+    cuerpo.innerHTML = emptyState("No se pudieron cargar las entregas", sinMigracion ? "Falta aplicar la migración 014 en Supabase (supabase/migrations/014_entregas_notas.sql)." : e.message, "alert");
+  }
+}
+
+/** @param {HTMLElement} btn */
+async function calificar(btn) {
+  const fila = btn.closest(".aula-entrega");
+  const e = entregas.find((x) => x.id === btn.dataset.id);
+  if (!fila || !e) return;
+  const bruto = /** @type {HTMLInputElement} */ (fila.querySelector("[name=nota]")).value.trim();
+  const comentario = /** @type {HTMLInputElement} */ (fila.querySelector("[name=comentario]")).value.trim();
+  const nota = bruto === "" ? null : Number(bruto);
+  const problema = nota == null ? null : validarNota(nota, actEntregas?.puntaje_max ?? 20);
+  if (problema) { toast(problema, "error"); return; }
+  /** @type {HTMLButtonElement} */ (btn).disabled = true;
+  try {
+    await api.aulaCalificar(e.id, nota, comentario);
+    Object.assign(e, { nota, comentario });
+    const cuerpo = /** @type {HTMLElement} */ (fila.closest(".modal-body"));
+    pintarEntregas(cuerpo);
+    toast(nota == null ? "Calificación quitada" : "Nota guardada", "success");
+  } catch (/** @type {any} */ ex) { toast("No se pudo guardar: " + ex.message, "error"); /** @type {HTMLButtonElement} */ (btn).disabled = false; }
+}
+
 registerActions({
+  "aula-entregas": (/** @type {HTMLElement} */ el) => { verEntregas(datos.actividades.find((a) => a.id === el.dataset.id)); },
+  "aula-calificar": (/** @type {HTMLElement} */ el) => { calificar(el); },
   "aula-tab": (/** @type {HTMLElement} */ el) => { st.tab = el.dataset.tab === "actividades" ? "actividades" : "material"; pintar(); },
   "aula-mat-new": () => formMaterial(),
   "aula-mat-edit": (/** @type {HTMLElement} */ el) => formMaterial(datos.materiales.find((m) => m.id === el.dataset.id)),

@@ -53,3 +53,5 @@ body.est{min-height:100vh;display:flex;flex-direction:column}
 .aula-est-items{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .aula-est-item{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
 .aula-est-item small{display:block;color:var(--ink-soft)}.aula-est-item p{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.aula-est-entrega{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.aula-est-entrega p{flex-basis:100%;margin:0}

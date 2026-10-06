@@ -186,6 +186,20 @@ export interface CursoActividad extends Partial<ArchivoAula> {
   creado_en?: string;
 }
 
+// Entrega de un estudiante a una actividad (migración 014)
+export interface CursoEntrega extends Partial<ArchivoAula> {
+  id: string;
+  curso_id: string;
+  actividad_id: string;
+  alumno_id: string;
+  texto: string;
+  enviado_en: string;
+  tardia: boolean;
+  nota: number | null;
+  comentario: string;
+  alumnos?: { nombre: string; codigo?: string } | null;
+}
+
 // Asistencia por curso
 export interface AsistenciaCurso {
   id?: string;
@@ -770,6 +784,8 @@ export interface Api {
   aulaEliminar(tabla: 'curso_materiales' | 'curso_actividades', fila: { id: string; archivo_path?: string | null }): Promise<void>;
   aulaUrlArchivo(path: string): Promise<string>;
   aulaDocentes(cursoId: string): Promise<{ user_id: string }[]>;
+  aulaEntregas(actividadId: string): Promise<CursoEntrega[]>;
+  aulaCalificar(id: string, nota: number | null, comentario: string): Promise<void>;
   aulaAsignarDocente(cursoId: string, userId: string): Promise<void>;
   aulaQuitarDocente(cursoId: string, userId: string): Promise<void>;
   justificacionesRango(cid: string | null | undefined, desde: string, hasta: string): Promise<Justificacion[]>;
@@ -974,6 +990,8 @@ export interface BackendEstudiante {
   aulaMateriales(cursoId: string): Promise<CursoMaterial[]>;
   aulaActividades(cursoId: string): Promise<CursoActividad[]>;
   aulaUrlArchivo(path: string): Promise<string>;
+  aulaMiEntrega(actividadId: string): Promise<CursoEntrega | null>;
+  aulaEntregar(user: { id: string }, actividad: CursoActividad, texto: string, file?: File): Promise<void>;
 }
 
 declare global {

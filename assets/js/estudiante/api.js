@@ -6,7 +6,7 @@
 import { CONFIG, DEMO_SCHOOL_CODE, isDemoMode } from "../config.js";
 import { buildDemoDB } from "../demo-data.js";
 import { uid } from "../utils.js";
-import { materialesDe, actividadesDe, urlArchivoAula } from "../api-aula.js";
+import { materialesDe, actividadesDe, urlArchivoAula, miEntregaDe, entregarSb, entregarDemo } from "../api-aula.js";
 
 /** @typedef {import('../tipos.d.ts').Alumno} Alumno */
 /** @typedef {import('../tipos.d.ts').BackendEstudiante} BackendEstudiante */
@@ -196,6 +196,25 @@ class DemoEstudiante {
   async aulaActividades(cursoId) { const db = /** @type {any} */ (this.load()); return (db.curso_actividades || []).filter((/** @type {any} */ m) => m.curso_id === cursoId && m.publicado !== false); }
   /** @returns {Promise<string>} */
   async aulaUrlArchivo() { throw err("En el modo demostración los archivos no se guardan."); }
+  /** @param {string} actividadId */
+  async aulaMiEntrega(actividadId) {
+    const db = /** @type {any} */ (this.load());
+    const a = db.alumnos.find((/** @type {any} */ x) => x.user_id === localStorage.getItem(this.SESSION));
+    return a ? (db.curso_entregas || []).find((/** @type {any} */ e) => e.actividad_id === actividadId && e.alumno_id === a.id) || null : null;
+  }
+  /**
+   * @param {{ id: string }} user
+   * @param {import('../tipos.d.ts').CursoActividad} actividad
+   * @param {string} texto
+   * @param {File} [file]
+   */
+  async aulaEntregar(user, actividad, texto, file) {
+    const db = /** @type {any} */ (this.load());
+    const alumno = db.alumnos.find((/** @type {any} */ x) => x.user_id === user.id);
+    if (!alumno) throw err("Solo los estudiantes aprobados pueden entregar");
+    entregarDemo(db, alumno, actividad, texto, file);
+    this.save(db);
+  }
   /**
    * @param {{ id: string }} user
    * @param {Blob} blob
@@ -327,6 +346,15 @@ class SupabaseEstudiante {
   aulaActividades(cursoId) { return actividadesDe(this.sb, cursoId); }
   /** @param {string} path */
   aulaUrlArchivo(path) { return urlArchivoAula(this.sb, path); }
+  /** @param {string} actividadId */
+  aulaMiEntrega(actividadId) { return miEntregaDe(this.sb, actividadId); }
+  /**
+   * @param {{ id: string }} user
+   * @param {import('../tipos.d.ts').CursoActividad} actividad
+   * @param {string} texto
+   * @param {File} [file]
+   */
+  aulaEntregar(user, actividad, texto, file) { return entregarSb(this.sb, user, actividad, texto, file); }
   /**
    * @param {{ id: string }} user
    * @param {Blob} blob
