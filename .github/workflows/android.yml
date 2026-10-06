@@ -77,12 +77,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          cp .github/release-notes/app-lite.md "$RUNNER_TEMP/notas-lite.md"
+          printf '\n\nCompilación #%s · commit %s\n' "${{ github.run_number }}" "${GITHUB_SHA::7}" >> "$RUNNER_TEMP/notas-lite.md"
           gh release delete apk-latest --cleanup-tag --yes || true
           gh release create apk-latest asistencia-escolar.apk carnet-estudiante.apk \
             --title "App Android Lite (última versión)" \
-            --notes "**Versión Lite** de la app Android (abre ${APP_URL} en un WebView ligero). Se mantiene y se actualiza de vez en cuando, pero no es la prioridad del proyecto. Para la app nativa completa (Kotlin/Compose, 33 pantallas, CameraX, Room + WorkManager offline), descarga la versión principal desde la release [app-latest](https://github.com/${{ github.repository }}/releases/tag/app-latest).
-
-- **asistencia-escolar.apk** → app del docente («Asistencia Institucional Lite»).
-- **carnet-estudiante.apk** → app «Mi Carnet Institucional» del estudiante (portal web móvil con carnet y asistencia).
-
-Compilación #${{ github.run_number }} · commit ${GITHUB_SHA::7}."
+            --notes-file "$RUNNER_TEMP/notas-lite.md"
