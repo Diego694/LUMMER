@@ -67,8 +67,7 @@ def main():
         r = psql(AQUI / "aula_test.sql", db="prueba")
         print(r.stdout.strip())
         if r.returncode != 0:
-            print("✘ PRUEBAS DEL AULA FALLARON:
-" + (r.stderr or "").strip()); return 1
+            print("✘ PRUEBAS DEL AULA FALLARON:\n" + (r.stderr or "").strip()); return 1
         # Idempotencia: volver a aplicar las migraciones no debe fallar ni cambiar el resultado
         for f in orden[2:]:
             r = psql(f, db="prueba")
@@ -87,8 +86,7 @@ def main():
             print("✘ PRUEBAS DE SEGURIDAD FALLARON (instalación limpia):\n" + (r.stderr or "").strip()); return 1
         r = psql(AQUI / "aula_test.sql", db="limpia")
         if r.returncode != 0:
-            print("✘ PRUEBAS DEL AULA FALLARON (instalación limpia):
-" + (r.stderr or "").strip()); return 1
+            print("✘ PRUEBAS DEL AULA FALLARON (instalación limpia):\n" + (r.stderr or "").strip()); return 1
         print("✔ instalación limpia: pruebas de seguridad correctas")
         estado = 0
     finally:

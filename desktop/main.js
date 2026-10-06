@@ -76,7 +76,7 @@ async function pruebaAutomatica(win) {
   try {
     if (win.webContents.isLoading()) await siguienteCarga();
     await esperar(1500);
-    paso("web cargada sin internet", await evaluar("document.title.includes('Registro')"));
+    paso("web cargada sin internet", await evaluar("document.title.includes('LUMMER')"));
     paso("librerías incluidas (Chart, QRCode, jsQR, jsPDF, Papa, supabase)", await evaluar("[typeof Chart, typeof QRCode, typeof jsQR, typeof jspdf, typeof Papa, typeof supabase].every(t => t !== 'undefined')"));
     paso("expone el programa de escritorio", await evaluar("!!window.escritorio"));
     paso("muestra el selector de modo", await evaluar("!!document.getElementById('modo-switch')"));
