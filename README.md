@@ -179,4 +179,4 @@ Para consultar el índice temático completo, visite el [índice de documentaci�
 
 ---
 
-Distribución bajo licencia [MIT](LICENSE).
+HECHO CON MUCHO AMOR Y CARIÑO PARA USTEDES :)
