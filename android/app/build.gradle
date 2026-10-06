@@ -5,7 +5,7 @@ plugins {
 def appUrl = (findProperty('APP_URL') ?: 'https://TU-USUARIO.github.io/registro-academico/').toString()
 if (!appUrl.endsWith('/')) appUrl += '/'
 // Config remota (app-config.json): permite cambiar la URL de la web sin reinstalar si el dominio cambia.
-def configUrl = (findProperty('CONFIG_URL') ?: 'https://raw.githubusercontent.com/Diego694/Sistema-de-control-de-asistencia/main/app-config.json').toString()
+def configUrl = (findProperty('CONFIG_URL') ?: 'https://raw.githubusercontent.com/Diego694/LUMMER/main/app-config.json').toString()
 
 android {
     namespace 'app.registroacademico'

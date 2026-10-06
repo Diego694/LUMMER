@@ -25,7 +25,7 @@ export const CONFIG = {
 
   APP_NAME: "LUMMER",
   // Enlace de descarga del APK "LUMMER Estudiante" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.
-  APK_ESTUDIANTE_URL: "https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/download/apk-latest/carnet-estudiante.apk",
+  APK_ESTUDIANTE_URL: "https://github.com/Diego694/LUMMER/releases/download/apk-latest/carnet-estudiante.apk",
   // Versión de la web. Se muestra en el menú lateral para confirmar que el APK/navegador ya cargó la última.
   APP_VERSION: "4.0.0",
   // QR del carnet: valor de respaldo si la institución no tiene uno configurado (manda la configuración de cada institución en Mi instituto).

@@ -2,7 +2,7 @@
 
 Un solo programa (`Registro-Academico-PC-Portable.exe`, o el instalador) para docentes y administradores que quieran trabajar en el computador aunque no haya internet estable o Supabase esté saturado.
 
-**Descarga:** [Releases → pc-latest](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/pc-latest). El portable no necesita instalación; el instalador crea acceso directo y desinstalador.
+**Descarga:** [Releases → pc-latest](https://github.com/Diego694/LUMMER/releases/tag/pc-latest). El portable no necesita instalación; el instalador crea acceso directo y desinstalador.
 
 ## Dos modos
 | | Online | Local |

@@ -8,13 +8,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Diego694/Sistema-de-control-de-asistencia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Diego694/Sistema-de-control-de-asistencia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=1c2433"></a>
+  <a href="https://github.com/Diego694/LUMMER/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Diego694/LUMMER/ci.yml?branch=main&style=flat-square&label=CI&labelColor=1c2433"></a>
   <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-4.0.0-E8A33D?style=flat-square&labelColor=1c2433">
   <img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-8b95a8?style=flat-square&labelColor=1c2433">
 </p>
 
 <p align="center">
-  <a href="https://diego694.github.io/Sistema-de-control-de-asistencia/"><b>Abrir la aplicación</b></a> ·
+  <a href="https://diego694.github.io/LUMMER/"><b>Abrir la aplicación</b></a> ·
   <a href="#aplicaciones-y-descargas">Descargas</a> ·
   <a href="docs/GUIA-DE-USO.md">Guía de uso</a> ·
   <a href="docs/README.md">Documentación</a>
@@ -120,11 +120,11 @@ El estudiante ingresa a *LUMMER Estudiante* desde la web o la app Lite, crea su 
 
 | Aplicación | Plataforma y características | Enlace de descarga |
 |---|---|---|
-| Web / PWA | Navegadores modernos en PC y móvil; soporte sin conexión y modo instalable | [Abrir aplicación](https://diego694.github.io/Sistema-de-control-de-asistencia/) |
-| App Android Nativa | Android 7.0 o superior (probada en Android 17); Kotlin, Compose, CameraX y Room | [Descargar APK (`app-latest`)](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/app-latest) |
-| App Android Lite | Android 7.0 o superior; versión ligera basada en WebView para docentes | [Descargar APK (`apk-latest`)](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) |
-| Programa de PC Windows | Windows 10 o superior; instalador o portable con modo online y base local | [Descargar EXE (`pc-latest`)](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/pc-latest) |
-| Portal del estudiante (*LUMMER Estudiante*) | Acceso web para estudiantes y aplicación móvil dedicada | [Portal web](https://diego694.github.io/Sistema-de-control-de-asistencia/estudiante/) · [Descargar APK](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest) |
+| Web / PWA | Navegadores modernos en PC y móvil; soporte sin conexión y modo instalable | [Abrir aplicación](https://diego694.github.io/LUMMER/) |
+| App Android Nativa | Android 7.0 o superior (probada en Android 17); Kotlin, Compose, CameraX y Room | [Descargar APK (`app-latest`)](https://github.com/Diego694/LUMMER/releases/tag/app-latest) |
+| App Android Lite | Android 7.0 o superior; versión ligera basada en WebView para docentes | [Descargar APK (`apk-latest`)](https://github.com/Diego694/LUMMER/releases/tag/apk-latest) |
+| Programa de PC Windows | Windows 10 o superior; instalador o portable con modo online y base local | [Descargar EXE (`pc-latest`)](https://github.com/Diego694/LUMMER/releases/tag/pc-latest) |
+| Portal del estudiante (*LUMMER Estudiante*) | Acceso web para estudiantes y aplicación móvil dedicada | [Portal web](https://diego694.github.io/LUMMER/estudiante/) · [Descargar APK](https://github.com/Diego694/LUMMER/releases/tag/apk-latest) |
 
 Para instalar archivos APK en Android por primera vez, es necesario habilitar la opción de fuentes desconocidas en los ajustes del sistema. En Windows, si el filtro SmartScreen muestra una advertencia al abrir el ejecutable debido a la ausencia de un certificado comercial, seleccione *Más información* y confirme pulsando *Ejecutar de todas formas*.
 

@@ -31,10 +31,10 @@ Ambas aplicaciones tienen `applicationId` diferentes, por lo que **pueden instal
 Los binarios se compilan automáticamente con GitHub Actions y se publican con URLs de descarga directa:
 
 - **App Nativa (Docente / Administración):**
-  - Release estable: [Releases tag `app-latest`](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/app-latest)
+  - Release estable: [Releases tag `app-latest`](https://github.com/Diego694/LUMMER/releases/tag/app-latest)
   - Archivo APK: **`registro-academico.apk`**
 - **App Lite (Docente y Estudiante):**
-  - Release estable: [Releases tag `apk-latest`](https://github.com/Diego694/Sistema-de-control-de-asistencia/releases/tag/apk-latest)
+  - Release estable: [Releases tag `apk-latest`](https://github.com/Diego694/LUMMER/releases/tag/apk-latest)
   - Archivos APK:
     - **`asistencia-escolar.apk`** (Docente Lite)
     - **`carnet-estudiante.apk`** (LUMMER Estudiante - portal del estudiante)
