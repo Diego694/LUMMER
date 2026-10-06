@@ -5,7 +5,7 @@ import { bindActions, confirmDialog, icon, openModal, registerActions, toast } f
 import { ahora, cicloCorto, compararCiclos, downloadFile, esc, etiquetaCiclo, initials, sincronizarReloj } from "../utils.js";
 import { enviarPendientes, iniciarLogErrores } from "../errlog.js";
 import { activarAvisos, desactivarAvisos, detenerVigilancia, pedirPermisoNotificacion, permisoNotificacion, vigilarAprobacion } from "../notificaciones.js";
-import { VENTANA_MS, generarQR, segundosRestantes } from "../qr-seguro.js";
+import { VENTANA_MS, generarQR, qrModoEfectivo, segundosRestantes } from "../qr-seguro.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const root = () => $("#est-root");
@@ -13,6 +13,8 @@ let user = null;      // sesión
 let registro = null;  // { alumno, colegio: nombre del instituto }
 let tema = "light";
 let qrTimer = null;   // temporizador del QR dinámico
+let qrInstancia = null; // instancia de QRCode
+let ultimaVentana = -1;
 const PRIVACIDAD = new URL("../privacidad.html", location.href).href;
 
 /* ------------------------------ Tema ------------------------------ */
@@ -209,9 +211,15 @@ function vistaRegistro() {
 async function vistaCarnet(recienCreado = false) {
   const { alumno: a, colegio } = registro;
   const aprobado = a.aprobado !== false;
-  const dinamico = CONFIG.QR_MODO !== "off" && !!a.qr_secreto;
+  const modo = qrModoEfectivo(registro?.qr_modo);
+  const dinamico = modo !== "off" && !!a.qr_secreto;
   detenerQR();
   $("#est-instituto").textContent = colegio;
+  const textoPie = modo === "obligatorio"
+    ? "Muestra este QR al docente al ingresar a clases. Cambia solo cada 30 s; una captura no sirve."
+    : modo === "opcional"
+    ? "Muestra este QR al docente al ingresar a clases. Cambia solo cada 30 s; una captura no sirve. También se aceptan carnets impresos con QR fijo."
+    : "Muestra este QR al docente al ingresar a clases. No lo compartas con otras personas.";
   root().innerHTML = `
     <section class="carnet-est" aria-label="Mi carnet institucional">
       <div class="ce-head">${esc(colegio)} · Carnet institucional</div>
@@ -220,9 +228,9 @@ async function vistaCarnet(recienCreado = false) {
         <div><div class="ce-name">${esc(a.nombre)}</div><div class="ce-meta">${esc(etiquetaCiclo(a.nivel, a.grado))}</div>
           <span class="estado-chip ${aprobado ? "estado-ok" : "estado-pend"}">${icon(aprobado ? "check" : "clock", 13)} ${aprobado ? "Registro aprobado" : "Pendiente de aprobación"}</span></div>
       </div>
-      <div class="ce-qr" id="ce-qr" aria-label="Código QR de asistencia"></div>
+      <div class="ce-qr" id="ce-qr" aria-label="${dinamico ? "Código QR dinámico de asistencia" : "Código QR de asistencia"}"></div>
       ${dinamico ? '<div class="qr-timer" aria-hidden="true"><i id="qr-bar"></i></div><div class="qr-info" id="qr-info">QR seguro: se actualiza solo</div>' : ""}
-      <div class="ce-code">${esc(a.codigo)}</div>
+      ${modo === "obligatorio" ? "" : `<div class="ce-code">${esc(a.codigo)}</div>`}
     </section>
     ${aprobado ? "" : `<div class="aviso">${icon("info", 15)} ${recienCreado ? "¡Listo! Tu carnet fue creado. " : ""}Tu QR empezará a registrar asistencia cuando el instituto apruebe tu registro. Mientras tanto, agrega tu foto. <b>Te avisaremos cuando lo aprueben.</b>${!globalThis.AndroidBridge && permisoNotificacion() === "default" ? ` <button type="button" class="link-btn" data-action="avisar-aprobacion">Activar aviso en este navegador</button>` : ""}</div>`}
     ${a.foto_path ? "" : `<div class="aviso">${icon("camera", 15)} Agrega tu foto: el docente la verá cuando pases tu QR.</div>`}
@@ -233,7 +241,7 @@ async function vistaCarnet(recienCreado = false) {
     ${a.codigo_apoderado ? `<section class="est-card ap-codigo"><strong>Código para tu apoderado</strong><div class="codigo-box"><code id="ap-code">${esc(a.codigo_apoderado.replace(/(.{4})(?=.)/g, "$1-"))}</code></div>
       <p class="muted" style="margin:6px 0 10px">Con este código tu apoderado puede ver tu asistencia, sin cuenta.</p>
       <div class="est-actions"><button class="btn btn-outline" data-action="ap-copiar">Copiar código</button><a class="btn btn-teal" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent("Código para ver mi asistencia: " + a.codigo_apoderado.replace(/(.{4})(?=.)/g, "$1-") + "\n" + new URL("../apoderado/?c=" + a.codigo_apoderado, location.href).href)}">Enviar por WhatsApp</a></div></section>` : ""}
-    <p class="muted" style="text-align:center;margin-top:18px">Muestra este QR al docente al ingresar a clases. No lo compartas con otras personas.</p>
+    <p class="muted" style="text-align:center;margin-top:18px">${textoPie}</p>
     <p class="est-legal muted"><a href="${PRIVACIDAD}" target="_blank" rel="noopener">Política de privacidad</a> · <button type="button" class="link-btn link-peligro" data-action="eliminar-cuenta">Eliminar mi cuenta y mis datos</button></p>`;
   if (aprobado) detenerVigilancia();
   else vigilarAprobacion(api, a.notif_token, async () => {
@@ -241,18 +249,77 @@ async function vistaCarnet(recienCreado = false) {
     toast("¡Tu registro fue aprobado! Ya puedes usar tu carnet.", "success");
     await vistaCarnet();
   });
-  const qr = new QRCode($("#ce-qr"), { text: a.codigo, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
-  if (dinamico) iniciarQRDinamico(qr, a);
+  const qrBox = $("#ce-qr");
+  if (dinamico) {
+    qrBox.style.filter = "blur(4px)";
+    qrBox.style.transition = "filter 0.2s ease";
+    qrInstancia = new QRCode(qrBox, { width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    iniciarQRDinamico(qrInstancia, a);
+  } else {
+    qrBox.style.filter = "";
+    qrInstancia = new QRCode(qrBox, { text: a.codigo, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+  }
   cargarFoto(a);
 }
 
-/* ---------------------- QR dinámico (CONFIG.QR_MODO) ---------------------- */
+/* ---------------------- QR dinámico ---------------------- */
 function detenerQR() { clearInterval(qrTimer); qrTimer = null; }
+function alOcultarApp() {
+  detenerQR();
+  const modo = qrModoEfectivo(registro?.qr_modo);
+  const dinamico = modo !== "off" && !!registro?.alumno?.qr_secreto;
+  if (!dinamico) return;
+  const box = $("#ce-qr");
+  if (box) {
+    const cvs = box.querySelector("canvas");
+    if (cvs) {
+      const ctx = cvs.getContext("2d");
+      ctx?.clearRect(0, 0, cvs.width, cvs.height);
+    }
+    const img = box.querySelector("img");
+    if (img) img.removeAttribute("src");
+    box.style.filter = "blur(4px)";
+  }
+}
+function alReanudarApp() {
+  if (!registro?.alumno || !$("#ce-qr")) return;
+  const modo = qrModoEfectivo(registro.qr_modo);
+  if (modo !== "off" && registro.alumno.qr_secreto) {
+    ultimaVentana = -1;
+    detenerQR();
+    if (!qrInstancia) {
+      const box = $("#ce-qr");
+      box.innerHTML = "";
+      box.style.filter = "blur(4px)";
+      qrInstancia = new QRCode(box, { width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    }
+    iniciarQRDinamico(qrInstancia, registro.alumno);
+  } else {
+    detenerQR();
+    const box = $("#ce-qr");
+    box.style.filter = "";
+    if (qrInstancia) {
+      qrInstancia.makeCode(registro.alumno.codigo);
+    } else {
+      box.innerHTML = "";
+      qrInstancia = new QRCode(box, { text: registro.alumno.codigo, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    }
+  }
+}
 function iniciarQRDinamico(qr, a) {
-  let ultima = -1;
+  detenerQR();
   const tick = () => {
     const ms = ahora().getTime(), w = Math.floor(ms / VENTANA_MS);
-    if (w !== ultima) { ultima = w; generarQR(a.codigo, a.qr_secreto, ms).then((txt) => { if (qrTimer) qr.makeCode(txt); }); }
+    if (w !== ultimaVentana) {
+      ultimaVentana = w;
+      generarQR(a.codigo, a.qr_secreto, ms).then((txt) => {
+        if (qrTimer || !document.hidden) {
+          qr.makeCode(txt);
+          const box = $("#ce-qr");
+          if (box) box.style.filter = "";
+        }
+      });
+    }
     const bar = $("#qr-bar"), info = $("#qr-info");
     if (!bar) { detenerQR(); return; }
     bar.style.width = `${100 - ((ms % VENTANA_MS) / VENTANA_MS) * 100}%`;
@@ -323,16 +390,15 @@ async function cargarFoto(a) {
 }
 
 /** Dibuja el carnet (con foto y QR) en un canvas para descargarlo como imagen. */
-async function carnetCanvas(a, colegio) {
+async function carnetCanvas(a, colegio, modo = "off") {
   const c = document.createElement("canvas"); c.width = 560; c.height = 340;
   const x = c.getContext("2d");
   const g = x.createLinearGradient(0, 0, 560, 340); g.addColorStop(0, "#16223D"); g.addColorStop(1, "#22335A");
   x.fillStyle = "#fff"; x.fillRect(0, 0, 560, 340);
   x.fillStyle = g; x.beginPath(); x.roundRect(0, 0, 560, 340, 24); x.fill();
   x.fillStyle = "#E8A33D"; x.font = "bold 14px Arial"; x.fillText(`${colegio} · CARNET INSTITUCIONAL`.toUpperCase().slice(0, 60), 28, 40);
-  x.fillStyle = "#fff"; x.font = "bold 24px Arial"; x.fillText(a.nombre.slice(0, 30), 168, 100);
-  x.fillStyle = "#CFD7EA"; x.font = "15px Arial"; x.fillText(etiquetaCiclo(a.nivel, a.grado), 168, 128);
-  x.fillStyle = "#B8C2DC"; x.font = "14px monospace"; x.fillText(a.codigo, 168, 154);
+  x.fillStyle = "#fff"; x.font = "bold 24px Arial"; x.fillText(a.nombre.slice(0, 30), 168, 104);
+  x.fillStyle = "#CFD7EA"; x.font = "15px Arial"; x.fillText(etiquetaCiclo(a.nivel, a.grado), 168, 136);
   // foto circular o iniciales
   x.save(); x.beginPath(); x.arc(94, 112, 54, 0, Math.PI * 2); x.clip();
   x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(40, 58, 108, 108);
@@ -343,13 +409,22 @@ async function carnetCanvas(a, colegio) {
   } catch { /* sin foto */ }
   x.restore();
   if (!dibujada) { x.fillStyle = "#E8A33D"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(initials(a.nombre), 94, 124); x.textAlign = "left"; }
-  const tmp = document.createElement("div"); tmp.style.cssText = "position:absolute;left:-9999px"; document.body.appendChild(tmp);
-  new QRCode(tmp, { text: a.codigo, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M });
-  await new Promise((r) => setTimeout(r, 40));
-  x.fillStyle = "#fff"; x.beginPath(); x.roundRect(200, 176, 160, 150, 12); x.fill();
-  const src = tmp.querySelector("canvas") || tmp.querySelector("img");
-  try { if (src) x.drawImage(src, 205, 181, 150, 140); } catch { /* QR no disponible */ }
-  tmp.remove();
+  if (modo !== "off") {
+    x.fillStyle = "rgba(255,255,255,.10)"; x.beginPath(); x.roundRect(190, 180, 180, 140, 12); x.fill();
+    x.fillStyle = "#CFD7EA"; x.font = "bold 13px Arial"; x.textAlign = "center";
+    x.fillText("El QR cambia cada 30 s", 280, 235);
+    x.fillText("y solo se muestra", 280, 255);
+    x.fillText("en la app", 280, 275);
+    x.textAlign = "left";
+  } else {
+    const tmp = document.createElement("div"); tmp.style.cssText = "position:absolute;left:-9999px"; document.body.appendChild(tmp);
+    new QRCode(tmp, { text: a.codigo, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M });
+    await new Promise((r) => setTimeout(r, 40));
+    x.fillStyle = "#fff"; x.beginPath(); x.roundRect(200, 176, 160, 150, 12); x.fill();
+    const src = tmp.querySelector("canvas") || tmp.querySelector("img");
+    try { if (src) x.drawImage(src, 205, 181, 150, 140); } catch { /* QR no disponible */ }
+    tmp.remove();
+  }
   return c;
 }
 
@@ -379,7 +454,8 @@ registerActions({
     } catch (e) { toast("No se pudo eliminar: " + e.message, "error"); }
   },
   descargar: async () => {
-    const c = await carnetCanvas(registro.alumno, registro.colegio);
+    const modo = qrModoEfectivo(registro?.qr_modo);
+    const c = await carnetCanvas(registro.alumno, registro.colegio, modo);
     await downloadFile(`mi-carnet-${registro.alumno.codigo}.png`, await new Promise((r) => c.toBlob(r, "image/png")));
   },
 });
@@ -405,6 +481,13 @@ async function boot() {
   bindActions();
   iniciarLogErrores("estudiante", api);
   setInterval(sincronizarRelojEstudiante, 10 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) alOcultarApp();
+    else alReanudarApp();
+  });
+  window.addEventListener("focus", () => {
+    if (!document.hidden) alReanudarApp();
+  });
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch((e) => console.warn("Service worker no registrado:", e.message));
   }

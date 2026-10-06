@@ -60,6 +60,13 @@ Hay dos formas:
 
 El nombre aparece en el menú lateral, el título de la pestaña, el carnet, el portal del estudiante y los reportes. También se recuerda entre sesiones para mostrarlo en la pantalla de acceso.
 
+## Seguridad del QR por institución
+
+Cada institución define de forma independiente su modo de validación de asistencia en **Gestión → Mi instituto** (solo Administrador):
+- **Desactivado (`off`)**: QR fijo (el código del alumno).
+- **Opcional (`opcional`)**: el estudiante muestra QR dinámico que renueva cada 30 s; se aceptan tanto el dinámico como el fijo impreso.
+- **Obligatorio (`obligatorio`, por defecto)**: la cámara solo valida el QR dinámico firmado, impidiendo el uso de capturas de pantalla (NFC y código manual siguen como alternativa).
+
 ## Limitaciones
 
 - El superadmin «entra» a una institución a la vez (su perfil se mueve al colegio destino).

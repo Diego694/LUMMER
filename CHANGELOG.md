@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.2.0 — 2026-10-05
+
+### Añadido
+- **QR dinámico seguro por institución**: configuración en *Mi instituto* (`colegios.qr_modo`) con tres modos: `off`, `opcional` y `obligatorio` (por defecto activo como `obligatorio`). Migración `012_qr_modo.sql` con constraint y función `mi_registro()` actualizada.
+- **Protección contra capturas en Android**: activación de `FLAG_SECURE` en el sabor de estudiante de la app Android nativa para bloquear capturas de pantalla y grabaciones en video.
+- **Regeneración dinámica en portal de estudiante**: actualización instantánea del código QR al abrir la app o volver al foco (`visibilitychange`/`focus`), limpieza del canvas en segundo plano y ocultación del código de texto en modo obligatorio.
+- **Aviso en carnets impresos**: advertencia visual para el personal indicando que con QR obligatorio los carnets impresos con QR estático no se validan por cámara y requieren NFC o código de respaldo.
+
+### Cambiado
+- **Ventana de tolerancia reducida**: reducción de tolerancia de HMAC-SHA256 de 2 a 1 ventana en `qr-seguro.js` (~60 s de validez máxima).
+- **Descarga de carnet estudiantil adaptada**: en modos dinámicos (`opcional` y `obligatorio`), la descarga de imagen del carnet omite el QR estático y muestra el aviso de que el QR solo se visualiza en vivo dentro de la aplicación.
+
 ## 3.1.2 — 2026-10-05
 
 ### Corregido

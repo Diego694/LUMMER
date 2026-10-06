@@ -277,6 +277,20 @@ export const extrasSupabase = {
     if (error) throw err(error.message, error.code);
     if (count === 0) throw err("No tienes permiso para cambiar el nombre");
   },
+  async cambiarQrModo(cid, modo) {
+    const m = String(modo || "").toLowerCase().trim();
+    if (!["off", "opcional", "obligatorio"].includes(m)) {
+      throw err("Modo no válido (usa off, opcional u obligatorio)");
+    }
+    const { error, count } = await this.sb.from("colegios").update({ qr_modo: m }, { count: "exact" }).eq("id", cid);
+    if (error) {
+      if (/does not exist|column|schema cache/i.test(error.message) || error.code === "PGRST204" || error.code === "42703") {
+        throw err("Falta aplicar la migración 012", error.code);
+      }
+      throw err(error.message, error.code);
+    }
+    if (count === 0) throw err("No tienes permiso para cambiar la seguridad del QR");
+  },
 };
 
 /* --------------------------------- Demo --------------------------------- */
@@ -465,6 +479,19 @@ export const extrasDemo = {
     if (this.db.instituciones) {
       const inst = this.db.instituciones.find((i) => i.id === cid || i.id === this.db.colegio.id);
       if (inst) inst.nombre = nom;
+    }
+    this.persist();
+  },
+  async cambiarQrModo(cid, modo) {
+    const m = String(modo || "").toLowerCase().trim();
+    if (!["off", "opcional", "obligatorio"].includes(m)) {
+      throw err("Modo no válido (usa off, opcional u obligatorio)");
+    }
+    this.reload();
+    this.db.colegio.qr_modo = m;
+    if (this.db.instituciones) {
+      const inst = this.db.instituciones.find((i) => i.id === cid || i.id === this.db.colegio.id);
+      if (inst) inst.qr_modo = m;
     }
     this.persist();
   },

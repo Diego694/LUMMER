@@ -31,6 +31,7 @@ El **superadmin** no es un rol de la tabla `perfiles`, sino una entrada en la ta
 | Ver reportes             |  ✓    |    ✓    |     ✓      |
 | Ver auditoría            |  ✓    |         |            |
 | Renombrar institución    |  ✓    |         |            |
+| Configurar seguridad QR  |  ✓    |         |            |
 | Gestionar instituciones  |  superadmin  |   |            |
 
 ## Seguridad
@@ -40,6 +41,7 @@ El **superadmin** no es un rol de la tabla `perfiles`, sino una entrada en la ta
 - `es_superadmin()` verifica si el usuario está en la tabla `superadmins`
 - Las funciones sensibles verifican el rol antes de ejecutar
 - El frontend replica las verificaciones con `puede(accion)` en `permisos.js`
+- Solo el Administrador puede editar el nombre y la seguridad del QR de su institución (`colegios.qr_modo`)
 - Las funciones `sa_*` comprueban `es_superadmin()` al inicio
 - `_crear_colegio` y `crear_instituto` están revocadas a todos los roles de la API
 

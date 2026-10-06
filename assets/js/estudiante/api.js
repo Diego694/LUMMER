@@ -102,7 +102,7 @@ class DemoEstudiante {
   async miRegistro(user) {
     const db = this.load();
     const a = db.alumnos.find((x) => x.user_id === user.id);
-    return a ? { alumno: a, colegio: db.colegio.nombre } : null;
+    return a ? { alumno: a, colegio: db.colegio.nombre, qr_modo: db.colegio.qr_modo || "obligatorio" } : null;
   }
   async subirFoto(user, blob) {
     const db = this.load();

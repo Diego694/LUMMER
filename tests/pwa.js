@@ -113,7 +113,8 @@ await check("QR dinámico: un QR recién generado se verifica y la firma depende
 
 await check("QR dinámico: vence (captura de pantalla inútil) pero tolera pequeños desfases", async () => {
   const q = await generarQR(alumnoQR.codigo, alumnoQR.qr_secreto, T0);
-  assert((await verificarQR(q, buscar, T0 + 60000)).ok === true, "a 60 s todavía vale (2 ventanas)");
+  assert((await verificarQR(q, buscar, T0 + 30000)).ok === true, "a 30 s todavía vale (1 ventana)");
+  assert((await verificarQR(q, buscar, T0 + 90000)).ok === false, "a 90 s no vale");
   const tarde = await verificarQR(q, buscar, T0 + 5 * VENTANA_MS);
   assert(tarde.ok === false && tarde.motivo === "vencido", JSON.stringify(tarde));
   assert((await verificarQR(q, buscar, T0 - 5 * VENTANA_MS)).motivo === "vencido", "tampoco sirve uno 'del futuro'");
@@ -128,6 +129,21 @@ await check("QR dinámico: manipular el código, la ventana o la firma lo invali
   assert((await verificarQR(alumnoQR.codigo, buscar, T0)).estatico === true && (await verificarQR("lo-que-sea", buscar, T0)).estatico === true);
   const sinSecreto = { ...alumnoQR, qr_secreto: undefined };
   assert((await verificarQR(q, (x) => (x === c ? sinSecreto : null), T0)).motivo === "sinsecreto");
+});
+
+await check("QR dinámico: código con puntos y firma en mayúsculas son aceptados", async () => {
+  const alumnoPuntos = { id: "2", codigo: "alu.2026.sec.1", qr_secreto: "secreto-con-puntos" };
+  const buscarPuntos = (c) => (c === alumnoPuntos.codigo ? alumnoPuntos : buscar(c));
+  const qPuntos = await generarQR(alumnoPuntos.codigo, alumnoPuntos.qr_secreto, T0);
+  const rPuntos = await verificarQR(qPuntos, buscarPuntos, T0);
+  assert(rPuntos.ok === true && rPuntos.alumno.id === "2", "código con puntos dinámico debe verificar");
+  assert((await verificarQR(alumnoPuntos.codigo, buscarPuntos, T0)).estatico === true, "código con puntos estático debe ser estático");
+
+  const q = await generarQR(alumnoQR.codigo, alumnoQR.qr_secreto, T0);
+  const i = q.lastIndexOf(".");
+  const qMayus = q.slice(0, i + 1) + q.slice(i + 1).toUpperCase();
+  const rMayus = await verificarQR(qMayus, buscar, T0);
+  assert(rMayus.ok === true && rMayus.alumno.id === "1", "firma en mayúsculas debe ser válida");
 });
 
 const fail = out.filter((r) => !r.ok);
