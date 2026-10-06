@@ -31,9 +31,23 @@ class ColaOfflineRepository @Inject constructor(
 
     fun contarPendientes(): Flow<Int> = dao.contarPendientesFlow()
 
+    fun contarRechazados(): Flow<Int> = dao.contarRechazadosFlow()
+
     fun obtenerPendientes(): Flow<List<ColaOfflineEntity>> = dao.obtenerPendientesFlow()
 
+    fun obtenerTodos(): Flow<List<ColaOfflineEntity>> = dao.listarTodosFlow()
+
     suspend fun totalPendientes(): Int = dao.contarPendientes()
+
+    suspend fun totalRechazados(): Int = dao.contarRechazados()
+
+    suspend fun listarTodos(): List<ColaOfflineEntity> = dao.listarTodos()
+
+    suspend fun eliminarPorId(id: String) = dao.eliminarPorId(id)
+
+    suspend fun vaciarRechazados() = dao.vaciarRechazados()
+
+    suspend fun vaciarTodo() = dao.vaciarTodo()
 
     suspend fun encolarAsistencia(asistencia: Asistencia): Boolean {
         val clave = "a|${asistencia.alumnoId}|${asistencia.fecha}"

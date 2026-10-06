@@ -2,6 +2,7 @@ package pe.registroacademico.nativo.ui.sistema
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Domain
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ManageHistory
@@ -24,6 +25,14 @@ val pantallasSistema: List<Pantalla> = listOf(
         grupo = "Sistema",
         soloAdmin = true,
         contenido = { ctx -> RespaldoScreen(ctx) }
+    ),
+    Pantalla(
+        id = "respaldo-offline",
+        titulo = "Respaldo offline",
+        icono = Icons.Default.CloudUpload,
+        grupo = "Sistema",
+        soloAdmin = true,
+        contenido = { ctx -> RespaldoOfflineScreen(ctx) }
     ),
     Pantalla(
         id = "historial",

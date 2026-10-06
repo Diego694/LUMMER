@@ -56,11 +56,17 @@ class SistemaRepoImpl @Inject constructor(
             }.decodeList<Auditoria>()
         } catch (e: Throwable) {
             val msg = e.message ?: ""
-            if (msg.contains("does not exist", ignoreCase = true) || msg.contains("schema cache", ignoreCase = true)) {
-                emptyList()
-            } else {
-                throw mapearError(e)
+            if (msg.contains("does not exist", ignoreCase = true) ||
+                msg.contains("schema cache", ignoreCase = true) ||
+                msg.contains("relation", ignoreCase = true)
+            ) {
+                throw ApiException(
+                    "Falta aplicar la migración 007 (supabase/migrations/007_operacion_avanzada.sql).",
+                    e,
+                    "migration007"
+                )
             }
+            throw mapearError(e)
         }
     }
 

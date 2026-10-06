@@ -39,6 +39,21 @@ interface ColaOfflineDao {
     @Query("SELECT * FROM cola_offline WHERE rechazado = 1 ORDER BY en DESC")
     fun listarRechazadosFlow(): Flow<List<ColaOfflineEntity>>
 
+    @Query("SELECT COUNT(*) FROM cola_offline WHERE rechazado = 1")
+    fun contarRechazadosFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM cola_offline WHERE rechazado = 1")
+    suspend fun contarRechazados(): Int
+
     @Query("DELETE FROM cola_offline WHERE rechazado = 1")
     suspend fun vaciarRechazados()
+
+    @Query("SELECT * FROM cola_offline ORDER BY en DESC")
+    fun listarTodosFlow(): Flow<List<ColaOfflineEntity>>
+
+    @Query("SELECT * FROM cola_offline ORDER BY en DESC")
+    suspend fun listarTodos(): List<ColaOfflineEntity>
+
+    @Query("DELETE FROM cola_offline")
+    suspend fun vaciarTodo()
 }
