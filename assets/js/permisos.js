@@ -50,3 +50,14 @@ export function aplicarPermisos() {
 
 /** @type {Record<'admin' | 'coordinador' | 'docente', string>} */
 export const ETIQUETA_ROL = { admin: "Administrador", coordinador: "Coordinador", docente: "Docente" };
+
+/**
+ * Determina si un rol corresponde a personal autorizado para el portal del aula (docentes y administradores).
+ * @param {string | null | undefined} rol
+ * @returns {boolean}
+ */
+export function puedeEntrarAlAula(rol) {
+  if (!rol) return false;
+  const r = String(rol).trim().toLowerCase();
+  return r === "admin" || r === "administrador" || r === "coordinador" || r === "docente";
+}

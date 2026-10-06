@@ -3,6 +3,7 @@
 ## 4.0.0 — 2026-10-05
 
 ### Añadido
+- **Portal separado LUMMER Aula**: portal web independiente (`aula/`) exclusivo para personal (administrador y docentes) enfocado únicamente en el aula virtual (cursos, material, actividades, entregas y notas), con manifest PWA propio, soporte de navegación offline y botón «Aula virtual» en el login de `index.html`.
 - **App nativa Android (Kotlin + Jetpack Compose)**: versión oficial principal para docentes y administradores con las 33 pantallas de la web portadas en su totalidad (registro QR con CameraX y Google ML Kit, quiosco con PIN y bloqueo, asistencia masiva y por curso, consultas, gestión, reportes, instituciones y configuración general).
 - **Respaldo y sincronización offline en móvil**: base de datos local Room y sincronización garantizada en segundo plano con WorkManager.
 - **Compilación y firma para Android 17 (API 37)**: `compileSdk 37`, `targetSdk 37`, `minSdk 24`, soporte para signing configs con keystore de producción en CI y distribución como release principal `app-latest` (`registro-academico.apk`) y por tags de versión en GitHub Actions.

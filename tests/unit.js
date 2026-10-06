@@ -266,7 +266,7 @@ test("salida: solo pasadas 2 horas desde el ingreso (quien sale temprano tambié
 });
 
 /* permisos, qr-seguro, api, estudiante (v4.0 Lote 2) */
-import { esAdmin, puede, rolActual } from "../assets/js/permisos.js";
+import { esAdmin, puede, puedeEntrarAlAula, rolActual } from "../assets/js/permisos.js";
 import { DB } from "../assets/js/state.js";
 import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
@@ -293,6 +293,25 @@ test("permisos · esAdmin y rolActual: normalización y detección de administra
   same(con("docente"), [false, "docente"]);
   same(con(null), [false, "docente"]);
   DB.perfil = previo;
+});
+
+test("permisos · puedeEntrarAlAula: solo personal docente y administrativo; rechaza estudiante, apoderado y vacíos", () => {
+  same(puedeEntrarAlAula("admin"), true);
+  same(puedeEntrarAlAula("Administrador"), true);
+  same(puedeEntrarAlAula("docente"), true);
+  same(puedeEntrarAlAula("Docente"), true);
+  same(puedeEntrarAlAula("coordinador"), true);
+  same(puedeEntrarAlAula("Coordinador"), true);
+  same(puedeEntrarAlAula("auxiliar"), false);
+  same(puedeEntrarAlAula("administrativo"), false);
+  same(puedeEntrarAlAula("estudiante"), false);
+  same(puedeEntrarAlAula("Estudiante"), false);
+  same(puedeEntrarAlAula("apoderado"), false);
+  same(puedeEntrarAlAula("alumno"), false);
+  same(puedeEntrarAlAula(null), false);
+  same(puedeEntrarAlAula(undefined), false);
+  same(puedeEntrarAlAula(""), false);
+  same(puedeEntrarAlAula("invitado"), false);
 });
 
 test("qr-seguro · qrModoEfectivo y ventana", () => {

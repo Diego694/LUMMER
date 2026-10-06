@@ -16,6 +16,8 @@ const SHELL = [
   // Portal del estudiante
   "estudiante/", "estudiante/manifest.webmanifest", "apoderado/", "assets/js/apoderado/main.js", "assets/css/estudiante.css", "assets/css/diseno.css",
   "assets/js/estudiante/main.js", "assets/js/estudiante/api.js", "assets/js/estudiante/aula.js",
+  // Portal del aula
+  "aula/", "aula/manifest.webmanifest", "assets/css/aula.css", "assets/js/aula-portal/main.js",
 ];
 const CDN = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
 
@@ -39,8 +41,10 @@ async function redPrimero(req) {
     const hit = await cache.match(req, { ignoreSearch: true });
     if (hit) return hit;
     if (req.mode === "navigate") {
-      const portalEstudiante = new URL(req.url).pathname.includes("/estudiante");
-      return (await cache.match(portalEstudiante ? "estudiante/" : "index.html")) || Response.error();
+      const pathname = new URL(req.url).pathname;
+      const portalAula = pathname.includes("/aula/") || pathname.endsWith("/aula");
+      const portalEstudiante = pathname.includes("/estudiante");
+      return (await cache.match(portalAula ? "aula/" : portalEstudiante ? "estudiante/" : "index.html")) || Response.error();
     }
     return Response.error();
   }
