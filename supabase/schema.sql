@@ -1,5 +1,5 @@
 -- =====================================================================
---  Lummer — esquema de base de datos (PostgreSQL / Supabase)
+--  LUMMER — esquema de base de datos (PostgreSQL / Supabase)
 --  Ejecutar completo en: Supabase → SQL Editor → New query → Run.
 --  Es idempotente: se puede volver a ejecutar sin perder datos.
 --  Modelo multi-instituto: cada usuario pertenece a un instituto (tabla perfiles) y las

@@ -115,7 +115,7 @@ flowchart TD
 
 | Archivo | Líneas | Responsabilidad |
 |---|---:|---|
-| `assets/js/estudiante/main.js` | 419 | Interfaz y flujo completo de Lummer Estudiante. |
+| `assets/js/estudiante/main.js` | 419 | Interfaz y flujo completo de LUMMER Estudiante. |
 | `assets/js/main.js` | 282 | Router por hash, autenticación y ciclo de vida de la PWA. |
 | `assets/js/estudiante/api.js` | 209 | Capa de datos del portal de estudiantes. |
 | `assets/js/apoderado/main.js` | 87 | Consulta de asistencia por código de 12 caracteres. |
@@ -321,7 +321,7 @@ flowchart LR
 4. **Hito 4: Dashboard y Métricas (`DashboardScreen`)**
    - Indicadores KPI (total matriculados, presentes, tardanzas, faltas).
    - Gráficos nativos (gráfico circular de asistencia y barras por ciclo) usando Canvas o biblioteca Vico.
-5. **Hito 5: Lummer Estudiante (Flavor `estudiante`)**
+5. **Hito 5: LUMMER Estudiante (Flavor `estudiante`)**
    - Carnet virtual con código QR de alto contraste.
    - Subida de foto a bucket Supabase Storage (`fotos-alumnos`).
    - Consulta personal de asistencia y comunicados.
