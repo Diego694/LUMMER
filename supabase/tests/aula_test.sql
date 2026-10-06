@@ -2,6 +2,7 @@
 -- Autónomo y SIN EFECTOS: todo ocurre dentro de una transacción que termina en ROLLBACK (no deja datos).
 --  · Local:    python supabase/tests/run_tests.py   (lo ejecuta después de aplicar las migraciones)
 --  · Supabase: pegar TODO este archivo en SQL Editor y ejecutar (después de aplicar 013 y 014). Resultado esperado: «AULA: TODAS LAS PRUEBAS PASARON».
+--    (Supabase prohíbe DELETE directo en storage.objects: el borrado se controla por la API de Storage.)
 --    Si algo falla, el mensaje dice cuál comprobación («FALLO: …» o «DEBIA FALLAR: …»).
 begin;
 
@@ -170,7 +171,6 @@ do $$ begin
   perform ta.act('f0000000-0000-0000-0000-0000000000d2');
   perform ta.eq(ta.n($q$select 1 from storage.objects where bucket_id = 'cursos'$q$)::text, '1', 'docente no asignado ve el material (personal del instituto) pero NO la entrega');
   perform ta.act('f0000000-0000-0000-0000-0000000000e3');
-  perform ta.eq(ta.dml($q$delete from storage.objects where name like '%/entregas/f0000000-0000-0000-0000-0000000000e1/%'$q$)::text, '0', 'el compañero no borra la entrega de est1');
   perform ta.root();
 end $$;
 

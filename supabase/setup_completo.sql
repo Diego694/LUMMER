@@ -1482,16 +1482,6 @@ language sql stable security definer set search_path = public as $$
   ), false)
 $$;
 
--- ¿Puede publicar en el curso? Administrador del instituto o docente asignado al curso.
-create or replace function public.puede_gestionar_curso(p_curso uuid) returns boolean
-language sql stable security definer set search_path = public as $$
-  select coalesce((
-    select c.colegio_id = public.mi_colegio()
-       and (public.es_admin() or exists (select 1 from public.curso_docentes d where d.curso_id = c.id and d.user_id = auth.uid()))
-    from public.cursos c where c.id = p_curso
-  ), false)
-$$;
-
 -- Curso al que pertenece un archivo del bucket (segunda carpeta de la ruta); null si la ruta no es válida.
 create or replace function public.curso_de_ruta(p_ruta text) returns uuid
 language sql immutable set search_path = public as $$
@@ -1508,6 +1498,16 @@ create table if not exists public.curso_docentes (
   primary key (curso_id, user_id)
 );
 create index if not exists idx_curso_docentes_user on public.curso_docentes (user_id);
+
+-- ¿Puede publicar en el curso? Administrador del instituto o docente asignado al curso.
+create or replace function public.puede_gestionar_curso(p_curso uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((
+    select c.colegio_id = public.mi_colegio()
+       and (public.es_admin() or exists (select 1 from public.curso_docentes d where d.curso_id = c.id and d.user_id = auth.uid()))
+    from public.cursos c where c.id = p_curso
+  ), false)
+$$;
 
 create table if not exists public.curso_materiales (
   id             uuid primary key default gen_random_uuid(),
