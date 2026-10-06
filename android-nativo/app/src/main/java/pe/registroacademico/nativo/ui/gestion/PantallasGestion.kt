@@ -12,8 +12,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ContactPage
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import pe.registroacademico.nativo.domain.Permisos
 import pe.registroacademico.nativo.ui.shell.Pantalla
 import pe.registroacademico.nativo.ui.shell.PantallaCtx
+import pe.registroacademico.nativo.ui.sistema.pantallasSistema
 
 @Composable
 fun PerfilScreenContent(ctx: PantallaCtx) {
@@ -171,5 +185,101 @@ val pantallasGestion: List<Pantalla> = listOf(
         icono = Icons.Default.AccountCircle,
         grupo = "Principal",
         contenido = { ctx -> PerfilScreenContent(ctx) }
+    ),
+    Pantalla(
+        id = "carnet",
+        titulo = "Carnet",
+        icono = Icons.Default.ContactPage,
+        grupo = "Gestión",
+        contenido = { ctx -> CarnetScreen(ctx) }
+    ),
+    Pantalla(
+        id = "codigo",
+        titulo = "Código de registro",
+        icono = Icons.Default.QrCode,
+        grupo = "Gestión",
+        contenido = { ctx -> CodigoScreen(ctx) }
+    ),
+    Pantalla(
+        id = "instituto",
+        titulo = "Mi instituto",
+        icono = Icons.Default.Business,
+        grupo = "Gestión",
+        soloAdmin = true,
+        contenido = { ctx -> InstitutoScreen(ctx) }
+    ),
+    Pantalla(
+        id = "alumnos",
+        titulo = "Alumnos",
+        icono = Icons.Default.School,
+        grupo = "Gestión",
+        contenido = { ctx -> AlumnosScreen(ctx) }
+    ),
+    Pantalla(
+        id = "docentes",
+        titulo = "Docentes",
+        icono = Icons.Default.Work,
+        grupo = "Gestión",
+        contenido = { ctx -> DocentesScreen(ctx) }
+    ),
+    Pantalla(
+        id = "personal",
+        titulo = "Personal y accesos",
+        icono = Icons.Default.Group,
+        grupo = "Gestión",
+        soloAdmin = true,
+        contenido = { ctx -> PersonalScreen(ctx) }
+    ),
+    Pantalla(
+        id = "niveles",
+        titulo = "Carreras",
+        icono = Icons.Default.Layers,
+        grupo = "Gestión",
+        contenido = { ctx -> NivelesScreen(ctx) }
+    ),
+    Pantalla(
+        id = "grados",
+        titulo = "Ciclos y salones",
+        icono = Icons.Default.MenuBook,
+        grupo = "Gestión",
+        contenido = { ctx -> GradosScreen(ctx) }
+    ),
+    Pantalla(
+        id = "cursos",
+        titulo = "Cursos",
+        icono = Icons.Default.Book,
+        grupo = "Gestión",
+        soloAdmin = true,
+        contenido = { ctx -> CursosScreen(ctx) }
+    ),
+    Pantalla(
+        id = "calendario",
+        titulo = "Calendario y horarios",
+        icono = Icons.Default.CalendarMonth,
+        grupo = "Gestión",
+        soloAdmin = true,
+        contenido = { ctx -> CalendarioScreen(ctx) }
+    ),
+    Pantalla(
+        id = "periodos",
+        titulo = "Periodos y cambio de ciclo",
+        icono = Icons.Default.DateRange,
+        grupo = "Gestión",
+        soloAdmin = true,
+        contenido = { ctx -> PeriodosScreen(ctx) }
+    ),
+    Pantalla(
+        id = "justificaciones",
+        titulo = "Justificaciones",
+        icono = Icons.Default.EventAvailable,
+        grupo = "Gestión",
+        contenido = { ctx -> JustificacionesScreen(ctx) }
+    ),
+    Pantalla(
+        id = "comunicados",
+        titulo = "Comunicados",
+        icono = Icons.Default.Notifications,
+        grupo = "Gestión",
+        contenido = { ctx -> ComunicadosScreen(ctx) }
     )
-)
+) + pantallasSistema
