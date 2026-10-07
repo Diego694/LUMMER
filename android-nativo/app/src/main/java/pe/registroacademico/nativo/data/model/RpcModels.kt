@@ -43,6 +43,7 @@ data class InstitucionItem(
     @SerialName("codigo_registro") val codigoRegistro: String? = null,
     @SerialName("activo") val activo: Boolean? = true,
     @SerialName("creado_en") val creadoEn: String? = null,
+    @SerialName("desvinculado_en") val desvinculadoEn: String? = null,
     @SerialName("alumnos") val alumnos: Long? = 0,
     @SerialName("personal") val personal: Long? = 0,
     @SerialName("actual") val actual: Boolean? = false

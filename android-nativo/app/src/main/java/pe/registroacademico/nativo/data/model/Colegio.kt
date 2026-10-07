@@ -12,5 +12,6 @@ data class Colegio(
     @SerialName("activo") val activo: Boolean? = true,
     @SerialName("aviso_token") val avisoToken: String? = null,
     @SerialName("creado_en") val creadoEn: String? = null,
-    @SerialName("created_at") val createdAt: String? = null
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("desvinculado_en") val desvinculadoEn: String? = null
 )

@@ -16,6 +16,7 @@ interface InstitucionesRepo {
     suspend fun saCrear(nombre: String, codigo: String? = null): InstitucionItem?
     suspend fun saRenombrar(id: String, nombre: String): Unit
     suspend fun saActivar(id: String, activo: Boolean): Unit
+    suspend fun saDesvincular(id: String, desvincular: Boolean): Unit
     suspend fun saEntrar(id: String): Unit
     suspend fun saAsignarAdmin(id: String, email: String): Unit
     suspend fun renombrarInstituto(colegioId: String, nombre: String): Unit
@@ -100,6 +101,27 @@ class InstitucionesRepoImpl @Inject constructor(
             val msg = e.message ?: ""
             if (msg.contains("does not exist", ignoreCase = true) || msg.contains("schema cache", ignoreCase = true)) {
                 throw ApiException("Falta aplicar la migración 011 en Supabase.", e)
+            }
+            throw mapearError(e)
+        }
+    }
+
+    override suspend fun saDesvincular(id: String, desvincular: Boolean): Unit {
+        try {
+            val params = buildJsonObject {
+                put("p_id", id)
+                put("p_desvincular", desvincular)
+            }
+            supabase.postgrest.rpc("sa_desvincular", params)
+        } catch (e: Throwable) {
+            val msg = e.message ?: ""
+            if (msg.contains("does not exist", ignoreCase = true) ||
+                msg.contains("schema cache", ignoreCase = true) ||
+                msg.contains("function", ignoreCase = true) ||
+                msg.contains("42883") ||
+                msg.contains("PGRST202")
+            ) {
+                throw ApiException("Falta aplicar la migración 018 en Supabase.", e)
             }
             throw mapearError(e)
         }

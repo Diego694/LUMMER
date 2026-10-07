@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Domain
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.ManageHistory
 import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material.icons.filled.SyncAlt
@@ -65,5 +66,13 @@ val pantallasSistema: List<Pantalla> = listOf(
         grupo = "Sistema",
         soloSuper = true,
         contenido = { ctx -> InstitucionesScreen(ctx) }
+    ),
+    Pantalla(
+        id = "conexiones",
+        titulo = "Conexiones de datos",
+        icono = Icons.Default.Layers,
+        grupo = "Sistema",
+        soloSuper = true,
+        contenido = { ctx -> ConexionesScreen(ctx) }
     )
 )

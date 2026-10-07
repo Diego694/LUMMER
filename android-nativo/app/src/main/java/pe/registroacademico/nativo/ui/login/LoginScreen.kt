@@ -29,10 +29,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -45,6 +49,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import pe.registroacademico.nativo.R
+import pe.registroacademico.nativo.ui.sistema.BasePropiaDialog
 
 @Composable
 fun LoginScreen(
@@ -54,6 +59,7 @@ fun LoginScreen(
     val formState by viewModel.formState.collectAsState()
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
+    var showBasePropiaDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(formState.uiState) {
         if (formState.uiState is LoginUiState.Success) {
@@ -260,8 +266,33 @@ fun LoginScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Enlace discreto para base de datos propia
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        TextButton(
+                            onClick = { showBasePropiaDialog = true },
+                            modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                        ) {
+                            Text(
+                                text = "Usar otra base de datos",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+
+    if (showBasePropiaDialog) {
+        BasePropiaDialog(
+            onDismiss = { showBasePropiaDialog = false }
+        )
     }
 }

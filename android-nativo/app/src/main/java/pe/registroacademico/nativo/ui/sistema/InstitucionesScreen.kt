@@ -20,10 +20,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Domain
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.School
@@ -168,6 +170,26 @@ class InstitucionesViewModel @Inject constructor(
         }
     }
 
+    fun desvincular(
+        id: String,
+        desvincular: Boolean,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(guardando = true)
+            try {
+                institucionesRepo.saDesvincular(id, desvincular)
+                cargar()
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e.message ?: "No se pudo cambiar el vínculo")
+            } finally {
+                _uiState.value = _uiState.value.copy(guardando = false)
+            }
+        }
+    }
+
     fun asignarAdmin(
         id: String,
         email: String,
@@ -224,6 +246,7 @@ fun InstitucionesScreen(
     var itemRenombrar by remember { mutableStateOf<InstitucionItem?>(null) }
     var itemAdmin by remember { mutableStateOf<InstitucionItem?>(null) }
     var itemActivar by remember { mutableStateOf<InstitucionItem?>(null) }
+    var itemDesvincular by remember { mutableStateOf<InstitucionItem?>(null) }
     var itemEntrar by remember { mutableStateOf<InstitucionItem?>(null) }
 
     fun copiarAlPortapapeles(texto: String) {
@@ -346,10 +369,17 @@ fun InstitucionesScreen(
                                                         tipo = TipoEstadoBadge.AZUL
                                                     )
                                                 }
-                                                EstadoBadge(
-                                                    texto = if (estaActiva) "Activa" else "Inactiva",
-                                                    tipo = if (estaActiva) TipoEstadoBadge.VERDE else TipoEstadoBadge.AMBAR
-                                                )
+                                                if (inst.desvinculadoEn != null) {
+                                                    EstadoBadge(
+                                                        texto = "Desvinculada",
+                                                        tipo = TipoEstadoBadge.ROJO
+                                                    )
+                                                } else {
+                                                    EstadoBadge(
+                                                        texto = if (estaActiva) "Activa" else "Inactiva",
+                                                        tipo = if (estaActiva) TipoEstadoBadge.VERDE else TipoEstadoBadge.AMBAR
+                                                    )
+                                                }
                                             }
 
                                             Spacer(modifier = Modifier.height(4.dp))
@@ -444,16 +474,42 @@ fun InstitucionesScreen(
                                             Text("Admin")
                                         }
 
-                                        TextButton(
-                                            onClick = { itemActivar = inst },
-                                            modifier = Modifier.defaultMinSize(minHeight = 44.dp),
-                                            colors = if (estaActiva) {
-                                                ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                        if (!esActual) {
+                                            val estaDesvinculada = inst.desvinculadoEn != null
+                                            if (estaDesvinculada) {
+                                                OutlinedButton(
+                                                    onClick = { itemDesvincular = inst },
+                                                    modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                                                ) {
+                                                    Icon(Icons.Default.Layers, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Vincular")
+                                                }
                                             } else {
-                                                ButtonDefaults.textButtonColors()
+                                                TextButton(
+                                                    onClick = { itemDesvincular = inst },
+                                                    modifier = Modifier.defaultMinSize(minHeight = 44.dp),
+                                                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                                ) {
+                                                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Desvincular")
+                                                }
                                             }
-                                        ) {
-                                            Text(if (estaActiva) "Desactivar" else "Activar")
+                                        }
+
+                                        if (inst.desvinculadoEn == null) {
+                                            TextButton(
+                                                onClick = { itemActivar = inst },
+                                                modifier = Modifier.defaultMinSize(minHeight = 44.dp),
+                                                colors = if (estaActiva) {
+                                                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                                } else {
+                                                    ButtonDefaults.textButtonColors()
+                                                }
+                                            ) {
+                                                Text(if (estaActiva) "Desactivar" else "Activar")
+                                            }
                                         }
                                     }
                                 }
@@ -717,6 +773,44 @@ fun InstitucionesScreen(
                 )
             },
             onCancelar = { itemEntrar = null }
+        )
+    }
+
+    // Modal Confirmar Desvincular / Vincular
+    itemDesvincular?.let { inst ->
+        val desvincular = inst.desvinculadoEn == null
+        val titulo = if (desvincular) "Desvincular base de datos" else "Vincular base de datos"
+        val mensaje = if (desvincular) {
+            "«${inst.nombre}» quedará inactiva y su personal dejará de ver o escribir datos. No se borra nada: sus datos siguen guardados y puedes vincularla de nuevo. Si quieres una copia, entra a la institución y descarga el paquete en «Conexiones de datos»."
+        } else {
+            "«${inst.nombre}» volverá a estar activa y su personal recuperará el acceso a sus datos."
+        }
+        val textoConfirmar = if (desvincular) "Desvincular" else "Vincular"
+
+        ConfirmDialog(
+            titulo = titulo,
+            mensaje = mensaje,
+            textoConfirmar = textoConfirmar,
+            esPeligro = desvincular,
+            onConfirmar = {
+                viewModel.desvincular(
+                    id = inst.id,
+                    desvincular = desvincular,
+                    onSuccess = {
+                        itemDesvincular = null
+                        ctx.scope.launch {
+                            ctx.snackbarHostState.showSnackbar(
+                                if (desvincular) "Institución desvinculada" else "Institución vinculada"
+                            )
+                        }
+                    },
+                    onError = { err ->
+                        itemDesvincular = null
+                        ctx.scope.launch { ctx.snackbarHostState.showSnackbar(err) }
+                    }
+                )
+            },
+            onCancelar = { itemDesvincular = null }
         )
     }
 }
