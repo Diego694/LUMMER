@@ -271,7 +271,7 @@ import { DB } from "../assets/js/state.js";
 import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
 import { vocabulario } from "../assets/js/estudiante/api.js";
-import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso, periodoDe, periodosDe, agendaEstudiante } from "../assets/js/api-aula.js";
+import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso, periodoDe, periodosDe, agendaEstudiante, cursosParaPasarLista, resumenLista } from "../assets/js/api-aula.js";
 
 test("permisos · puede: rol docente no puede acciones de administración", () => {
   const previo = DB.perfil;
@@ -389,6 +389,16 @@ test("aula · agendaEstudiante separa por entregar, vencidas y entregadas con su
   same(r.porEntregar.map((x) => x.actividad.id), ["cerca", "lejos", "sinfecha"], "próxima primero, sin fecha al final");
   same(r.vencidas.map((x) => x.actividad.id), ["v-reciente", "v-vieja"], "la más reciente primero");
   same(r.entregadas.map((x) => x.actividad.id), ["hecha"], "entregada aunque venció");
+});
+
+test("aula · pasar lista: el docente solo ve sus cursos y el resumen cuenta presentes", () => {
+  const cursos = [{ id: "c1" }, { id: "c2" }, { id: "c3" }];
+  same(cursosParaPasarLista(cursos, true, []).length, 3, "el admin ve todos");
+  same(cursosParaPasarLista(cursos, false, ["c2"]).map((c) => c.id), ["c2"], "el docente, los asignados");
+  same(cursosParaPasarLista(cursos, false, []).length, 0, "sin asignar no ve ninguno");
+  const al = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  same(resumenLista(al, new Set(["a", "c", "zz"])), { total: 3, presentes: 2, faltan: 1, pct: 67 });
+  same(resumenLista([], new Map()), { total: 0, presentes: 0, faltan: 0, pct: 0 });
 });
 
 /* render */

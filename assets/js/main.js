@@ -31,6 +31,7 @@ import { institutoPage } from "./pages/instituto.js";
 import { avisosPage } from "./pages/avisos.js";
 import { justificacionesPage, reportePage } from "./pages/reportes.js";
 import { asistCursoPage, cursosPage } from "./pages/cursos.js";
+import { pasarListaPage } from "./pages/pasar-lista.js";
 import { aulaPage } from "./pages/aula.js";
 import { diagnosticoPage, erroresPage, respaldoPage } from "./pages/sistema.js";
 import { alumnosPage, comunicadosPage, docentesPage, gradosPage, nivelesPage } from "./pages/mantenimiento.js";
@@ -39,7 +40,7 @@ import { institucionesPage } from "./pages/instituciones.js";
 /** @type {any[]} */
 const PAGES = [
   dashboardPage, perfilPage, aulaPage,
-  registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
+  pasarListaPage, registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, alertasPage, avisosPage,
   carnetPage, codigoPage, institutoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
   diagnosticoPage, respaldoPage, offlinePage, historialPage, migrarPage, erroresPage, institucionesPage,

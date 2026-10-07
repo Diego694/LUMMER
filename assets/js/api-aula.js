@@ -148,6 +148,28 @@ export async function eliminarFila(sb, tabla, fila) {
   if (fila.archivo_path) await sb.storage.from(BUCKET_AULA).remove([fila.archivo_path]).catch(() => { /* el archivo huérfano no bloquea */ });
 }
 
+/**
+ * Cursos que ve quien pasa lista: el administrador, todos; un docente o coordinador, solo los que el administrador le asignó.
+ * @template {{ id?: string }} C
+ * @param {C[]} cursos
+ * @param {boolean} esAdmin
+ * @param {string[]} asignados ids de curso asignados a este usuario
+ * @returns {C[]}
+ */
+export function cursosParaPasarLista(cursos, esAdmin, asignados) {
+  return esAdmin ? cursos : cursos.filter((c) => c.id != null && asignados.includes(c.id));
+}
+
+/**
+ * Resumen de la lista de un curso: cuántos hay, cuántos ya se marcaron y cuántos faltan por marcar.
+ * @param {{ id: string }[]} alumnos
+ * @param {Set<string> | Map<string, unknown>} marcados
+ */
+export function resumenLista(alumnos, marcados) {
+  const presentes = alumnos.filter((a) => marcados.has(a.id)).length;
+  return { total: alumnos.length, presentes, faltan: alumnos.length - presentes, pct: alumnos.length ? Math.round((presentes / alumnos.length) * 100) : 0 };
+}
+
 export const PERIODOS_MAX = 8;
 
 /** Periodo de una actividad (las anteriores a la migración 015 cuentan como periodo 1). @param {{ periodo?: number | null }} a */
@@ -325,6 +347,12 @@ export const aulaSupabase = {
     if (error) throw err(error.message, error.code);
     return data;
   },
+  /** @this {any} @param {string} userId @returns {Promise<string[]>} */
+  async aulaCursosDe(userId) {
+    const { data, error } = await this.sb.from("curso_docentes").select("curso_id").eq("user_id", userId);
+    if (error) throw err(error.message, error.code);
+    return data.map((/** @type {{ curso_id: string }} */ d) => d.curso_id);
+  },
   /** @this {any} @param {string} cursoId @param {string} userId */
   async aulaAsignarDocente(cursoId, userId) {
     const { error } = await this.sb.from("curso_docentes").insert({ curso_id: cursoId, user_id: userId });
@@ -387,6 +415,8 @@ export const aulaDemo = {
   },
   /** @this {any} @param {string} cursoId */
   async aulaDocentes(cursoId) { this.reload(); return tabla(this.db, "curso_docentes").filter((/** @type {any} */ d) => d.curso_id === cursoId); },
+  /** @this {any} @param {string} userId @returns {Promise<string[]>} */
+  async aulaCursosDe(userId) { this.reload(); return tabla(this.db, "curso_docentes").filter((/** @type {any} */ d) => d.user_id === userId).map((/** @type {any} */ d) => d.curso_id); },
   /** @this {any} @param {string} cursoId @param {string} userId */
   async aulaAsignarDocente(cursoId, userId) {
     this.reload(); const l = tabla(this.db, "curso_docentes");

@@ -786,6 +786,7 @@ export interface Api {
   aulaEliminar(tabla: 'curso_materiales' | 'curso_actividades', fila: { id: string; archivo_path?: string | null }): Promise<void>;
   aulaUrlArchivo(path: string): Promise<string>;
   aulaDocentes(cursoId: string): Promise<{ user_id: string }[]>;
+  aulaCursosDe(userId: string): Promise<string[]>;
   aulaEntregas(actividadId: string): Promise<CursoEntrega[]>;
   aulaEntregasCurso(cursoId: string): Promise<CursoEntrega[]>;
   aulaCalificar(id: string, nota: number | null, comentario: string): Promise<void>;

@@ -11,7 +11,7 @@ const SHELL = [
   "assets/js/pages/dashboard.js", "assets/js/pages/registro.js", "assets/js/pages/consultas.js",
   "assets/js/pages/carnet.js", "assets/js/pages/mantenimiento.js", "assets/js/alerta.js", "assets/js/pages/codigo.js", "assets/js/cola.js", "assets/js/sync.js", "assets/js/permisos.js", "assets/js/errlog.js", "assets/js/api-extra.js", "assets/js/api-aula.js", "assets/js/pages/aula.js", "assets/js/qr-seguro.js", "assets/js/modo.js", "assets/js/notificaciones.js", "assets/js/pages/personal.js", "assets/js/pages/perfil.js", "assets/js/calendario.js", "assets/js/promocion.js", "assets/js/fusion.js", "assets/js/riesgo.js",
   "assets/js/pages/calendario.js", "assets/js/pages/periodos.js", "assets/js/pages/alertas.js", "assets/js/pages/historial.js", "assets/js/pages/migrar.js", "assets/js/pages/quiosco.js", "assets/js/pages/solicitudes.js", "assets/js/respaldo-offline.js", "assets/js/pages/offline.js", "assets/js/compat.js", "privacidad.html", "entorno.html",
-  "assets/js/pages/avisos.js", "assets/js/pages/reportes.js", "assets/js/pages/cursos.js", "assets/js/pages/sistema.js",
+  "assets/js/pages/avisos.js", "assets/js/pages/reportes.js", "assets/js/pages/cursos.js", "assets/js/pages/pasar-lista.js", "assets/js/pages/sistema.js",
   "assets/js/marca.js", "assets/js/pages/instituciones.js", "assets/js/pages/instituto.js",
   // Portal del estudiante
   "estudiante/", "estudiante/manifest.webmanifest", "apoderado/", "assets/js/apoderado/main.js", "assets/css/estudiante.css", "assets/css/diseno.css",

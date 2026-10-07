@@ -3,6 +3,7 @@
 ## 4.0.0 — 2026-10-05
 
 ### Añadido
+- **Panel: «Pasar lista» por curso y ciclo**: cada docente ve solo los cursos que el administrador le asignó (el administrador y el superadmin ven todos), elige curso y marca a cada alumno con un botón grande «Presente», escaneando su carnet (cámara o código) o con «Marcar a todos presentes». Muestra presentes, sin marcar y barra de avance, con filtro y búsqueda, y puede marcar a la vez el ingreso al instituto si el alumno aún no ingresó hoy. No requiere migración.
 - **Aula: «Mis pendientes» del estudiante**: agenda con las actividades de todos sus cursos agrupadas en vencidas sin entregar, por entregar (la más próxima primero) y entregadas con su nota. No requiere migración.
 - **Portal separado LUMMER Aula**: portal web independiente (`aula/`) exclusivo para personal (administrador y docentes) enfocado únicamente en el aula virtual (cursos, material, actividades, entregas y notas), con manifest PWA propio, soporte de navegación offline y botón «Aula virtual» en el login de `index.html`.
 - **App nativa Android (Kotlin + Jetpack Compose)**: versión oficial principal para docentes y administradores con las 33 pantallas de la web portadas en su totalidad (registro QR con CameraX y Google ML Kit, quiosco con PIN y bloqueo, asistencia masiva y por curso, consultas, gestión, reportes, instituciones y configuración general).
