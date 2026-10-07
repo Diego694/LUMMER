@@ -178,5 +178,7 @@ Abra `http://127.0.0.1:8080/?demo=1` e ingrese con las credenciales `demo@instit
 Para consultar el índice temático completo, visite el [índice de documentación](docs/README.md). El registro de versiones está disponible en el [historial de cambios](CHANGELOG.md).
 
 ---
+EN LA PESTAÑA DEL REPOSITORIO EN EL APARTADO SUPABASE SE ENCUENTRAN TODOS LOS SCRIPTS SQL EJECUTABLES PARA PODER HACER TU PROPIA BASE DE DATOS PREDISEÑADA CON SUPABASE U OTRA SIMILAR
+---
 
 HECHO CON MUCHO AMOR Y CARIÑO PARA USTEDES :)
