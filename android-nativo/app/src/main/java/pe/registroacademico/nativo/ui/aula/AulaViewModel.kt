@@ -162,15 +162,25 @@ class AulaViewModel @Inject constructor(
                 val alumnosDeferred = async {
                     if (colegioId.isNotBlank()) aulaRepo.listarAlumnos(colegioId) else emptyList()
                 }
+                val manualesDeferred = async {
+                    try {
+                        aulaRepo.listarAlumnosDelCurso(cursoId)
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                }
 
                 val entregas = entregasDeferred.await()
                 val alumnos = alumnosDeferred.await()
+                val manuales = manualesDeferred.await()
+                val manualesIds = manuales.map { it.alumnoId }.toSet()
 
                 _uiState.update {
                     it.copy(
                         cargandoNotas = false,
                         entregasLibro = entregas,
-                        alumnosCurso = alumnos
+                        alumnosCurso = alumnos,
+                        alumnosManualesIds = manualesIds
                     )
                 }
                 recalcularLibro()
@@ -194,7 +204,7 @@ class AulaViewModel @Inject constructor(
         } else {
             state.actividades
         }
-        val alumnos = AulaUtils.alumnosDelCurso(state.alumnosCurso, curso)
+        val alumnos = AulaUtils.alumnosDelCurso(state.alumnosCurso, curso, state.alumnosManualesIds)
         val libro = AulaUtils.libroNotas(alumnos, actividades, state.entregasLibro)
         _uiState.update { it.copy(libroNotas = libro) }
     }
@@ -469,5 +479,14 @@ class AulaViewModel @Inject constructor(
         } else state.actividades
 
         return AulaUtils.generarCsvNotas(actividades, state.libroNotas)
+    }
+
+    // --- Estudiantes del curso ---
+    fun abrirModalEstudiantes() {
+        _uiState.update { it.copy(mostrarModalEstudiantes = true) }
+    }
+
+    fun cerrarModalEstudiantes() {
+        _uiState.update { it.copy(mostrarModalEstudiantes = false) }
     }
 }

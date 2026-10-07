@@ -81,6 +81,7 @@ import pe.registroacademico.nativo.ui.components.SearchField
 import pe.registroacademico.nativo.ui.components.SkeletonList
 import pe.registroacademico.nativo.ui.components.TipoEstadoBadge
 import pe.registroacademico.nativo.ui.escaner.EscanerScreen
+import pe.registroacademico.nativo.ui.gestion.EstudiantesCursoDialog
 import pe.registroacademico.nativo.ui.shell.PantallaCtx
 import java.text.Collator
 import java.util.Locale
@@ -128,6 +129,7 @@ fun PasarListaScreen(
         VistaSeleccionarCurso(
             cursos = uiState.cursosMios,
             todosAlumnos = uiState.todosAlumnos,
+            manualesPorCurso = uiState.manualesPorCurso,
             esAdmin = esAdmin,
             onSeleccionarCurso = { curso ->
                 viewModel.abrirCurso(curso, ctx.sesion.colegioId)
@@ -150,6 +152,7 @@ fun PasarListaScreen(
 private fun VistaSeleccionarCurso(
     cursos: List<Curso>,
     todosAlumnos: List<Alumno>,
+    manualesPorCurso: Map<String, Set<String>> = emptyMap(),
     esAdmin: Boolean,
     onSeleccionarCurso: (Curso) -> Unit,
     modifier: Modifier = Modifier
@@ -208,8 +211,12 @@ private fun VistaSeleccionarCurso(
                 )
 
                 cursosDeCarrera.forEach { curso ->
-                    val alumnosDelCurso = remember(todosAlumnos, curso) {
-                        PasarListaUtils.alumnosDelCurso(todosAlumnos, curso)
+                    val alumnosDelCurso = remember(todosAlumnos, curso, manualesPorCurso) {
+                        PasarListaUtils.alumnosDelCurso(
+                            todosAlumnos,
+                            curso,
+                            manualesPorCurso[curso.id] ?: emptySet()
+                        )
                     }
 
                     Card(
@@ -288,6 +295,7 @@ private fun VistaClase(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     var mostrarConfirmarTodos by remember { mutableStateOf(false) }
+    var mostrarModalEstudiantes by remember { mutableStateOf(false) }
 
     val alumnos = uiState.alumnosCurso
     val marcados = uiState.marcados
@@ -311,13 +319,13 @@ private fun VistaClase(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp)
     ) {
-        // Cabecera con botón de retorno
+        // Cabecera con botón de retorno y gestión de estudiantes
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             OutlinedButton(
                 onClick = onVolver,
@@ -330,6 +338,19 @@ private fun VistaClase(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Mis cursos")
+            }
+
+            OutlinedButton(
+                onClick = { mostrarModalEstudiantes = true },
+                modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Group,
+                    contentDescription = "Estudiantes del curso",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Estudiantes")
             }
         }
 
@@ -865,6 +886,18 @@ private fun VistaClase(
             },
             onCancelar = { mostrarConfirmarTodos = false },
             esPeligro = false
+        )
+    }
+
+    if (mostrarModalEstudiantes) {
+        EstudiantesCursoDialog(
+            curso = curso,
+            colegioId = ctx.sesion.colegioId,
+            userId = ctx.sesion.userId,
+            onCerrar = { mostrarModalEstudiantes = false },
+            onActualizado = {
+                viewModel.abrirCurso(curso, ctx.sesion.colegioId)
+            }
         )
     }
 }

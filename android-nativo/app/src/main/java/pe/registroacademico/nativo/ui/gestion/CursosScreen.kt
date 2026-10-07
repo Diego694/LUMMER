@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -154,6 +155,7 @@ fun CursosScreen(
     var mostrarModalCrear by remember { mutableStateOf(false) }
     var cursoParaEditar by remember { mutableStateOf<Curso?>(null) }
     var cursoParaEliminar by remember { mutableStateOf<Curso?>(null) }
+    var cursoParaEstudiantes by remember { mutableStateOf<Curso?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.cargarDatos()
@@ -263,6 +265,17 @@ fun CursosScreen(
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             IconButton(
+                                                onClick = { cursoParaEstudiantes = curso },
+                                                modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Group,
+                                                    contentDescription = "Estudiantes de ${curso.nombre}",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+
+                                            IconButton(
                                                 onClick = { cursoParaEditar = curso },
                                                 modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                                             ) {
@@ -322,6 +335,17 @@ fun CursosScreen(
                                             texto = if (activo) "Activo" else "Inactivo",
                                             tipo = if (activo) TipoEstadoBadge.VERDE else TipoEstadoBadge.NEUTRAL
                                         )
+
+                                        IconButton(
+                                            onClick = { cursoParaEstudiantes = curso },
+                                            modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Group,
+                                                contentDescription = "Estudiantes de ${curso.nombre}",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
 
                                         IconButton(
                                             onClick = { cursoParaEditar = curso },
@@ -520,6 +544,18 @@ fun CursosScreen(
                 }
             },
             onCancelar = { cursoParaEliminar = null }
+        )
+    }
+
+    cursoParaEstudiantes?.let { curso ->
+        EstudiantesCursoDialog(
+            curso = curso,
+            colegioId = ctx.sesion.colegioId,
+            userId = ctx.sesion.userId,
+            onCerrar = { cursoParaEstudiantes = null },
+            onActualizado = {
+                viewModel.cargarDatos()
+            }
         )
     }
 }

@@ -18,6 +18,7 @@
   - **Desvincular institución**: soporte en UI para suspender y reactivar instituciones desde la vista de instituciones del superadministrador.
   - **Base propia de Supabase**: persistencia de credenciales alternativas en preferencias locales (`BasePropiaStore` en `domain/Conectores.kt`) que permite conectar la aplicación a una instancia Supabase independiente.
   - *Estado de verificación*: la integración compila y pasa todas las pruebas unitarias en la JVM (`AulaUtilsTest`, `ConectoresTest`, etc.); **NO** ha sido verificada aún en un dispositivo físico real ni contra una base de datos real de producción.
+- **Android nativo · Estudiantes del curso (migración 020)**: matrícula manual de estudiantes a cursos (`curso_alumnos`) para cross-ciclo, repitientes o cursos transversales del instituto. Diálogo «Estudiantes del curso» accesible desde Pasar lista (botón en clase), Aula virtual (botón en tarjeta del curso según asignación/rol) y Gestión de Cursos (administrador). Visualización con etiquetas «Por su ciclo» / «Manual», acción «Quitar» solo para manuales, y «Agregar alumnos» con buscador reactivo y selección múltiple. Integración en `StatsUtils.perteneceACurso(..., matriculadoManual)`, `PasarListaUtils`/`PasarListaViewModel`, `AsistCursoViewModel`, `AulaRepo`/`AulaViewModel`, clave compuesta en `Conectores.kt` y pruebas unitarias puras en la JVM.
 
 ## 4.0.0 — 2026-10-05
 

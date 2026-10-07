@@ -365,8 +365,9 @@ object StatsUtils {
         alumnoNivel: String,
         alumnoGrado: String?,
         cursoNivel: String,
-        cursoGrado: String?
+        cursoGrado: String?,
+        matriculadoManual: Boolean = false
     ): Boolean {
-        return alumnoNivel == cursoNivel && (cursoGrado.isNullOrBlank() || alumnoGrado == cursoGrado)
+        return matriculadoManual || (alumnoNivel == cursoNivel && (cursoGrado.isNullOrBlank() || alumnoGrado == cursoGrado))
     }
 }

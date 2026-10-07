@@ -67,12 +67,13 @@ enum class TipoConexion(
 
 val TABLAS_CONEXION = listOf(
     "colegios", "niveles", "grados", "docentes", "alumnos", "comunicados", "cursos", "curso_docentes",
-    "asistencias", "justificaciones", "avisos_apoderados", "asistencias_curso",
+    "curso_alumnos", "asistencias", "justificaciones", "avisos_apoderados", "asistencias_curso",
     "curso_materiales", "curso_actividades", "curso_entregas"
 )
 
 private val CLAVE_ID = mapOf(
-    "curso_docentes" to listOf("curso_id", "user_id")
+    "curso_docentes" to listOf("curso_id", "user_id"),
+    "curso_alumnos" to listOf("curso_id", "alumno_id")
 )
 
 data class ClasificacionLlave(

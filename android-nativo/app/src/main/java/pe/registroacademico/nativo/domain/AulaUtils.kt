@@ -105,15 +105,24 @@ object AulaUtils {
     }
 
     /**
-     * Estudiantes que cursan un curso: activos y aprobados de su carrera y, si el curso es de un ciclo, de ese ciclo.
+     * Estudiantes que cursan un curso: activos y aprobados de su carrera y ciclo, o matriculados manualmente.
      */
-    fun alumnosDelCurso(alumnos: List<Alumno>, curso: Curso): List<Alumno> {
+    fun alumnosDelCurso(
+        alumnos: List<Alumno>,
+        curso: Curso,
+        manualesIds: Set<String> = emptySet()
+    ): List<Alumno> {
         return alumnos
             .filter { a ->
-                a.nivel == curso.nivel &&
-                    (curso.grado.isNullOrBlank() || a.grado == curso.grado) &&
-                    (a.estado == "ACTIVO") &&
-                    a.aprobado != false
+                a.estado == "ACTIVO" &&
+                    a.aprobado != false &&
+                    StatsUtils.perteneceACurso(
+                        alumnoNivel = a.nivel,
+                        alumnoGrado = a.grado,
+                        cursoNivel = curso.nivel,
+                        cursoGrado = curso.grado,
+                        matriculadoManual = a.id in manualesIds
+                    )
             }
             .sortedWith { x, y -> x.nombre.compareTo(y.nombre, ignoreCase = true) }
     }

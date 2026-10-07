@@ -53,6 +53,7 @@ import pe.registroacademico.nativo.ui.components.OpcionDropdown
 import pe.registroacademico.nativo.ui.components.PageHeader
 import pe.registroacademico.nativo.ui.components.SkeletonList
 import pe.registroacademico.nativo.ui.components.SnackbarHelper
+import pe.registroacademico.nativo.ui.gestion.EstudiantesCursoDialog
 import pe.registroacademico.nativo.ui.shell.PantallaCtx
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -207,14 +208,29 @@ fun AulaScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                if (esAdmin) {
-                                    OutlinedButton(
-                                        onClick = { viewModel.abrirModalDocentes() },
-                                        modifier = Modifier.defaultMinSize(minHeight = 44.dp)
-                                    ) {
-                                        Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Docentes")
+                                 FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    if (uiState.gestionaCurso) {
+                                        OutlinedButton(
+                                            onClick = { viewModel.abrirModalEstudiantes() },
+                                            modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                                        ) {
+                                            Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Estudiantes")
+                                        }
+                                    }
+                                    if (esAdmin) {
+                                        OutlinedButton(
+                                            onClick = { viewModel.abrirModalDocentes() },
+                                            modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                                        ) {
+                                            Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Docentes")
+                                        }
                                     }
                                 }
                             }
@@ -238,14 +254,29 @@ fun AulaScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                if (esAdmin) {
-                                    OutlinedButton(
-                                        onClick = { viewModel.abrirModalDocentes() },
-                                        modifier = Modifier.defaultMinSize(minHeight = 44.dp)
-                                    ) {
-                                        Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Docentes")
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    if (uiState.gestionaCurso) {
+                                        OutlinedButton(
+                                            onClick = { viewModel.abrirModalEstudiantes() },
+                                            modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                                        ) {
+                                            Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Estudiantes")
+                                        }
+                                    }
+                                    if (esAdmin) {
+                                        OutlinedButton(
+                                            onClick = { viewModel.abrirModalDocentes() },
+                                            modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                                        ) {
+                                            Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Docentes")
+                                        }
                                     }
                                 }
                             }
@@ -562,6 +593,20 @@ fun AulaScreen(
                 )
             },
             onCerrar = { viewModel.cerrarModalDocentes() }
+        )
+    }
+
+    // Modal Estudiantes del Curso
+    if (uiState.mostrarModalEstudiantes && uiState.cursoSeleccionado != null) {
+        val curso = uiState.cursoSeleccionado!!
+        EstudiantesCursoDialog(
+            curso = curso,
+            colegioId = ctx.sesion.colegioId,
+            userId = ctx.sesion.userId,
+            onCerrar = { viewModel.cerrarModalEstudiantes() },
+            onActualizado = {
+                viewModel.seleccionarCurso(curso)
+            }
         )
     }
 }

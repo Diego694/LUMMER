@@ -55,6 +55,8 @@ data class PasarListaUiState(
     val ultimoResultado: EscaneoResultadoInfo? = null,
     val procesandoMarcado: Boolean = false,
     val horasIngresoHoy: Set<String> = emptySet(),
+    val manualesPorCurso: Map<String, Set<String>> = emptyMap(),
+    val alumnosManualesIds: Set<String> = emptySet(),
     val mensajeSnackbar: String? = null
 )
 
@@ -78,6 +80,14 @@ class PasarListaViewModel @Inject constructor(
             try {
                 val todosCursos = catalogosRepo.listarCursos(colegioId)
                 val todosAlumnos = alumnosRepo.listar(colegioId)
+                val todosCursoAlumnos = try {
+                    catalogosRepo.listarCursoAlumnos(colegioId)
+                } catch (_: Throwable) {
+                    emptyList()
+                }
+                val manualesMap = todosCursoAlumnos.groupBy({ it.cursoId }, { it.alumnoId })
+                    .mapValues { it.value.toSet() }
+
                 val asignados = if (esAdmin) {
                     emptyList()
                 } else {
@@ -94,7 +104,8 @@ class PasarListaViewModel @Inject constructor(
                     it.copy(
                         cargando = false,
                         cursosMios = mios,
-                        todosAlumnos = todosAlumnos
+                        todosAlumnos = todosAlumnos,
+                        manualesPorCurso = manualesMap
                     )
                 }
 
@@ -150,12 +161,21 @@ class PasarListaViewModel @Inject constructor(
                     it.alumnoId to AlumnoMarcadoInfo(hora = it.hora.take(5))
                 }
 
-                val alumnosDelCurso = PasarListaUtils.alumnosDelCurso(_uiState.value.todosAlumnos, curso)
+                val manualesIds = try {
+                    if (cursoId.isNotBlank()) {
+                        catalogosRepo.listarAlumnosDelCurso(cursoId).map { it.alumnoId }.toSet()
+                    } else emptySet()
+                } catch (_: Throwable) {
+                    _uiState.value.manualesPorCurso[cursoId] ?: emptySet()
+                }
+
+                val alumnosDelCurso = PasarListaUtils.alumnosDelCurso(_uiState.value.todosAlumnos, curso, manualesIds)
 
                 _uiState.update {
                     it.copy(
                         cargando = false,
                         alumnosCurso = alumnosDelCurso,
+                        alumnosManualesIds = manualesIds,
                         marcados = marcadosMap,
                         horasIngresoHoy = asistenciasDiarias.map { a -> a.alumnoId }.toSet()
                     )
@@ -179,7 +199,8 @@ class PasarListaViewModel @Inject constructor(
                 ultimoResultado = null,
                 codigoManual = "",
                 busqueda = "",
-                filtro = FiltroLista.TODOS
+                filtro = FiltroLista.TODOS,
+                alumnosManualesIds = emptySet()
             )
         }
     }
@@ -217,7 +238,8 @@ class PasarListaViewModel @Inject constructor(
         val curso = _uiState.value.cursoSeleccionado ?: return
         val yaMarcado = _uiState.value.marcados.containsKey(alumno.id)
 
-        val validacion = PasarListaUtils.validarMarcar(alumno, curso, yaMarcado)
+        val esManual = alumno.id in _uiState.value.alumnosManualesIds
+        val validacion = PasarListaUtils.validarMarcar(alumno, curso, yaMarcado, esManual = esManual)
         if (validacion != null) {
             when (validacion) {
                 is ResultadoMarcar.Advertencia -> {

@@ -116,9 +116,21 @@ class AsistCursoViewModel @Inject constructor(
                     return@launch
                 }
 
+                val manualesIds = try {
+                    catalogosRepo.listarAlumnosDelCurso(cursoId).map { it.alumnoId }.toSet()
+                } catch (_: Throwable) {
+                    emptySet()
+                }
+
                 val alumnosDelCurso = todosAlumnos.filter { a ->
                     a.estado == "ACTIVO" && a.aprobado != false &&
-                        StatsUtils.perteneceACurso(a.nivel, a.grado, curso.nivel, curso.grado)
+                        StatsUtils.perteneceACurso(
+                            alumnoNivel = a.nivel,
+                            alumnoGrado = a.grado,
+                            cursoNivel = curso.nivel,
+                            cursoGrado = curso.grado,
+                            matriculadoManual = a.id in manualesIds
+                        )
                 }.sortedWith(
                     compareBy<Alumno> { it.grado }.thenBy { it.nombre }
                 )

@@ -10,6 +10,7 @@ import pe.registroacademico.nativo.data.model.Asistencia
 import pe.registroacademico.nativo.data.model.DiaCalendario
 import pe.registroacademico.nativo.data.model.Horario
 import pe.registroacademico.nativo.data.model.Justificacion
+import pe.registroacademico.nativo.domain.StatsUtils
 import java.time.Instant
 
 class DomainUnitTests {
@@ -408,6 +409,16 @@ class DomainUnitTests {
         assertTrue(StatsUtils.perteneceACurso("APSTI", "APSTI · I CICLO", "APSTI", "APSTI · I CICLO"))
         assertFalse(StatsUtils.perteneceACurso("APSTI", "APSTI · I CICLO", "APSTI", "APSTI · II CICLO"))
         assertFalse(StatsUtils.perteneceACurso("APSTI", "APSTI · I CICLO", "OTRA", null))
+    }
+
+    @Test
+    fun perteneceACurso_conMatriculadoManual() {
+        // Si matriculadoManual es true, pertenece aunque la carrera o ciclo no coincidan
+        assertTrue(StatsUtils.perteneceACurso("ENFERMERIA", "ENFERMERIA · II CICLO", "APSTI", "APSTI · I CICLO", matriculadoManual = true))
+        assertTrue(StatsUtils.perteneceACurso("APSTI", "APSTI · II CICLO", "APSTI", "APSTI · I CICLO", matriculadoManual = true))
+        // Si matriculadoManual es false, se aplican las reglas normales de carrera y ciclo
+        assertFalse(StatsUtils.perteneceACurso("ENFERMERIA", "ENFERMERIA · II CICLO", "APSTI", "APSTI · I CICLO", matriculadoManual = false))
+        assertTrue(StatsUtils.perteneceACurso("APSTI", "APSTI · I CICLO", "APSTI", "APSTI · I CICLO", matriculadoManual = false))
     }
 
     @Test

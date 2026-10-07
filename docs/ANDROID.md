@@ -129,6 +129,12 @@ Se integraron y cablearon en la aplicación Android nativa (`android-nativo/`) l
 - **Alcance docente**: filtrado automático en la navegación para que los docentes accedan únicamente a sus cursos asignados, ocultando las pantallas de gestión administrativa.
 - **Conexiones de datos (`ui/sistema/`, `ConexionesRepo`, `ConexionesViewModel`)**: administración de conexiones externas (Supabase, Firebase Firestore, REST), validación de llaves públicas (con rechazo de llaves secretas o service_role), prueba de conectividad/salud y copia por lotes de datos institucionales con verificación de conteos en destino.
 - **Desvincular institución y Base propia**: interfaz para suspender o reactivar instituciones (superadministrador) y configuración de base Supabase alternativa persistida en preferencias locales (`BasePropiaStore` en `domain/Conectores.kt`).
+- **Estudiantes del curso y matrícula manual (migración 020)**: soporte nativo para `curso_alumnos` permitiendo asignar estudiantes individual o masivamente fuera de su ciclo/carrera habitual (repitientes, cursos libres o cross-ciclo):
+  - Modelo `@Serializable CursoAlumno` y tabla `curso_alumnos` en `Conectores.TABLAS_CONEXION` con clave compuesta `["curso_id", "alumno_id"]`.
+  - Operaciones en repositorios `CatalogosRepo` y `AulaRepo` (`listarCursoAlumnos`, `agregarAlumnosACurso`, `quitarAlumnoDeCurso`) con soporte idempotente de PostgREST.
+  - Regla de pertenencia ampliada `StatsUtils.perteneceACurso(..., matriculadoManual = true)` utilizada en `PasarListaUtils`, `PasarListaViewModel`, `AsistCursoViewModel`, `AulaUtils` y `AulaViewModel`.
+  - Diálogo de gestión `EstudiantesCursoDialog` accesible desde el aula virtual (`AulaScreen`), el control de asistencia (`PasarListaScreen`) y la administración de cursos (`CursosScreen`), restringiendo al docente exclusivamente a sus cursos asignados.
+  - Interfaz con anchos adaptativos hasta 360dp, chips en `FlowRow`, etiquetas distintivas «Por su ciclo» / «Manual», eliminación únicamente de matrículas manuales y selector múltiple con buscador para agregar candidatos.
 
 > [!NOTE]
-> **Estado de verificación:** La integración compila y pasa todas las pruebas unitarias en la JVM (`AulaUtilsTest`, `ConectoresTest`, etc.); **NO** ha sido verificada aún en un dispositivo físico real ni contra una base de datos real de producción.
+> **Estado de verificación:** La integración compila y pasa todas las pruebas unitarias en la JVM (`AulaUtilsTest`, `ConectoresTest`, `CursoAlumnosUtilsTest`, etc.); **NO** ha sido verificada aún en un dispositivo físico real ni contra una base de datos real de producción.

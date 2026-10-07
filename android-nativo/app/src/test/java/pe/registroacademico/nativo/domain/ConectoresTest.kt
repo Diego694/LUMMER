@@ -14,6 +14,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import pe.registroacademico.nativo.domain.Conectores
+import pe.registroacademico.nativo.domain.TABLAS_CONEXION
 
 class ConectoresTest {
 
@@ -167,6 +169,17 @@ class ConectoresTest {
         }
         val id = Conectores.idDeFila("curso_docentes", fila, 0)
         assertEquals("c123_u456", id)
+    }
+
+    @Test
+    fun idDeFila_cursoAlumnos_generaClaveCompuesta() {
+        val fila = buildJsonObject {
+            put("curso_id", "c123")
+            put("alumno_id", "a789")
+        }
+        val id = Conectores.idDeFila("curso_alumnos", fila, 0)
+        assertEquals("c123_a789", id)
+        assertTrue(TABLAS_CONEXION.contains("curso_alumnos"))
     }
 
     @Test

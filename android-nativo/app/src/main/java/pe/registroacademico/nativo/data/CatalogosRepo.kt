@@ -6,9 +6,12 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import pe.registroacademico.nativo.data.model.AvisoApoderado
 import pe.registroacademico.nativo.data.model.Comunicado
 import pe.registroacademico.nativo.data.model.Curso
+import pe.registroacademico.nativo.data.model.CursoAlumno
 import pe.registroacademico.nativo.data.model.DiaCalendario
 import pe.registroacademico.nativo.data.model.Docente
 import pe.registroacademico.nativo.data.model.Grado
@@ -58,6 +61,11 @@ interface CatalogosRepo {
 
     suspend fun listarDocentes(colegioId: String): List<Docente>
     suspend fun cursosAsignadosADocente(userId: String): List<String>
+
+    suspend fun listarCursoAlumnos(colegioId: String): List<CursoAlumno>
+    suspend fun listarAlumnosDelCurso(cursoId: String): List<CursoAlumno>
+    suspend fun agregarAlumnosACurso(cursoId: String, colegioId: String, alumnoIds: List<String>, agregadoPor: String? = null): Unit
+    suspend fun quitarAlumnoDeCurso(cursoId: String, alumnoId: String): Unit
 }
 
 @Singleton
@@ -429,6 +437,79 @@ class CatalogosRepoImpl @Inject constructor(
             supabase.from("curso_docentes").select {
                 filter { eq("user_id", userId) }
             }.decodeList<CursoDocenteRow>().map { it.cursoId }
+        } catch (e: Throwable) {
+            throw mapearError(e)
+        }
+    }
+
+    override suspend fun listarCursoAlumnos(colegioId: String): List<CursoAlumno> {
+        if (colegioId.isBlank()) return emptyList()
+        return try {
+            supabase.from("curso_alumnos").select {
+                filter { eq("colegio_id", colegioId) }
+            }.decodeList<CursoAlumno>()
+        } catch (e: Throwable) {
+            val msg = e.message ?: ""
+            if (msg.contains("does not exist", ignoreCase = true) || msg.contains("schema cache", ignoreCase = true)) {
+                emptyList()
+            } else {
+                throw mapearError(e)
+            }
+        }
+    }
+
+    override suspend fun listarAlumnosDelCurso(cursoId: String): List<CursoAlumno> {
+        if (cursoId.isBlank()) return emptyList()
+        return try {
+            supabase.from("curso_alumnos").select {
+                filter { eq("curso_id", cursoId) }
+            }.decodeList<CursoAlumno>()
+        } catch (e: Throwable) {
+            val msg = e.message ?: ""
+            if (msg.contains("does not exist", ignoreCase = true) || msg.contains("schema cache", ignoreCase = true)) {
+                emptyList()
+            } else {
+                throw mapearError(e)
+            }
+        }
+    }
+
+    override suspend fun agregarAlumnosACurso(
+        cursoId: String,
+        colegioId: String,
+        alumnoIds: List<String>,
+        agregadoPor: String?
+    ): Unit {
+        if (cursoId.isBlank() || alumnoIds.isEmpty()) return
+        try {
+            val rows = alumnoIds.map { alumnoId ->
+                buildJsonObject {
+                    put("curso_id", cursoId)
+                    put("alumno_id", alumnoId)
+                    put("colegio_id", colegioId)
+                    if (!agregadoPor.isNullOrBlank()) {
+                        put("agregado_por", agregadoPor)
+                    }
+                }
+            }
+            supabase.from("curso_alumnos").insert(rows)
+        } catch (e: Throwable) {
+            val msg = e.message ?: ""
+            if (!msg.contains("23505") && !msg.contains("duplicate", ignoreCase = true)) {
+                throw mapearError(e)
+            }
+        }
+    }
+
+    override suspend fun quitarAlumnoDeCurso(cursoId: String, alumnoId: String): Unit {
+        if (cursoId.isBlank() || alumnoId.isBlank()) return
+        try {
+            supabase.from("curso_alumnos").delete {
+                filter {
+                    eq("curso_id", cursoId)
+                    eq("alumno_id", alumnoId)
+                }
+            }
         } catch (e: Throwable) {
             throw mapearError(e)
         }

@@ -7,7 +7,7 @@ Este módulo reside de forma independiente en `android-nativo/` y reproduce la t
 > [!IMPORTANT]
 > **Estado del proyecto:**
 > - **v4.0.0 (Release):** Probada satisfactoriamente en hardware real en todas sus pantallas y flujos originales. Se distribuye como la **Release Principal** en GitHub (`app-latest` / `registro-academico.apk`) para el perfil **Docente** (`pe.registroacademico.nativo.docente`).
-> - **Nuevos módulos («Sin publicar»):** Aula virtual, Pasar lista, alcance docente, Conexiones de datos, Desvincular institución y Base propia.
+> - **Nuevos módulos («Sin publicar»):** Aula virtual, Pasar lista, alcance docente, Conexiones de datos, Desvincular institución, Base propia y Estudiantes del curso (matrícula manual / migración 020).
 > - **Verificación de los nuevos módulos:** Compilan y pasan pruebas unitarias JVM; **NO** han sido verificados en dispositivo físico real ni contra una base de datos real.
 > - El perfil **Estudiante** aún no está portado a Compose; los estudiantes continúan accediendo vía el portal web y la app Lite («LUMMER Estudiante»).
 > - La app anterior WebView (`android/`) se mantiene como versión **Lite** y convive instalada sin interferencias.
@@ -71,7 +71,7 @@ android-nativo/app/src/main/java/pe/registroacademico/nativo/
 │       ├── Alumno.kt
 │       ├── Asistencia.kt & AsistenciaCurso.kt
 │       ├── Justificacion.kt
-│       ├── Nivel.kt, Grado.kt, Curso.kt
+│       ├── Nivel.kt, Grado.kt, Curso.kt, CursoAlumno.kt
 │       ├── Horario.kt & DiaCalendario.kt
 │       ├── Periodo.kt, Comunicado.kt, Docente.kt
 │       ├── AvisoApoderado.kt, LogCliente.kt, Auditoria.kt
@@ -84,6 +84,7 @@ android-nativo/app/src/main/java/pe/registroacademico/nativo/
 │   ├── Sesion.kt & SesionManagerImpl.kt# StateFlow con perfil, rol, institución y qr_modo
 │   ├── AulaUtils.kt                    # Validaciones de archivos, cálculo de notas sobre 20, ponderación y CSV
 │   ├── Conectores.kt                   # Conectores externos, adaptadores (ConectoresHttp), copia de datos, PaqueteLummer y BasePropiaStore
+│   ├── CursoAlumnosUtils.kt            # Lógica pura de pertenencia (ciclo vs manual) y candidatos a agregar
 │   ├── DateUtils.kt                    # Fechas en America/Lima (UTC-5), sincronización de reloj y días hábiles
 │   ├── StringUtils.kt                  # norm(), initials(), censurarNombre(), pct() y sanitización
 │   ├── CiclosUtils.kt                  # Ciclos canónicos I–VI, formateo, comparación y etiquetas

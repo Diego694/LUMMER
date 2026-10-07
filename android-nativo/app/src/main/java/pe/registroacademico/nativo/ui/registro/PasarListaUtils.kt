@@ -36,12 +36,22 @@ object PasarListaUtils {
         }
     }
 
-    fun alumnosDelCurso(alumnos: List<Alumno>, curso: Curso): List<Alumno> {
+    fun alumnosDelCurso(
+        alumnos: List<Alumno>,
+        curso: Curso,
+        manualesIds: Set<String> = emptySet()
+    ): List<Alumno> {
         val collator = Collator.getInstance(Locale("es")).apply { strength = Collator.PRIMARY }
         return alumnos.filter { a ->
             a.estado == "ACTIVO" &&
                 a.aprobado != false &&
-                StatsUtils.perteneceACurso(a.nivel, a.grado, curso.nivel, curso.grado)
+                StatsUtils.perteneceACurso(
+                    alumnoNivel = a.nivel,
+                    alumnoGrado = a.grado,
+                    cursoNivel = curso.nivel,
+                    cursoGrado = curso.grado,
+                    matriculadoManual = a.id in manualesIds
+                )
         }.sortedWith { a, b -> collator.compare(a.nombre, b.nombre) }
     }
 
@@ -61,7 +71,8 @@ object PasarListaUtils {
     fun validarMarcar(
         alumno: Alumno,
         curso: Curso,
-        yaMarcado: Boolean
+        yaMarcado: Boolean,
+        esManual: Boolean = false
     ): ResultadoMarcar? {
         if (alumno.estado != "ACTIVO") {
             return ResultadoMarcar.Error("Alumno inactivo")
@@ -69,7 +80,14 @@ object PasarListaUtils {
         if (alumno.aprobado == false) {
             return ResultadoMarcar.Error("Su registro aún no fue aprobado")
         }
-        if (!StatsUtils.perteneceACurso(alumno.nivel, alumno.grado, curso.nivel, curso.grado)) {
+        if (!StatsUtils.perteneceACurso(
+                alumnoNivel = alumno.nivel,
+                alumnoGrado = alumno.grado,
+                cursoNivel = curso.nivel,
+                cursoGrado = curso.grado,
+                matriculadoManual = esManual
+            )
+        ) {
             return ResultadoMarcar.Error("No pertenece a este curso o ciclo")
         }
         if (yaMarcado) {

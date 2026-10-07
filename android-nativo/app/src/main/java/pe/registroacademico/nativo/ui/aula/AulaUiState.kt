@@ -54,5 +54,7 @@ data class AulaUiState(
     val actividadParaEliminar: CursoActividad? = null,
 
     val mostrarModalDocentes: Boolean = false,
-    val guardandoDocenteId: String? = null
+    val guardandoDocenteId: String? = null,
+    val alumnosManualesIds: Set<String> = emptySet(),
+    val mostrarModalEstudiantes: Boolean = false
 )
