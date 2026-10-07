@@ -1164,3 +1164,16 @@ body.est{background:var(--paper)}
 @keyframes dash-entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes meter-crece{from{transform:scaleX(0)}to{transform:none}}
 @media (prefers-reduced-motion:reduce){.dash-in .kpi-grid>.kpi,.dash-in .dash-grid>.card,.dash-in .kpi-meter i{animation:none}}
+
+/* ---------- Conexiones de datos (superadmin) ---------- */
+.cx-lista{display:grid;gap:var(--s-4);margin-bottom:var(--s-5)}
+.cx-card{padding:var(--s-5)}
+.cx-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s-3);flex-wrap:wrap}
+.cx-head small{display:block;color:var(--ink-soft);font-size:var(--fs-xs)}
+.cx-badges{display:flex;gap:var(--s-2);flex-wrap:wrap}
+.cx-url{word-break:break-all;margin:var(--s-2) 0 0}
+.cx-acciones{display:flex;gap:var(--s-2);flex-wrap:wrap;margin-top:var(--s-4)}
+.cx-principal{border-left:3px solid var(--teal)}
+.cx-quitar{color:var(--red)}
+.cx-aviso{display:flex;gap:var(--s-3);align-items:flex-start;padding:var(--s-3) var(--s-4);border-radius:var(--radius-sm);background:var(--amber-soft);color:var(--ink);margin-bottom:var(--s-5);font-size:var(--fs-sm)}
+#cx-progreso{padding:var(--s-5)}

@@ -1,4 +1,5 @@
 // Tests unitarios sin dependencias. Se ejecutan abriendo tests/tests.html (o con scripts/check.py en CI).
+import { TABLAS, aFirestore, clasificarLlave, crearPaquete, idDeFila, importarPaquete, lotes, normalizarDestino, probarConexion, validarPaquete } from "../assets/js/conectores.js";
 import { alcanceDocente } from "../assets/js/alcance.js";
 import { ahora, esErrorRed, esErrorSesion, fechaZona, horaZona, sincronizarReloj, todayStr, nowHHMM } from "../assets/js/utils.js";
 import { CICLOS, addDays, censurarNombre, cicloCorto, compararCiclos, dateStr, esc, etiquetaCiclo, nombreCiclo, parsearCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
@@ -7,8 +8,13 @@ import { bajaAsistencia, esTardanza, normalizarFilasImport, porGrado, resumenAlu
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const pendientes = [];
 function test(name, fn) {
-  try { fn(); results.push({ name, ok: true }); } catch (e) { results.push({ name, ok: false, msg: e.message }); }
+  try {
+    const r = fn();
+    if (r && typeof r.then === "function") pendientes.push(r.then(() => results.push({ name, ok: true }), (e) => results.push({ name, ok: false, msg: e.message })));
+    else results.push({ name, ok: true });
+  } catch (e) { results.push({ name, ok: false, msg: e.message }); }
 }
 const assert = (c, m = "aserción fallida") => { if (!c) throw new Error(m); };
 const same = (a, b) => assert(eq(a, b), `esperado ${JSON.stringify(b)} y se obtuvo ${JSON.stringify(a)}`);
@@ -415,6 +421,47 @@ test("alcance del docente: solo alumnos, carreras y ciclos de sus cursos asignad
   same(alcanceDocente(datos, []).alumnos.length, 0, "sin asignar no ve nada");
 });
 
+test("conectores · clasificarLlave rechaza llaves secretas y acepta las públicas", () => {
+  const jwt = (rol) => `x.${Buffer.from(JSON.stringify({ role: rol })).toString("base64url")}.y`;
+  assert(!clasificarLlave("").ok); assert(!clasificarLlave("sb_secret_abc123").ok);
+  assert(!clasificarLlave(jwt("service_role")).ok, "service_role"); assert(clasificarLlave(jwt("anon")).ok, "anon");
+  assert(clasificarLlave("sb_publishable_abc123").ok); assert(clasificarLlave("AIzaSyExample123").ok);
+  assert(!clasificarLlave("-----BEGIN PRIVATE KEY----- abc").ok); assert(!clasificarLlave('{"type": "service_account"}').ok);
+});
+test("conectores · normalizarDestino valida URL e ID de proyecto", () => {
+  same(normalizarDestino("supabase", "https://a.supabase.co/").valor, "https://a.supabase.co");
+  assert(!normalizarDestino("rest", "http://evil.com").ok, "http solo en localhost"); assert(normalizarDestino("rest", "http://localhost:3000").ok);
+  assert(normalizarDestino("firestore", "mi-instituto-1").ok); assert(!normalizarDestino("firestore", "Mi Instituto").ok);
+});
+test("conectores · formato Firestore, lotes e ids de fila", () => {
+  same(aFirestore(3), { integerValue: "3" }); same(aFirestore(1.5), { doubleValue: 1.5 }); same(aFirestore(null), { nullValue: null });
+  same(aFirestore(["a"]), { arrayValue: { values: [{ stringValue: "a" }] } });
+  same(lotes([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
+  same(idDeFila("curso_docentes", { curso_id: "c", user_id: "u" }, 0), "c_u"); same(idDeFila("alumnos", { id: "x" }, 0), "x"); same(idDeFila("alumnos", {}, 4), "alumnos-4");
+});
+test("conectores · paquete: se crea, valida e importa por lotes con upsert", async () => {
+  const p = await crearPaquete(async (t) => (t === "alumnos" ? [{ id: "1" }, { id: "2" }, { id: "3" }] : t === "niveles" ? [{ id: "n" }] : t === "grados" ? (() => { throw new Error("no existe"); })() : []));
+  same(p.conteos.alumnos, 3); assert(p.avisos.length === 1, "aviso por tabla ilegible"); assert(validarPaquete(p).ok); assert(!validarPaquete({}).ok);
+  const llamadas = [];
+  const f = async (url, init) => { llamadas.push({ url, init }); return { ok: true, status: 200 }; };
+  const inf = await importarPaquete({ tipo: "supabase", url: "https://d.supabase.co", llave: "k" }, p, { f, lote: 2 });
+  same(inf.map((i) => [i.tabla, i.enviadas]), [["niveles", 1], ["alumnos", 3]]);
+  same(llamadas.length, 3, "alumnos en 2 lotes + niveles");
+  assert(llamadas[0].url === "https://d.supabase.co/rest/v1/niveles" && /merge-duplicates/.test(llamadas[0].init.headers.Prefer));
+  const rest = []; await importarPaquete({ tipo: "rest", url: "https://api.x/l", llave: "t" }, p, { f: async (u) => { rest.push(u); return { ok: true }; } });
+  assert(rest[0] === "https://api.x/l/importar/niveles");
+});
+test("conectores · importar se detiene ante RLS y probar traduce errores", async () => {
+  const p = { tablas: { niveles: [{ id: "n" }], alumnos: [{ id: "a" }] } };
+  const inf = await importarPaquete({ tipo: "supabase", url: "https://d", llave: "k" }, p, { f: async () => ({ ok: false, status: 403 }) });
+  same(inf.length, 1, "no sigue tras el primer fallo"); assert(/RLS/.test(inf[0].error));
+  assert((await probarConexion({ tipo: "supabase", url: "https://d", llave: "k" }, async () => ({ ok: false, status: 401 }))).detalle.includes("rechazó"));
+  assert((await probarConexion({ tipo: "firestore", url: "mi-proyecto-1", llave: "k" }, async () => ({ ok: false, status: 403 }))).ok, "403 = alcanzable");
+  assert(!(await probarConexion({ tipo: "rest", url: "https://d", llave: "k" }, async () => { throw new Error("cors"); })).ok);
+  assert(TABLAS[0] === "colegios");
+});
+
+await Promise.all(pendientes);   // pruebas asíncronas
 /* render */
 const fail = results.filter((r) => !r.ok);
 if (typeof document !== "undefined") {

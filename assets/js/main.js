@@ -36,6 +36,7 @@ import { aulaPage } from "./pages/aula.js";
 import { diagnosticoPage, erroresPage, respaldoPage } from "./pages/sistema.js";
 import { alumnosPage, comunicadosPage, docentesPage, gradosPage, nivelesPage } from "./pages/mantenimiento.js";
 import { institucionesPage } from "./pages/instituciones.js";
+import { conexionesPage } from "./pages/conexiones.js";
 
 /** @type {any[]} */
 const PAGES = [
@@ -43,7 +44,7 @@ const PAGES = [
   pasarListaPage, registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, alertasPage, avisosPage,
   carnetPage, codigoPage, institutoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
-  diagnosticoPage, respaldoPage, offlinePage, historialPage, migrarPage, erroresPage, institucionesPage,
+  diagnosticoPage, respaldoPage, offlinePage, historialPage, migrarPage, erroresPage, institucionesPage, conexionesPage,
   perfilPage,   // «Mi cuenta» va al final del menú: no es esencial
 ];
 const $ = (/** @type {any} */ s) => document.querySelector(s);
