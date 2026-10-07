@@ -1907,3 +1907,4 @@ create policy "gestiona curso_alumnos (borrar)" on public.curso_alumnos for dele
 -- Permisos sobre la tabla
 revoke all on public.curso_alumnos from anon;
 grant select, insert, delete on public.curso_alumnos to authenticated;
+
