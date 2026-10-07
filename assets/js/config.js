@@ -16,12 +16,27 @@ const OVERRIDE = (() => {
     return o && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(o.url) && o.key ? o : null;
   } catch { return null; }
 })();
+// Base propia: el superadmin puede apuntar LUMMER a otro proyecto Supabase (URL + llave publishable) desde conexion.html,
+// sin tocar el código. Se guarda en este navegador/equipo y manda sobre el entorno de pruebas y sobre la base original.
+/** @type {{ url: string, key: string, nombre?: string } | null} */
+const BASE_PROPIA = (() => {
+  try {
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem("ra-base") : null;
+    const o = raw ? JSON.parse(raw) : null;
+    return o && /^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(o.url) && typeof o.key === "string" && o.key.length >= 20 ? o : null;
+  } catch { return null; }
+})();
+/** "original" (la del código), "propia" (conexion.html) o "pruebas" (entorno.html). */
+export const BASE_ORIGEN = BASE_PROPIA ? "propia" : OVERRIDE ? "pruebas" : "original";
+/** Dirección de la base en uso (sin la llave). */
+export const BASE_URL = BASE_PROPIA ? BASE_PROPIA.url : OVERRIDE ? OVERRIDE.url : URL_PRODUCCION;
+
 /** "produccion" o el nombre del entorno de pruebas activo en este navegador. */
-export const ENTORNO = OVERRIDE ? OVERRIDE.nombre || "pruebas" : "produccion";
+export const ENTORNO = BASE_PROPIA ? "produccion" : OVERRIDE ? OVERRIDE.nombre || "pruebas" : "produccion";
 
 export const CONFIG = {
-  SUPABASE_URL: OVERRIDE ? OVERRIDE.url : URL_PRODUCCION,
-  SUPABASE_ANON_KEY: OVERRIDE ? OVERRIDE.key : KEY_PRODUCCION,
+  SUPABASE_URL: BASE_PROPIA ? BASE_PROPIA.url : OVERRIDE ? OVERRIDE.url : URL_PRODUCCION,
+  SUPABASE_ANON_KEY: BASE_PROPIA ? BASE_PROPIA.key : OVERRIDE ? OVERRIDE.key : KEY_PRODUCCION,
 
   APP_NAME: "LUMMER",
   // Enlace de descarga del APK "LUMMER Estudiante" (se incluye en el mensaje para compartir el código). Vacío = solo el portal web.

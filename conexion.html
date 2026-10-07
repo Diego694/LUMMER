@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#16223D">
+<title>Base de datos · LUMMER</title>
+<style>
+  :root{--ink:#16223D;--soft:#5A6784;--line:#E3E8F0;--bg:#F3F5F9}*{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{max-width:560px;margin:0 auto;padding:26px 16px 60px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:16px}
+  h1{font-size:22px;margin:0 0 6px}p{color:#2b3957}.muted{color:var(--soft);font-size:14px}label{display:block;font-weight:600;font-size:13px;margin:14px 0 6px;color:var(--soft)}
+  input{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:9px;font:inherit}button{font:inherit;font-weight:700;border:0;border-radius:9px;padding:11px 18px;cursor:pointer}
+  .p{background:#E8A33D;color:#2A1B02}.s{background:#fff;border:1.5px solid var(--line);color:var(--ink)}.row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .estado{padding:12px 14px;border-radius:10px;font-weight:600;margin-bottom:14px;overflow-wrap:anywhere}.orig{background:#E1F3EE;color:#12806A}.propia{background:#E3EAFB;color:#2547A8}.err{color:#C1443A;font-size:14px;margin:12px 0 0}.ok{color:#12806A;font-size:14px;margin:12px 0 0}
+  @media(prefers-color-scheme:dark){:root{--bg:#0C1322;--ink:#E8ECF5;--soft:#9AA7C6;--line:#27324F}.card{background:#141D33}p{color:#C7D0E6}input{background:#1A2540;color:#E8ECF5}.s{background:#1A2540;color:#E8ECF5}.orig{background:#10372E;color:#6FE3C8}.propia{background:#1B2A55;color:#AFC3FF}a{color:#E8A33D}}
+  a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #E8A33D;outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body><main>
+<div class="card">
+<h1>Base de datos de LUMMER</h1>
+<p class="muted">Elige a qué proyecto de Supabase se conecta LUMMER <b>en este navegador o equipo</b>: la web, el aula, el portal del estudiante y el del apoderado lo usan. Sirve para instalar LUMMER con tu propia base sin tocar el código.</p>
+<div id="estado" class="estado"></div>
+<form id="f">
+  <label for="u">URL del proyecto Supabase</label><input id="u" placeholder="https://xxxx.supabase.co" autocomplete="off" inputmode="url">
+  <label for="k">Publishable (anon) key</label><input id="k" placeholder="sb_publishable_…" autocomplete="off">
+  <p class="err" id="err" role="alert" hidden></p><p class="ok" id="ok" role="status" hidden></p>
+  <div class="row"><button class="p" type="submit">Probar y conectar</button><button class="s" type="button" id="quitar">Volver a la base original</button></div>
+</form>
+<p class="muted" style="margin-top:16px">Pega solo la <b>publishable / anon key</b>. Nunca la «service_role» ni una clave secreta: se rechazan. La base nueva necesita el esquema de LUMMER (<code>supabase/schema.sql</code> y migraciones) y una cuenta de superadministrador; las cuentas de la base anterior no se trasladan.</p>
+</div>
+<a href="./">← Ir a la aplicación</a>
+<script>
+  var est = document.getElementById("estado"), err = document.getElementById("err"), ok = document.getElementById("ok");
+  function pintar() {
+    var o = null; try { o = JSON.parse(localStorage.getItem("ra-base")); } catch (e) {}
+    if (o && o.url) { est.className = "estado propia"; est.textContent = "Base en uso: propia → " + o.url; }
+    else { est.className = "estado orig"; est.textContent = "Base en uso: la original de LUMMER."; }
+  }
+  function falla(m) { err.textContent = m; err.hidden = false; ok.hidden = true; }
+  document.getElementById("f").addEventListener("submit", function (e) {
+    e.preventDefault(); err.hidden = true; ok.hidden = true;
+    var url = document.getElementById("u").value.trim().replace(/\/+$/, ""), key = document.getElementById("k").value.trim();
+    if (!/^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(url)) return falla("La URL debe ser https:// y sin ruta, por ejemplo https://xxxx.supabase.co");
+    if (/service_role|sb_secret_/.test(key) || key.length < 20) return falla("Esa clave no es válida o es secreta. Usa la publishable/anon key.");
+    try { var p = key.split(".")[1]; if (p && JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/"))).role === "service_role") return falla("¡Es una clave service_role! No la uses en el navegador."); } catch (x) {}
+    ok.textContent = "Probando…"; ok.hidden = false;
+    fetch(url + "/rest/v1/", { headers: { apikey: key, Authorization: "Bearer " + key } }).then(function (r) {
+      if (r.status === 401 || r.status === 403) return falla("El servidor rechazó la llave (" + r.status + "). Revisa que sea la publishable/anon de ese proyecto.");
+      localStorage.setItem("ra-base", JSON.stringify({ url: url, key: key }));
+      pintar(); ok.textContent = "Conectado. Abre la aplicación e inicia sesión con una cuenta de esa base."; ok.hidden = false;
+    }).catch(function () { falla("No se pudo contactar con esa dirección. Revisa la URL y tu conexión."); });
+  });
+  document.getElementById("quitar").addEventListener("click", function () { localStorage.removeItem("ra-base"); err.hidden = true; pintar(); ok.textContent = "Listo: se usa la base original."; ok.hidden = false; });
+  pintar();
+</script>
+</main></body></html>

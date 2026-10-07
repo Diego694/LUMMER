@@ -27,6 +27,7 @@
 // Marca visible de entorno de pruebas (ver entorno.html): evita confundir datos de prueba con los reales.
 (function () {
   try {
+    if (localStorage.getItem("ra-base")) return;
     var raw = localStorage.getItem("ra-entorno");
     var o = raw ? JSON.parse(raw) : null;
     if (!o || !o.url) return;

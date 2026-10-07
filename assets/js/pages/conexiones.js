@@ -1,6 +1,7 @@
 // @ts-check
 // Conexiones de datos (superadmin): registra bases externas con llaves públicas y copia a ellas todos los datos de LUMMER.
 import { api } from "../api.js";
+import { BASE_ORIGEN, BASE_URL } from "../config.js";
 import { DB } from "../state.js";
 import { badge, confirmDialog, emptyState, formModal, icon, pageHead, registerActions, skeleton, toast } from "../ui.js";
 import { downloadFile, esc, fmtDate } from "../utils.js";
@@ -54,8 +55,10 @@ function pintar() {
   const caja = /** @type {HTMLElement} */ (raiz.querySelector("#cx-lista"));
   caja.innerHTML = `
     <article class="card cx-card cx-principal">
-      <div class="cx-head"><div><strong>LUMMER · base principal</strong><small>Supabase del proyecto (en uso)</small></div>${badge("En uso", "green")}</div>
-      <p class="muted">Es la base que usa hoy la aplicación, con sus cuentas de acceso. Mientras no esté lista la migración completa de cuentas (ver docs/CONEXIONES.md) sigue siendo la principal.</p>
+      <div class="cx-head"><div><strong>LUMMER · base principal</strong><small>Supabase ${BASE_ORIGEN === "propia" ? "propio de este equipo" : BASE_ORIGEN === "pruebas" ? "de pruebas (entorno.html)" : "original del proyecto"} (en uso)</small></div>${badge("En uso", "green")}</div>
+      <p class="muted cx-url">${esc(BASE_URL)}</p>
+      <p class="muted">Aquí se conecta LUMMER con sus cuentas de acceso. Puedes asociar otro proyecto Supabase con su URL y su llave publishable, y volver a la original cuando quieras; el cambio vale para este navegador o equipo.</p>
+      <div class="cx-acciones"><a class="btn btn-outline btn-sm" href="conexion.html">${icon("edit", 16)} Asociar otra base de Supabase</a></div>
     </article>
     ${lista.length ? lista.map((c) => {
       const [txt, tono] = ESTADO[c.estado] || ESTADO.pendiente;

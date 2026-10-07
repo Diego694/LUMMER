@@ -34,3 +34,9 @@ Tablas, en este orden: `colegios, niveles, grados, docentes, alumnos, comunicado
 - Nunca pegues llaves secretas: la web las rechaza y la base también (restricción `llave_no_secreta`).
 - La tabla `conexiones_datos` solo la lee y modifica el superadmin (RLS con `es_superadmin()`). Aun así, las llaves públicas que guardas dan acceso de escritura al destino según sus reglas: configúralas con el mínimo necesario.
 - Cada copia es *upsert*: no borra nada, ni en LUMMER ni en el destino.
+
+## Base propia y alojamiento
+
+- **Asociar otro Supabase sin tocar código:** `conexion.html` (enlace «Base de datos del servidor» en el login y botón en Conexiones de datos) guarda en este navegador/equipo la URL y la llave publishable de otro proyecto. Todo LUMMER (web, aula, estudiante, apoderado) usa esa base; «Volver a la base original» lo deshace. La base nueva necesita el esquema (`supabase/schema.sql` + migraciones) y su propia cuenta de superadministrador: las cuentas no se trasladan.
+- **La base original sigue escrita en `assets/js/config.js`** como valor por defecto; la llave publishable es pública por diseño (la seguridad la dan las políticas RLS).
+- **Alojamiento privado:** GitHub Pages publica el sitio de forma pública aunque el repositorio sea privado (solo GitHub Enterprise Cloud permite restringir el acceso). Con repositorio privado y sitio protegido hacen falta otras opciones (Cloudflare Pages + Access, Netlify con contraseña, o un servidor propio con el `Dockerfile`/`nginx.conf` del repositorio). El acceso real lo controlan siempre las cuentas y las políticas de la base.
