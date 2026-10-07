@@ -2,6 +2,7 @@
 // Aula: material y actividades por curso (migración 013). Funciones sobre un cliente Supabase (`sb`) que usan tanto el
 // panel (api.js) como el portal del estudiante (estudiante/api.js); el modo demo guarda solo los metadatos en el navegador.
 import { uid } from "./utils.js";
+import { perteneceACurso } from "./stats.js";
 
 /** @typedef {import('./tipos.d.ts').Curso} Curso */
 /** @typedef {import('./tipos.d.ts').CursoMaterial} CursoMaterial */
@@ -179,15 +180,16 @@ export const periodoDe = (a) => a.periodo || 1;
 export const periodosDe = (actividades) => [...new Set(actividades.map(periodoDe))].sort((a, b) => a - b);
 
 /**
- * Estudiantes que cursan un curso: activos y aprobados de su carrera y, si el curso es de un ciclo, de ese ciclo.
- * @template {{ nombre: string, nivel: string, grado: string, estado?: string, aprobado?: boolean | null }} A
+ * Estudiantes que cursan un curso: activos y aprobados de su carrera y, si el curso es de un ciclo, de ese ciclo (o matriculados manualmente).
+ * @template {{ id?: string, nombre: string, nivel: string, grado: string, estado?: string, aprobado?: boolean | null }} A
  * @param {A[]} alumnos
  * @param {{ nivel: string, grado?: string | null }} curso
+ * @param {Set<string> | string[] | Array<{ alumno_id?: string }> | null | undefined} [manuales]
  * @returns {A[]}
  */
-export function alumnosDelCurso(alumnos, curso) {
+export function alumnosDelCurso(alumnos, curso, manuales) {
   return alumnos
-    .filter((a) => a.nivel === curso.nivel && (!curso.grado || a.grado === curso.grado) && (a.estado ?? "ACTIVO") === "ACTIVO" && a.aprobado !== false)
+    .filter((a) => perteneceACurso(a, curso, manuales) && (a.estado ?? "ACTIVO") === "ACTIVO" && a.aprobado !== false)
     .sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
 }
 
@@ -363,6 +365,29 @@ export const aulaSupabase = {
     const { error } = await this.sb.from("curso_docentes").delete().eq("curso_id", cursoId).eq("user_id", userId);
     if (error) throw err(error.message, error.code);
   },
+  /** @this {any} @param {string} cursoId @returns {Promise<import('./tipos.d.ts').CursoAlumno[]>} */
+  async cursoAlumnos(cursoId) {
+    const { data, error } = await this.sb.from("curso_alumnos").select("*").eq("curso_id", cursoId);
+    if (error) throw err(error.message, error.code);
+    return data || [];
+  },
+  /** @this {any} @param {string} cursoId @param {string} alumnoId @param {string} [colegioId] */
+  async cursoAgregarAlumno(cursoId, alumnoId, colegioId) {
+    const cid = colegioId || (await this.getProfile().then((/** @type {any} */ p) => p.colegio_id).catch(() => null));
+    const { error } = await this.sb.from("curso_alumnos").insert({ curso_id: cursoId, alumno_id: alumnoId, ...(cid ? { colegio_id: cid } : {}) });
+    if (error && error.code !== "23505") throw err(error.message, error.code);
+  },
+  /** @this {any} @param {string} cursoId @param {string} alumnoId */
+  async cursoQuitarAlumno(cursoId, alumnoId) {
+    const { error } = await this.sb.from("curso_alumnos").delete().eq("curso_id", cursoId).eq("alumno_id", alumnoId);
+    if (error) throw err(error.message, error.code);
+  },
+  /** @this {any} @param {string} cursoId */
+  aulaAlumnos(cursoId) { return this.cursoAlumnos(cursoId); },
+  /** @this {any} @param {string} cursoId @param {string} alumnoId @param {string} [colegioId] */
+  aulaAsignarAlumno(cursoId, alumnoId, colegioId) { return this.cursoAgregarAlumno(cursoId, alumnoId, colegioId); },
+  /** @this {any} @param {string} cursoId @param {string} alumnoId */
+  aulaQuitarAlumno(cursoId, alumnoId) { return this.cursoQuitarAlumno(cursoId, alumnoId); },
 };
 
 /* ------------------------------ Demo / local (metadatos en el navegador) ------------------------------ */
@@ -427,6 +452,35 @@ export const aulaDemo = {
   async aulaQuitarDocente(cursoId, userId) {
     this.db.curso_docentes = tabla(this.db, "curso_docentes").filter((/** @type {any} */ d) => !(d.curso_id === cursoId && d.user_id === userId)); this.persist();
   },
+  /** @this {any} @param {string} cursoId */
+  async cursoAlumnos(cursoId) { this.reload(); return tabla(this.db, "curso_alumnos").filter((/** @type {any} */ ca) => ca.curso_id === cursoId); },
+  /** @this {any} @param {string} cursoId @param {string} alumnoId @param {string} [colegioId] */
+  async cursoAgregarAlumno(cursoId, alumnoId, colegioId) {
+    this.reload();
+    const l = tabla(this.db, "curso_alumnos");
+    if (!l.some((/** @type {any} */ ca) => ca.curso_id === cursoId && ca.alumno_id === alumnoId)) {
+      l.push({
+        curso_id: cursoId,
+        alumno_id: alumnoId,
+        colegio_id: colegioId || this.db?.colegio?.id || "demo-colegio",
+        agregado_por: this.mode === "local" ? "local-user" : "demo-user",
+        creado_en: new Date().toISOString(),
+      });
+    }
+    this.persist();
+  },
+  /** @this {any} @param {string} cursoId @param {string} alumnoId */
+  async cursoQuitarAlumno(cursoId, alumnoId) {
+    this.reload();
+    this.db.curso_alumnos = tabla(this.db, "curso_alumnos").filter((/** @type {any} */ ca) => !(ca.curso_id === cursoId && ca.alumno_id === alumnoId));
+    this.persist();
+  },
+  /** @this {any} @param {string} cursoId */
+  aulaAlumnos(cursoId) { return this.cursoAlumnos(cursoId); },
+  /** @this {any} @param {string} cursoId @param {string} alumnoId @param {string} [colegioId] */
+  aulaAsignarAlumno(cursoId, alumnoId, colegioId) { return this.cursoAgregarAlumno(cursoId, alumnoId, colegioId); },
+  /** @this {any} @param {string} cursoId @param {string} alumnoId */
+  aulaQuitarAlumno(cursoId, alumnoId) { return this.cursoQuitarAlumno(cursoId, alumnoId); },
 };
 
 /* ------------------------------ Estudiante: entregas (demo) ------------------------------ */

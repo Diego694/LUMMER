@@ -153,6 +153,36 @@ test("perteneceACurso: carrera y, si el curso fija ciclo, ciclo", () => {
   const al = { nivel: "APSTI", grado: "APSTI · I CICLO" };
   same([perteneceACurso(al, { nivel: "APSTI" }), perteneceACurso(al, { nivel: "APSTI", grado: "APSTI · I CICLO" }), perteneceACurso(al, { nivel: "APSTI", grado: "APSTI · II CICLO" }), perteneceACurso(al, { nivel: "OTRA" })], [true, true, false, false]);
 });
+test("perteneceACurso con matrícula manual (Set, array de ids u objetos)", () => {
+  const alOtro = { id: "a2", nivel: "MECANICA", grado: "MEC · I CICLO" };
+  const alSinId = { nivel: "MECANICA", grado: "MEC · I CICLO" };
+  const curso = { nivel: "APSTI", grado: "APSTI · II CICLO" };
+  assert(!perteneceACurso(alOtro, curso));
+  assert(perteneceACurso(alOtro, curso, new Set(["a2", "a3"])));
+  assert(!perteneceACurso(alOtro, curso, new Set(["a99"])));
+  assert(perteneceACurso(alOtro, curso, ["a2"]));
+  assert(!perteneceACurso(alOtro, curso, ["a99"]));
+  assert(perteneceACurso(alOtro, curso, [{ alumno_id: "a2" }]));
+  assert(!perteneceACurso(alOtro, curso, [{ alumno_id: "a99" }]));
+  assert(!perteneceACurso(alSinId, curso, ["a2"]));
+  const alAuto = { id: "a1", nivel: "APSTI", grado: "APSTI · II CICLO" };
+  assert(perteneceACurso(alAuto, curso, []));
+  assert(perteneceACurso(alAuto, curso, new Set()));
+});
+test("perteneceACurso con matriculados manuales: ciclo distinto y carrera distinta", () => {
+  const curso = { nivel: "APSTI", grado: "APSTI · II CICLO" };
+  const alMismoCicloOtro = { id: "a1", nivel: "APSTI", grado: "APSTI · I CICLO" };
+  const alOtraCarrera = { id: "a2", nivel: "MECANICA", grado: "MEC · II CICLO" };
+  const alSinMatricula = { id: "a3", nivel: "MECANICA", grado: "MEC · I CICLO" };
+
+  assert(!perteneceACurso(alMismoCicloOtro, curso));
+  assert(!perteneceACurso(alOtraCarrera, curso));
+
+  const manuales = new Set(["a1", "a2"]);
+  assert(perteneceACurso(alMismoCicloOtro, curso, manuales), "ciclo distinto con matrícula manual debe pertenecer");
+  assert(perteneceACurso(alOtraCarrera, curso, manuales), "carrera distinta con matrícula manual debe pertenecer");
+  assert(!perteneceACurso(alSinMatricula, curso, manuales), "otra carrera sin matrícula manual no pertenece");
+});
 test("normalizarFilasImport acepta las columnas carrera y ciclo", () => {
   const r = normalizarFilasImport([{ nombre: "Ana", codigo: "a1", carrera: "APSTI", ciclo: "APSTI III" }], ["APSTI"], [{ nivel: "APSTI", nombre: "APSTI III" }]);
   same(r.validas.map((v) => [v.nivel, v.grado, v.aviso.length]), [["APSTI", "APSTI III", 0]]);
@@ -279,6 +309,7 @@ import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
 import { vocabulario } from "../assets/js/estudiante/api.js";
 import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso, periodoDe, periodosDe, agendaEstudiante, cursosParaPasarLista, resumenLista } from "../assets/js/api-aula.js";
+import { candidatosParaCurso, filtrarPorBusqueda, tipoPertenencia } from "../assets/js/estudiantes-curso.js";
 
 test("permisos · puede: rol docente no puede acciones de administración", () => {
   const previo = DB.perfil;
@@ -367,12 +398,75 @@ test("aula · rutaArchivoAula: <colegio>/<curso>/ y nombre sin acentos ni caract
 test("aula · libroNotas y alumnosDelCurso: promedio sobre 20 con lo calificado", () => {
   const al = [{ id: "a", nombre: "Ana", nivel: "N", grado: "G1" }, { id: "b", nombre: "Beto", nivel: "N", grado: "G2" }, { id: "c", nombre: "Cris", nivel: "N", grado: "G1", aprobado: false }, { id: "d", nombre: "Dan", nivel: "X", grado: "G1" }];
   same(alumnosDelCurso(al, { nivel: "N", grado: "G1" }).map((x) => x.id), ["a"]);
+  same(alumnosDelCurso(al, { nivel: "N", grado: "G1" }, ["d"]).map((x) => x.id), ["a", "d"], "incluye alumno manual de otra carrera");
   same(alumnosDelCurso(al, { nivel: "N", grado: null }).map((x) => x.id), ["a", "b"]);
   const acts = [{ id: "1", puntaje_max: 20 }, { id: "2", puntaje_max: 10 }, { id: "3", puntaje_max: 20 }];
   const l = libroNotas(al.slice(0, 2), acts, [{ actividad_id: "1", alumno_id: "a", nota: 16 }, { actividad_id: "2", alumno_id: "a", nota: 8 }, { actividad_id: "1", alumno_id: "b", nota: null }]);
   same(l[0].promedio, 16, "(16+8)/(20+10)*20 = 16");
   same(l[0].notas["3"], null, "actividad sin calificar");
   same(l[1].promedio, null, "sin notas no hay promedio");
+});
+
+test("aula · alumnosDelCurso y lógica de lista: matriculados manuales respetan filtros de activo y aprobado", () => {
+  const curso = { nivel: "APSTI", grado: "APSTI · II CICLO" };
+  const manuales = new Set(["m_act", "m_inact", "m_rech"]);
+  const alumnos = [
+    { id: "m_act", nombre: "Manual Activo", nivel: "MEC", grado: "I", estado: "ACTIVO", aprobado: true },
+    { id: "m_inact", nombre: "Manual Inactivo", nivel: "MEC", grado: "I", estado: "INACTIVO", aprobado: true },
+    { id: "m_rech", nombre: "Manual No Aprobado", nivel: "MEC", grado: "I", estado: "ACTIVO", aprobado: false },
+    { id: "auto_act", nombre: "Auto Activo", nivel: "APSTI", grado: "APSTI · II CICLO", estado: "ACTIVO", aprobado: true },
+    { id: "auto_inact", nombre: "Auto Inactivo", nivel: "APSTI", grado: "APSTI · II CICLO", estado: "INACTIVO", aprobado: true },
+    { id: "auto_pend", nombre: "Auto Pendiente", nivel: "APSTI", grado: "APSTI · II CICLO", estado: "ACTIVO", aprobado: false },
+  ];
+  // Aunque pertenecen al curso en perteneceACurso, la lógica de lista excluye alumnos inactivos y no aprobados
+  assert(perteneceACurso(alumnos[0], curso, manuales));
+  assert(perteneceACurso(alumnos[1], curso, manuales));
+  assert(perteneceACurso(alumnos[2], curso, manuales));
+  const res = alumnosDelCurso(alumnos, curso, manuales);
+  same(res.map((a) => a.id).sort(), ["auto_act", "m_act"]);
+});
+
+test("estudiantes-curso · tipoPertenencia identifica manual, ciclo o ninguno", () => {
+  const curso = { nivel: "APSTI", grado: "APSTI · II CICLO" };
+  const manuales = new Set(["m1"]);
+  const alCiclo = { id: "c1", nivel: "APSTI", grado: "APSTI · II CICLO" };
+  const alManual = { id: "m1", nivel: "MEC", grado: "MEC · I CICLO" };
+  const alAjeno = { id: "x1", nivel: "MEC", grado: "MEC · I CICLO" };
+
+  same(tipoPertenencia(alCiclo, curso, manuales), "ciclo");
+  same(tipoPertenencia(alManual, curso, manuales), "manual");
+  same(tipoPertenencia(alAjeno, curso, manuales), "ninguno");
+  same(tipoPertenencia(null, curso, manuales), "ninguno");
+  same(tipoPertenencia(alCiclo, null, manuales), "ninguno");
+});
+
+test("estudiantes-curso · candidatosParaCurso filtra solo activos y aprobados que no pertenecen", () => {
+  const curso = { nivel: "APSTI", grado: "APSTI · II CICLO" };
+  const manuales = new Set(["m1"]);
+  const pool = [
+    { id: "c1", nombre: "Carlos Ciclo", codigo: "A10", nivel: "APSTI", grado: "APSTI · II CICLO", estado: "ACTIVO", aprobado: true },
+    { id: "m1", nombre: "Manuel Ya Manual", codigo: "A11", nivel: "MEC", grado: "MEC · I CICLO", estado: "ACTIVO", aprobado: true },
+    { id: "cand1", nombre: "Beatriz Arrastre", codigo: "A12", nivel: "APSTI", grado: "APSTI · I CICLO", estado: "ACTIVO", aprobado: true },
+    { id: "cand2", nombre: "Zulma Convalidacion", codigo: "B20", nivel: "MEC", grado: "MEC · I CICLO", estado: "ACTIVO", aprobado: true },
+    { id: "inact", nombre: "Ignacio Inactivo", codigo: "A13", nivel: "MEC", grado: "MEC · I CICLO", estado: "INACTIVO", aprobado: true },
+    { id: "no_apr", nombre: "No Aprobado", codigo: "A14", nivel: "MEC", grado: "MEC · I CICLO", estado: "ACTIVO", aprobado: false },
+  ];
+
+  const cand = candidatosParaCurso(pool, curso, manuales);
+  same(cand.map((c) => c.id), ["cand1", "cand2"], "solo candidatos elegibles que no estén ya en el curso");
+});
+
+test("estudiantes-curso · filtrarPorBusqueda busca por nombre, código o carrera", () => {
+  const lista = [
+    { id: "1", nombre: "Ana Pérez", codigo: "COD-01", nivel: "APSTI" },
+    { id: "2", nombre: "Carlos Gómez", codigo: "COD-02", nivel: "MECANICA" },
+  ];
+  same(filtrarPorBusqueda(lista, "ana").map((a) => a.id), ["1"]);
+  same(filtrarPorBusqueda(lista, "PÉREZ").map((a) => a.id), ["1"]);
+  same(filtrarPorBusqueda(lista, "02").map((a) => a.id), ["2"]);
+  same(filtrarPorBusqueda(lista, "mecanica").map((a) => a.id), ["2"]);
+  same(filtrarPorBusqueda(lista, "no-existe").length, 0);
+  same(filtrarPorBusqueda(lista, "").length, 2);
 });
 
 test("aula · periodos: las actividades antiguas cuentan como periodo 1 y el promedio se calcula por periodo", () => {
@@ -410,7 +504,7 @@ test("aula · pasar lista: el docente solo ve sus cursos y el resumen cuenta pre
 
 test("alcance del docente: solo alumnos, carreras y ciclos de sus cursos asignados", () => {
   const datos = {
-    alumnos: [{ nivel: "APSTI", grado: "I" }, { nivel: "APSTI", grado: "II" }, { nivel: "MEC", grado: "I" }],
+    alumnos: [{ id: "a1", nivel: "APSTI", grado: "I" }, { id: "a2", nivel: "APSTI", grado: "II" }, { id: "a3", nivel: "MEC", grado: "I" }],
     niveles: [{ nombre: "APSTI" }, { nombre: "MEC" }],
     grados: [{ nivel: "APSTI", nombre: "I" }, { nivel: "APSTI", nombre: "II" }, { nivel: "MEC", nombre: "I" }],
     cursos: [{ id: "c1", nivel: "APSTI", grado: "II" }, { id: "c2", nivel: "MEC", grado: null }, { id: "c3", nivel: "APSTI", grado: "I" }],
@@ -419,6 +513,10 @@ test("alcance del docente: solo alumnos, carreras y ciclos de sus cursos asignad
   same(r.alumnos.length, 1, "solo el ciclo del curso"); same(r.niveles.map((n) => n.nombre), ["APSTI"]); same(r.grados.length, 1); same(r.cursos.length, 1);
   same(alcanceDocente(datos, ["c2"]).alumnos.length, 1, "curso sin ciclo = toda la carrera");
   same(alcanceDocente(datos, []).alumnos.length, 0, "sin asignar no ve nada");
+  const rManual = alcanceDocente(datos, ["c1"], [{ curso_id: "c1", alumno_id: "a3" }]);
+  same(rManual.alumnos.map((a) => a.id).sort(), ["a2", "a3"], "incluye automático y manual");
+  assert(rManual.niveles.some((n) => n.nombre === "MEC"), "incluye la carrera del alumno manual");
+  assert(rManual.grados.some((g) => g.nivel === "MEC" && g.nombre === "I"), "incluye el ciclo del alumno manual");
 });
 
 test("conectores · clasificarLlave rechaza llaves secretas y acepta las públicas", () => {
@@ -437,7 +535,10 @@ test("conectores · formato Firestore, lotes e ids de fila", () => {
   same(aFirestore(3), { integerValue: "3" }); same(aFirestore(1.5), { doubleValue: 1.5 }); same(aFirestore(null), { nullValue: null });
   same(aFirestore(["a"]), { arrayValue: { values: [{ stringValue: "a" }] } });
   same(lotes([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
-  same(idDeFila("curso_docentes", { curso_id: "c", user_id: "u" }, 0), "c_u"); same(idDeFila("alumnos", { id: "x" }, 0), "x"); same(idDeFila("alumnos", {}, 4), "alumnos-4");
+  same(idDeFila("curso_docentes", { curso_id: "c", user_id: "u" }, 0), "c_u");
+  same(idDeFila("curso_alumnos", { curso_id: "c", alumno_id: "a" }, 0), "c_a");
+  assert(TABLAS.includes("curso_alumnos"), "curso_alumnos debe figurar en TABLAS copiables");
+  same(idDeFila("alumnos", { id: "x" }, 0), "x"); same(idDeFila("alumnos", {}, 4), "alumnos-4");
 });
 test("conectores · paquete: se crea, valida e importa por lotes con upsert", async () => {
   const p = await crearPaquete(async (t) => (t === "alumnos" ? [{ id: "1" }, { id: "2" }, { id: "3" }] : t === "niveles" ? [{ id: "n" }] : t === "grados" ? (() => { throw new Error("no existe"); })() : []));

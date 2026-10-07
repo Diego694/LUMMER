@@ -50,7 +50,7 @@ export function buildDemoDB() {
     colegio: { id: colegioId, nombre: "Instituto Demo San Martín", codigo_registro: "DEMO2026", qr_modo: "obligatorio" },
     niveles: CARRERAS_DEMO.map((nombre) => ({ id: uid(), colegio_id: colegioId, nombre })),
     grados: GRADOS_DEMO.map(([nivel, nombre]) => ({ id: uid(), colegio_id: colegioId, nivel, nombre })),
-    alumnos: [], asistencias: [], docentes: [], comunicados: [],
+    alumnos: [], asistencias: [], docentes: [], comunicados: [], curso_alumnos: [],
   };
 
   let n = 1000;

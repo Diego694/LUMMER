@@ -19,13 +19,13 @@ export const TIPOS = {
 
 /** Tablas de LUMMER en orden de dependencias (primero las que otras referencian). */
 export const TABLAS = [
-  "colegios", "niveles", "grados", "docentes", "alumnos", "comunicados", "cursos", "curso_docentes",
+  "colegios", "niveles", "grados", "docentes", "alumnos", "comunicados", "cursos", "curso_docentes", "curso_alumnos",
   "asistencias", "justificaciones", "avisos_apoderados", "asistencias_curso",
   "curso_materiales", "curso_actividades", "curso_entregas",
 ];
 
 /** Clave que identifica una fila cuando no es `id`. */
-const CLAVE_ID = { curso_docentes: ["curso_id", "user_id"] };
+const CLAVE_ID = { curso_docentes: ["curso_id", "user_id"], curso_alumnos: ["curso_id", "alumno_id"] };
 
 /** @param {string} b64 @returns {any} */
 function jwtPayload(b64) {

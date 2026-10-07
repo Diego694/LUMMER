@@ -12,6 +12,7 @@ import { badge, confirmDialog, emptyState, icon, pageHead, registerActions, skel
 import { censurarNombre, cicloCorto, esc, initials, norm, todayStr } from "../utils.js";
 import { cargarCursoHoy, cursosActivos, registrarEnCurso } from "./cursos.js";
 import { registrarHoy, resolverAlumno } from "./registro.js";
+import { abrirEstudiantesCurso } from "../estudiantes-curso.js";
 
 /** @typedef {import('../tipos.d.ts').Curso} Curso */
 
@@ -31,8 +32,11 @@ let ocupado = false;
 
 const cursoActual = () => mios.find((c) => c.id === st.cursoId);
 
+/** @param {string | undefined} [cursoId] */
+const manualesDeCurso = (cursoId) => new Set(cursoId ? (DB.curso_alumnos || []).filter((ca) => ca.curso_id === cursoId).map((ca) => ca.alumno_id) : []);
+
 /** Alumnos activos y aprobados del curso, por orden alfabético. @param {Curso} c */
-const alumnosDe = (c) => DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false && perteneceACurso(a, c)).sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
+const alumnosDe = (c) => DB.alumnos.filter((a) => a.estado === "ACTIVO" && a.aprobado !== false && perteneceACurso(a, c, manualesDeCurso(c.id))).sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
 
 export const pasarListaPage = {
   id: "pasar-lista", title: "Pasar lista", icon: "listCheck", group: "Registro",
@@ -62,9 +66,10 @@ function lista() {
   }
   const porCarrera = [...new Set(mios.map((c) => c.nivel))].sort((a, b) => a.localeCompare(b, "es"));
   cuerpo().innerHTML = porCarrera.map((carrera) => `<section class="pl-grupo"><h2 class="pl-grupo-t">${esc(carrera)}</h2><div class="pl-cursos">
-    ${mios.filter((c) => c.nivel === carrera).sort((a, b) => String(a.grado || "").localeCompare(String(b.grado || ""), "es") || a.nombre.localeCompare(b.nombre, "es")).map((c) => `<button type="button" class="pl-curso" data-action="pl-curso" data-id="${esc(String(c.id))}">
+    ${mios.filter((c) => c.nivel === carrera).sort((a, b) => String(a.grado || "").localeCompare(String(b.grado || ""), "es") || a.nombre.localeCompare(b.nombre, "es")).map((c) => `<div class="pl-curso-card" style="display:flex;flex-direction:column;gap:8px"><button type="button" class="pl-curso" style="flex:1;width:100%" data-action="pl-curso" data-id="${esc(String(c.id))}">
       <span class="pl-curso-ciclo">${esc(c.grado ? cicloCorto(c.grado, c.nivel) : "Todos los ciclos")}</span><strong>${esc(c.nombre)}</strong>
-      <small>${alumnosDe(c).length} estudiantes</small><span class="pl-curso-go">Pasar lista ${icon("listCheck", 15)}</span></button>`).join("")}</div></section>`).join("");
+      <small>${alumnosDe(c).length} estudiantes</small><span class="pl-curso-go">Pasar lista ${icon("listCheck", 15)}</span></button>
+      <button type="button" class="btn btn-outline btn-sm" data-action="pl-estudiantes" data-id="${esc(String(c.id))}" aria-label="Estudiantes de ${esc(c.nombre)}">${icon("users", 14)} Estudiantes</button></div>`).join("")}</div></section>`).join("");
 }
 
 /* ------------------------------ 2. Pantalla de la clase ------------------------------ */
@@ -90,7 +95,8 @@ function pintarClase() {
   if (!c) return lista();
   cuerpo().innerHTML = `<div class="pl-clase">
     <div class="pl-top"><button type="button" class="btn btn-outline btn-sm" data-action="pl-volver">${icon("book", 15)} Mis cursos</button>
-      <div class="pl-titulo"><h2>${esc(c.nombre)}</h2><p class="muted">${esc(c.nivel)} · ${esc(c.grado ? cicloCorto(c.grado, c.nivel) : "todos los ciclos")} · ${esc(new Date().toLocaleDateString("es-PE", { weekday: "long", day: "numeric", month: "long" }))}</p></div></div>
+      <div class="pl-titulo"><h2>${esc(c.nombre)}</h2><p class="muted">${esc(c.nivel)} · ${esc(c.grado ? cicloCorto(c.grado, c.nivel) : "todos los ciclos")} · ${esc(new Date().toLocaleDateString("es-PE", { weekday: "long", day: "numeric", month: "long" }))}</p></div>
+      <button type="button" class="btn btn-outline btn-sm" style="margin-left:auto" data-action="pl-estudiantes" data-id="${esc(String(c.id))}">${icon("users", 15)} Estudiantes</button></div>
     <div class="pl-resumen" id="pl-resumen" role="status" aria-live="polite"></div>
     <div class="pl-acciones">
       <button type="button" class="btn btn-primary" data-action="pl-cam" id="pl-cam-btn">${icon("camera", 16)} Escanear carnets</button>
@@ -217,6 +223,15 @@ function apagarCamara() {
 registerActions({
   "pl-curso": (/** @type {HTMLElement} */ b) => abrirCurso(b.dataset.id || ""),
   "pl-volver": () => lista(),
+  "pl-estudiantes": (/** @type {HTMLElement} */ el) => {
+    const c = mios.find((x) => x.id === el.dataset.id) || cursoActual();
+    if (!c) return;
+    abrirEstudiantesCurso(c, () => {
+      alumnos = alumnosDe(c);
+      if (st.cursoId) pintarFilas();
+      else lista();
+    });
+  },
   "pl-filtro": (/** @type {HTMLElement} */ b) => { st.filtro = /** @type {any} */ (b.dataset.filtro || "todos"); pintarFilas(); },
   "pl-cam": () => (stream ? apagarCamara() : encenderCamara()),
   "pl-marcar": async (/** @type {HTMLElement} */ b) => {

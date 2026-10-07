@@ -251,12 +251,23 @@ export const enlaceWhatsApp = (tel, texto) => { const n = numeroWhatsApp(tel); r
 export const mensajeAviso = (plantilla, datos) => String(plantilla).replace(/\{(\w+)\}/g, (m, k) => (datos[k] ?? m));
 
 /**
- * ¿El alumno puede asistir a este curso? (misma carrera y, si el curso fija ciclo, el mismo ciclo).
- * @param {{ nivel: string, grado?: string | null }} alumno
+ * ¿El alumno puede asistir a este curso? (misma carrera y, si el curso fija ciclo, el mismo ciclo, o matriculado manualmente).
+ * @param {{ id?: string, nivel: string, grado?: string | null }} alumno
  * @param {{ nivel: string, grado?: string | null }} curso
+ * @param {Set<string> | string[] | Array<{ alumno_id?: string }> | null | undefined} [manuales]
  * @returns {boolean}
  */
-export const perteneceACurso = (alumno, curso) => alumno.nivel === curso.nivel && (!curso.grado || alumno.grado === curso.grado);
+export const perteneceACurso = (alumno, curso, manuales) => {
+  if (manuales && alumno?.id) {
+    if (manuales instanceof Set) {
+      if (manuales.has(alumno.id)) return true;
+    } else if (Array.isArray(manuales)) {
+      if (manuales.includes(alumno.id)) return true;
+      if (manuales.some((x) => x === alumno.id || (typeof x === "object" && x?.alumno_id === alumno.id))) return true;
+    }
+  }
+  return alumno.nivel === curso.nivel && (!curso.grado || alumno.grado === curso.grado);
+};
 
 /**
  * Normaliza y valida las filas de un CSV de importación de alumnos.

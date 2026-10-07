@@ -3,6 +3,13 @@
 ## Sin publicar
 
 ### Añadido
+- **Estudiantes del curso y matrícula manual (migración 020)**:
+  - **Pertenencia ampliada en `perteneceACurso`**: un estudiante pertenece a un curso si coincide automáticamente con su carrera y ciclo o si ha sido matriculado manualmente en la tabla `curso_alumnos` (manteniendo la condición de activo y aprobado).
+  - **Diálogo accesible de estudiantes (`abrirEstudiantesCurso`)**: botón «Estudiantes» en Gestión → Cursos, Asistencia por curso, Pasar lista y Aula virtual. Distingue entre alumnos automáticos («Por su ciclo») y matriculados manualmente («Manual» con acción «Quitar»). Permite matricular nuevos estudiantes («Agregar alumnos») con buscador reactivo, selección múltiple y marcado masivo de visibles para soportar arrastres y convalidaciones entre carreras o ciclos.
+  - **Flujos integrados de asistencia y notas**: validación de registro en `cursos.js` (`no_pertenece`), selección y marcado en «Pasar lista», visualización en «Asistencia por curso» y cálculo del libro de calificaciones en «Aula virtual».
+  - **Alcance del docente adaptado**: inclusión de estudiantes matriculados manualmente en los cursos asignados al docente y conservación de sus carreras y ciclos en el estado local.
+  - **Conectores de datos**: inclusión de la tabla `curso_alumnos` en las tablas copiables y definición de clave compuesta `["curso_id", "alumno_id"]`.
+  - **PWA y Service Worker**: inclusión de `assets/js/estudiantes-curso.js` en el arreglo SHELL y actualización de la caché a `ra-shell-v2` para garantizar disponibilidad sin conexión.
 - **Android nativo: Aula virtual, Pasar lista, alcance docente, Conexiones de datos, Desvincular institución, Base propia**: integración y cableado completo de las funciones web en la app nativa Android (Kotlin + Jetpack Compose):
   - **Aula virtual** (`ui/aula/`, `AulaRepo`, `AulaViewModel`): catálogo de cursos asignados, materiales descargables, actividades evaluables, entregas de estudiantes, calificación sobre 20 y subida de archivos adjuntos mediante Supabase Storage (`install(Storage)`).
   - **Pasar lista** (`ui/registro/`, `PasarListaScreen`, `PasarListaViewModel`): control de asistencia por curso y ciclo con selector por carrera, lista con filtro y búsqueda, escaneo de carnets por cámara (o ingreso manual de código) con verificación de QR seguro, botón «Marcar a todos» para marcar a los estudiantes pendientes y opción de registrar también el ingreso al instituto si aún no ingresó hoy.

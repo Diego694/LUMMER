@@ -28,3 +28,21 @@ En el programa de PC, en modo **online** y como administrador: revisa y envía a
 
 ## Portal para apoderados  (`/apoderado/`)
 Sin cuenta: el apoderado escribe el **código de apoderado** (12 caracteres, único por alumno) y ve la asistencia en solo lectura: % de asistencia, faltas, tardanzas, justificadas, los últimos días con hora de ingreso y salida, y los comunicados. El código lo ve el estudiante en su carnet y el personal en **Alumnos → botón de apoderado** (con envío por WhatsApp). Protecciones: código largo, **límite de intentos fallidos por conexión**, el código no queda en la barra de direcciones y el portal solo expone a ese estudiante.
+
+## Estudiantes del curso y matrícula manual (*Gestión → Cursos*, *Pasar lista*, *Aula virtual*)
+Cada curso o asignatura agrupa a sus estudiantes según dos reglas:
+- **Pertenencia automática por carrera y ciclo:** los estudiantes activos y aprobados cuya carrera y ciclo coincidan con el curso (`alumno.nivel == curso.nivel` y, si el curso fija ciclo, `alumno.grado == curso.grado`). En la lista de estudiantes aparecen identificados con la etiqueta **«Por su ciclo»** (no se pueden quitar desde el curso, ya que su matrícula proviene de su ciclo de origen).
+- **Matrícula manual (`curso_alumnos`):** permite inscribir a estudiantes de otros ciclos o carreras (casos de cursos de arrastre, convalidaciones, adelantos o asignaturas extracurriculares). En la lista aparecen con la etiqueta **«Manual»** y cuentan con el botón **«Quitar»** para desmatricularlos en cualquier momento.
+
+### Acceso a la gestión de estudiantes
+El botón **«Estudiantes»** está disponible en:
+1. **Gestión → Cursos (Administrador):** en la tabla general de cursos.
+2. **Asistencia por Curso (Consultas):** en la barra superior junto al selector de fecha.
+3. **Pasar lista (Docentes y Administrador):** en cada tarjeta de curso y en la barra superior de la clase activa.
+4. **Aula virtual (Docentes asignados y Administrador):** en la tarjeta de encabezado del curso.
+
+### Diálogo de estudiantes
+- **Lista:** muestra el total de estudiantes inscritos, su código, carrera·ciclo y procedencia («Por su ciclo» o «Manual»).
+- **Agregar alumnos:** abre un buscador por nombre o código con la lista de estudiantes activos y aprobados que aún no pertenecen al curso. Permite selección individual mediante casillas o marcar todos los resultados visibles a la vez. Al confirmar, se registran en la tabla `curso_alumnos` con el usuario que realizó la acción y la fecha.
+- **Impacto en el sistema:** los estudiantes matriculados manualmente pueden marcar asistencia en Pasar lista y registro por QR (`registrarEnCurso`), figuran en las nóminas de Asistencia por Curso y forman parte del libro de calificaciones de Aula virtual (`libroNotas`).
+

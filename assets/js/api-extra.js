@@ -100,6 +100,15 @@ export const extrasSupabase = {
   /**
    * @this {any}
    * @param {string | null | undefined} cid
+   * @returns {Promise<import('./tipos.d.ts').CursoAlumno[]>}
+   */
+  async cursoAlumnosLista(cid) {
+    try { return await paginar(() => this.sb.from("curso_alumnos").select("*").eq("colegio_id", cid)); }
+    catch (e) { if (/does not exist|relation|schema cache/i.test(/** @type {Error} */ (e).message)) return []; throw e; }
+  },
+  /**
+   * @this {any}
+   * @param {string | null | undefined} cid
    * @param {string} desde
    * @param {string} hasta
    * @returns {Promise<Justificacion[]>}
@@ -571,6 +580,12 @@ export const extrasDemo = {
    * @returns {Promise<Curso[]>}
    */
   async cursosLista() { this.reload(); return [...tabla(this.db, "cursos")].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")); },
+  /**
+   * @this {any}
+   * @param {string | null | undefined} [_cid]
+   * @returns {Promise<import('./tipos.d.ts').CursoAlumno[]>}
+   */
+  async cursoAlumnosLista(_cid) { this.reload(); return [...(this.db.curso_alumnos || [])]; },
   /**
    * @this {any}
    * @param {string | null | undefined} _c

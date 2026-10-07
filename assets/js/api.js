@@ -131,11 +131,13 @@ class DemoBackend {
     this.reload();
     const { alumnos, niveles, grados, comunicados, docentes } = this.db;
     const cursos = [...(this.db.cursos || [])];
+    const curso_alumnos = [...(this.db.curso_alumnos || [])];
     /** @template T @param {T[]} a @param {keyof T} k @returns {T[]} */
     const sort = (a, k) => [...a].sort((x, y) => String(x[k]).localeCompare(String(y[k]), "es", { numeric: true }));
     return {
       alumnos: sort(alumnos, "nombre"), niveles: sort(niveles, "nombre"), grados: sort(grados, "nombre"),
       docentes: sort(docentes, "nombre"), comunicados: [...comunicados].sort((a, b) => b.fecha.localeCompare(a.fecha)), cursos: sort(cursos, "nombre"),
+      curso_alumnos,
       ajustes: { periodos: [...(this.db.periodos || [])], calendario: [...(this.db.calendario || [])], horarios: [...(this.db.horarios || [])] },
     };
   }
@@ -378,11 +380,11 @@ class SupabaseBackend {
    */
   async loadAll(cid) {
     const q = (/** @type {string} */ t, /** @type {string} */ col, asc = true) => this.#todo(() => this.sb.from(t).select("*").eq("colegio_id", cid).order(col, { ascending: asc }));
-    const [alumnos, niveles, grados, comunicados, docentes, cursos] = await Promise.all([
-      q("alumnos", "nombre"), q("niveles", "nombre"), q("grados", "nombre"), q("comunicados", "fecha", false), q("docentes", "nombre"), /** @type {any} */ (this).cursosLista(cid),
+    const [alumnos, niveles, grados, comunicados, docentes, cursos, curso_alumnos] = await Promise.all([
+      q("alumnos", "nombre"), q("niveles", "nombre"), q("grados", "nombre"), q("comunicados", "fecha", false), q("docentes", "nombre"), /** @type {any} */ (this).cursosLista(cid), /** @type {any} */ (this).cursoAlumnosLista(cid),
     ]);
     const ajustes = await /** @type {any} */ (this).ajustesLista(cid);
-    return { alumnos, niveles, grados, comunicados, docentes, cursos, ajustes };
+    return { alumnos, niveles, grados, comunicados, docentes, cursos, curso_alumnos: curso_alumnos || [], ajustes };
   }
   /**
    * @param {string | null | undefined} cid
@@ -469,7 +471,7 @@ Object.assign(SupabaseBackend.prototype, extrasSupabase);
 Object.assign(DemoBackend.prototype, aulaDemo);
 Object.assign(SupabaseBackend.prototype, aulaSupabase);
 // Las operaciones nuevas de red del demo también fallan con la red simulada caída
-["cursosLista", "ajustesLista", "registrarSalidas", "justificacionesRango", "guardarJustificacion", "asistenciasCursoPorFecha", "registrarAsistenciaCurso", "registrarMasivoCurso", "avisosPorFecha", "registrarAviso", "exportarTodo"].forEach((m) => {
+["cursosLista", "cursoAlumnosLista", "ajustesLista", "registrarSalidas", "justificacionesRango", "guardarJustificacion", "asistenciasCursoPorFecha", "registrarAsistenciaCurso", "registrarMasivoCurso", "avisosPorFecha", "registrarAviso", "exportarTodo"].forEach((m) => {
   const original = /** @type {any} */ (DemoBackend.prototype)[m];
   /** @type {any} */ (DemoBackend.prototype)[m] = async function (/** @type {any[]} */ ...args) {
     if (globalThis.__simOffline) throw err("Failed to fetch (sin conexión simulada)");
@@ -488,7 +490,7 @@ class LocalBackend extends DemoBackend {
     const id = "local-instituto";
     return {
       colegio: { id, nombre: "Mi instituto (modo local)", codigo_registro: "LOCAL", qr_modo: "obligatorio" },
-      niveles: [], grados: [], alumnos: [], asistencias: [], docentes: [], comunicados: [], cursos: [],
+      niveles: [], grados: [], alumnos: [], asistencias: [], docentes: [], comunicados: [], cursos: [], curso_alumnos: [],
     };
   }
   /** @returns {Promise<{ id: string, email: string }>} */

@@ -8,6 +8,7 @@ import { DB } from "../state.js";
 import { esAdmin } from "../permisos.js";
 import { badge, confirmDialog, emptyState, icon, openModal, pageHead, registerActions, skeleton, toast } from "../ui.js";
 import { downloadFile, esc, etiquetaCiclo, fmtDate } from "../utils.js";
+import { abrirEstudiantesCurso } from "../estudiantes-curso.js";
 
 /** @typedef {import('../tipos.d.ts').CursoMaterial} CursoMaterial */
 /** @typedef {import('../tipos.d.ts').CursoActividad} CursoActividad */
@@ -73,7 +74,10 @@ function pintar() {
   cuerpo.innerHTML = `
     <div class="card"><div class="card-head pad">
       <div><strong>${esc(curso.nombre)}</strong><div class="muted">${esc(curso.grado ? etiquetaCiclo(curso.nivel, curso.grado) : curso.nivel + " · todos los ciclos")}${nombresDoc.length ? " · " + esc(nombresDoc.join(", ")) : curso.docente ? " · " + esc(curso.docente) : ""}</div></div>
-      ${esAdmin() ? `<button class="btn btn-outline btn-sm" data-action="aula-docentes">${icon("users", 16)} Docentes</button>` : ""}
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        ${gestiona ? `<button class="btn btn-outline btn-sm" data-action="aula-estudiantes">${icon("users", 16)} Estudiantes</button>` : ""}
+        ${esAdmin() ? `<button class="btn btn-outline btn-sm" data-action="aula-docentes">${icon("users", 16)} Docentes</button>` : ""}
+      </div>
     </div></div>
     <div class="aula-barra"><div class="aula-tabs" role="tablist" aria-label="Secciones del curso">
       <button class="pill ${st.tab === "material" ? "active" : ""}" role="tab" aria-selected="${st.tab === "material"}" data-action="aula-tab" data-tab="material">Material (${materiales.length})</button>
@@ -93,7 +97,8 @@ let entregasLibro = [];
 const actividadesVista = () => (st.periodo ? datos.actividades.filter((a) => periodoDe(a) === st.periodo) : datos.actividades);
 const calcularLibro = () => {
   const curso = cursoActual();
-  libro = curso ? libroNotas(alumnosDelCurso(DB.alumnos, curso), actividadesVista(), entregasLibro) : [];
+  const manuales = curso?.id ? (DB.curso_alumnos || []).filter((ca) => ca.curso_id === curso.id).map((ca) => ca.alumno_id) : [];
+  libro = curso ? libroNotas(alumnosDelCurso(DB.alumnos, curso, manuales), actividadesVista(), entregasLibro) : [];
 };
 
 /** @param {string} cursoId */
@@ -386,6 +391,17 @@ registerActions({
   "aula-mat-edit": (/** @type {HTMLElement} */ el) => formMaterial(datos.materiales.find((m) => m.id === el.dataset.id)),
   "aula-act-new": () => formActividad(),
   "aula-act-edit": (/** @type {HTMLElement} */ el) => formActividad(datos.actividades.find((a) => a.id === el.dataset.id)),
+  "aula-estudiantes": () => {
+    const c = cursoActual();
+    if (!c) return;
+    abrirEstudiantesCurso(c, () => {
+      calcularLibro();
+      if (st.tab === "notas") {
+        const caja = document.getElementById("aula-tab-cuerpo");
+        if (caja) mostrarNotas(caja);
+      }
+    });
+  },
   "aula-docentes": () => { gestionarDocentes(); },
   "aula-abrir": async (/** @type {HTMLElement} */ el) => {
     try { window.open(await api.aulaUrlArchivo(/** @type {string} */ (el.dataset.path)), "_blank", "noopener"); }

@@ -23,10 +23,11 @@ let alCargar = null;
  */
 export const alCargarDatos = (f) => { alCargar = f; };
 
-/** @type {DBState} */
+/** @type {DBState & { _alumnosTodos?: Alumno[] }} */
 export const DB = {
   cid: null, rol: null, perfil: null, userId: null,
   alumnos: [], niveles: [], nivelesRaw: [], grados: [], comunicados: [], docentes: [], cursos: [],
+  curso_alumnos: [],
   periodos: [], calendario: [], horarios: [], noLectivos: new Map(),
   hoy: [], hoyFecha: null,
   sinConexion: false,   // true cuando los datos vienen de la copia local (sin red)
@@ -37,12 +38,14 @@ export const DB = {
  */
 function aplicar(d) {
   DB.alumnos = d.alumnos;
+  DB._alumnosTodos = d.alumnos;
   DB.nivelesRaw = d.niveles;
   DB.niveles = d.niveles.map((/** @type {Nivel} */ n) => n.nombre);
   DB.grados = d.grados;
   DB.comunicados = d.comunicados;
   DB.docentes = d.docentes;
   DB.cursos = d.cursos || [];
+  DB.curso_alumnos = d.curso_alumnos || [];
   const aj = d.ajustes || {};
   DB.periodos = aj.periodos || []; DB.calendario = aj.calendario || []; DB.horarios = aj.horarios || [];
   DB.noLectivos = mapaNoLectivos(DB.calendario);
@@ -59,8 +62,9 @@ async function limitarAlDocente() {
   let ids;
   try { ids = await api.aulaCursosDe(DB.userId); recordarAsignados(DB.userId, ids); }
   catch { ids = asignadosGuardados(DB.userId); }
-  const r = alcanceDocente({ alumnos: DB.alumnos, niveles: DB.nivelesRaw, grados: DB.grados, cursos: DB.cursos }, ids);
+  const r = alcanceDocente({ alumnos: DB.alumnos, niveles: DB.nivelesRaw, grados: DB.grados, cursos: DB.cursos }, ids, DB.curso_alumnos);
   DB.alumnos = r.alumnos; DB.nivelesRaw = r.niveles; DB.niveles = r.niveles.map((n) => n.nombre); DB.grados = r.grados; DB.cursos = r.cursos;
+  DB.curso_alumnos = (DB.curso_alumnos || []).filter((ca) => ids.includes(ca.curso_id));
 }
 
 /** Carga los datos del instituto. Sin red usa la última copia local para poder seguir registrando asistencia. */
@@ -69,7 +73,7 @@ export async function loadAll() {
     const d = await api.loadAll(DB.cid);
     aplicar(d);
     DB.sinConexion = false;
-    guardarSnapshot(DB.cid, { alumnos: d.alumnos, niveles: d.niveles, grados: d.grados, comunicados: d.comunicados, docentes: d.docentes, cursos: d.cursos || [], ajustes: d.ajustes || {} });
+    guardarSnapshot(DB.cid, { alumnos: d.alumnos, niveles: d.niveles, grados: d.grados, comunicados: d.comunicados, docentes: d.docentes, cursos: d.cursos || [], curso_alumnos: d.curso_alumnos || [], ajustes: d.ajustes || {} });
   } catch (e) {
     if (!esErrorRed(e)) throw e;
     const s = leerSnapshot(DB.cid);

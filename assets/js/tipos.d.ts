@@ -150,6 +150,15 @@ export interface Curso {
   activo?: boolean;
 }
 
+// Alumno matriculado manualmente en un curso (migración 020)
+export interface CursoAlumno {
+  curso_id: string;
+  alumno_id: string;
+  colegio_id: string;
+  agregado_por?: string | null;
+  creado_en?: string;
+}
+
 // Aula (migración 013): archivo subido al bucket «cursos»
 export interface ArchivoAula {
   archivo_path: string | null;
@@ -556,6 +565,7 @@ export interface SnapshotDatos {
   comunicados: Comunicado[];
   docentes: Docente[];
   cursos?: Curso[];
+  curso_alumnos?: CursoAlumno[];
   ajustes?: {
     periodos?: Periodo[];
     calendario?: DiaCalendario[];
@@ -584,6 +594,7 @@ export interface DBState {
   comunicados: Comunicado[];
   docentes: Docente[];
   cursos: Curso[];
+  curso_alumnos: CursoAlumno[];
   periodos: Periodo[];
   calendario: DiaCalendario[];
   horarios: Horario[];
@@ -739,6 +750,7 @@ export interface LoadAllResult {
   comunicados: Comunicado[];
   docentes: Docente[];
   cursos: Curso[];
+  curso_alumnos?: CursoAlumno[];
   ajustes?: {
     periodos?: Periodo[];
     calendario?: DiaCalendario[];
@@ -780,6 +792,13 @@ export interface Api {
   ajustesLista(cid?: string | null): Promise<{ periodos: Periodo[]; calendario: DiaCalendario[]; horarios: Horario[] }>;
   auditoriaLista(cid?: string | null, opts?: { limite?: number; tabla?: string; accion?: string }): Promise<Auditoria[]>;
   cursosLista(cid?: string | null): Promise<Curso[]>;
+  cursoAlumnos(cursoId: string): Promise<CursoAlumno[]>;
+  cursoAgregarAlumno(cursoId: string, alumnoId: string, colegioId?: string): Promise<void>;
+  cursoQuitarAlumno(cursoId: string, alumnoId: string): Promise<void>;
+  cursoAlumnosLista?(cid?: string | null): Promise<CursoAlumno[]>;
+  aulaAlumnos?(cursoId: string): Promise<CursoAlumno[]>;
+  aulaAsignarAlumno?(cursoId: string, alumnoId: string, colegioId?: string): Promise<void>;
+  aulaQuitarAlumno?(cursoId: string, alumnoId: string): Promise<void>;
   aulaMateriales(cursoId: string): Promise<CursoMaterial[]>;
   aulaActividades(cursoId: string): Promise<CursoActividad[]>;
   aulaGuardar(tabla: 'curso_materiales' | 'curso_actividades', row: Record<string, any>, archivo?: File): Promise<void>;
@@ -851,6 +870,7 @@ export interface DemoDB {
   docentes: Docente[];
   comunicados: Comunicado[];
   cursos?: Curso[];
+  curso_alumnos?: CursoAlumno[];
   periodos?: Periodo[];
   calendario?: DiaCalendario[];
   horarios?: Horario[];
