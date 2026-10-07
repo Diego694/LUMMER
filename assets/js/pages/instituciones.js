@@ -31,6 +31,7 @@ async function mount(/** @type {any} */ el) {
     'inst-entrar':    el => confirmarEntrar(el),
     'inst-admin':     el => abrirAsignarAdmin(el),
     'inst-activar':   el => toggleActivar(el),
+    'inst-desvincular': el => toggleDesvincular(el),
     'inst-copiar':    el => copiarCodigo(el),
   });
 
@@ -129,7 +130,7 @@ function renderGrid(/** @type {any} */ items) {
             <div class="inst-card-top">
               <div class="inst-card-badges">
                 ${esActual ? badge('Actual', 'navy') : ''}
-                ${estaActiva ? badge('Activa', 'green') : badge('Inactiva', 'amber')}
+                ${inst.desvinculado_en ? badge('Desvinculada', 'red') : estaActiva ? badge('Activa', 'green') : badge('Inactiva', 'amber')}
               </div>
               <h2 class="inst-card-name" title="${esc(inst.nombre)}">${esc(inst.nombre)}</h2>
 
@@ -175,9 +176,12 @@ function renderGrid(/** @type {any} */ items) {
               <button class="btn btn-outline btn-sm" data-action="inst-admin" data-id="${inst.id}" title="Asignar administrador">
                 ${icon('userCheck', 14)} Admin
               </button>
-              <button class="btn btn-sm ${estaActiva ? 'btn-ghost-danger' : 'btn-outline'}" data-action="inst-activar" data-id="${inst.id}" title="${estaActiva ? 'Desactivar institución' : 'Activar institución'}">
+              ${!esActual ? `<button class="btn btn-sm ${inst.desvinculado_en ? 'btn-outline' : 'btn-ghost-danger'}" data-action="inst-desvincular" data-id="${inst.id}" title="${inst.desvinculado_en ? 'Vincular de nuevo la base de datos' : 'Desvincular la base de datos de esta institución (no borra datos)'}">
+                ${icon(inst.desvinculado_en ? 'layers' : 'x', 14)} ${inst.desvinculado_en ? 'Vincular' : 'Desvincular'}
+              </button>` : ''}
+${inst.desvinculado_en ? '' : `<button class="btn btn-sm ${estaActiva ? 'btn-ghost-danger' : 'btn-outline'}" data-action="inst-activar" data-id="${inst.id}" title="${estaActiva ? 'Desactivar institución' : 'Activar institución'}">
                 ${icon(estaActiva ? 'x' : 'check', 14)} ${estaActiva ? 'Desactivar' : 'Activar'}
-              </button>
+              </button>`}
             </div>
           </article>
         `;
@@ -322,6 +326,32 @@ function abrirAsignarAdmin(/** @type {any} */ target) {
       await cargar();
     }
   });
+}
+
+async function toggleDesvincular(/** @type {any} */ target) {
+  const id = resolveId(target);
+  try {
+    const lista = await api.saListar();
+    const items = typeof lista === 'string' ? JSON.parse(lista) : lista;
+    const inst = items.find((/** @type {any} */ i) => i.id === id);
+    if (!inst) return;
+    const desvincular = !inst.desvinculado_en;
+
+    if (!(await confirmDialog({
+      title: desvincular ? 'Desvincular base de datos' : 'Vincular base de datos',
+      message: desvincular
+        ? `«${esc(inst.nombre)}» quedará inactiva y su personal dejará de ver o escribir datos. No se borra nada: sus datos siguen guardados y puedes vincularla de nuevo. Si quieres una copia, entra a la institución y descarga el paquete en «Conexiones de datos».`
+        : `«${esc(inst.nombre)}» volverá a estar activa y su personal recuperará el acceso a sus datos.`,
+      confirmLabel: desvincular ? 'Desvincular' : 'Vincular',
+      danger: desvincular,
+    }))) return;
+
+    await api.saDesvincular(id, desvincular);
+    toast(desvincular ? 'Institución desvinculada' : 'Institución vinculada', 'success');
+    await cargar();
+  } catch (/** @type {any} */ e) {
+    toast(e.message || 'No se pudo cambiar el vínculo', 'error');
+  }
 }
 
 async function toggleActivar(/** @type {any} */ target) {

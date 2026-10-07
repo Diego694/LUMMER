@@ -826,6 +826,7 @@ export interface Api {
   saCrear(nombre: string, codigo?: string | null): Promise<any>;
   saRenombrar(id: string, nombre: string): Promise<void>;
   saActivar(id: string, activo: boolean): Promise<void>;
+  saDesvincular(id: string, desvincular: boolean): Promise<void>;
   saEntrar(id: string): Promise<any>;
   saAsignarAdmin(id: string, email: string): Promise<any>;
   renombrarInstituto(cid: string, nombre: string): Promise<void>;

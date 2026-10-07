@@ -456,6 +456,21 @@ export const extrasSupabase = {
   /**
    * @this {any}
    * @param {string} id
+   * @param {boolean} desvincular
+   * @returns {Promise<void>}
+   */
+  async saDesvincular(id, desvincular) {
+    const { error } = await this.sb.rpc("sa_desvincular", { p_id: id, p_desvincular: desvincular });
+    if (error) {
+      if (/does not exist|schema cache|function/i.test(error.message) || error.code === "PGRST202" || error.code === "42883") {
+        throw err("Falta aplicar la migración 018", error.code);
+      }
+      throw err(error.message, error.code);
+    }
+  },
+  /**
+   * @this {any}
+   * @param {string} id
    * @param {boolean} activo
    * @returns {Promise<void>}
    */
@@ -884,6 +899,21 @@ export const extrasDemo = {
     this.persist();
   },
 
+  /**
+   * @this {any}
+   * @param {string} id
+   * @param {boolean} desvincular
+   * @returns {Promise<void>}
+   */
+  async saDesvincular(id, desvincular) {
+    this._asegurarInstituciones();
+    const inst = this.db.instituciones.find((/** @type {{ id: string }} */ i) => i.id === id);
+    if (!inst) throw err("No se encontró la institución");
+    if (desvincular && id === this.db.colegio.id) throw err("Estás dentro de esta institución: entra primero a otra y vuelve a intentarlo");
+    inst.desvinculado_en = desvincular ? new Date().toISOString() : null;
+    inst.activo = !desvincular;
+    this.persist();
+  },
   /**
    * @this {any}
    * @param {string} id
