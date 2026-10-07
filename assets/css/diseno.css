@@ -1150,3 +1150,17 @@ body.est{background:var(--paper)}
 .pl-marcar{min-height:44px;min-width:104px}.pl-ok{display:inline-flex;align-items:center;justify-content:center;min-width:104px;color:var(--teal)}
 @media (max-width:560px){.pl-fila{flex-wrap:wrap}.pl-nombre{flex-basis:calc(100% - 60px)}.pl-marcar{flex:1}.pl-buscar{max-width:none;width:100%}}
 @media (prefers-reduced-motion:reduce){.pl-curso,.pl-fila,.pl-barra span{transition:none}.pl-curso:hover{transform:none}}
+
+/* ---------- Dashboard: lo operativo primero, entrada escalonada ---------- */
+.kpi-meter{display:block;position:relative;height:6px;border-radius:99px;background:var(--muted-bg);margin-top:var(--s-2);overflow:visible}
+.kpi-meter i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--amber);transform-origin:left}.dash-in .kpi-meter i{animation:meter-crece var(--t-med) var(--ease) both .2s}
+.kpi-meter b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink-soft);border-radius:1px}
+.card-tools{display:flex;align-items:center;gap:var(--s-2);flex-wrap:wrap;justify-content:flex-end}
+.btn-ghost{background:transparent;border:1px solid transparent;color:var(--ink-soft)}
+.btn-ghost:hover{background:var(--hover-bg);color:var(--ink)}
+.dash-in .kpi-grid>.kpi,.dash-in .dash-grid>.card{animation:dash-entra var(--t-med) var(--ease) both}
+.dash-in .kpi-grid>.kpi:nth-child(2){animation-delay:40ms}.dash-in .kpi-grid>.kpi:nth-child(3){animation-delay:80ms}.dash-in .kpi-grid>.kpi:nth-child(4){animation-delay:120ms}
+.dash-in .dash-grid>.card:nth-child(n+2){animation-delay:60ms}.dash-in .dash-grid>.card:nth-child(n+4){animation-delay:100ms}
+@keyframes dash-entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes meter-crece{from{transform:scaleX(0)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.dash-in .kpi-grid>.kpi,.dash-in .dash-grid>.card,.dash-in .kpi-meter i{animation:none}}

@@ -29,7 +29,9 @@ export const dashboardPage = {
     root.innerHTML = skeleton(6);
     await cargar();
     if (mia !== ver) return;
+    root.classList.add("dash-in");   // la entrada escalonada solo ocurre al abrir la página, no en cada refresco
     pintar();
+    setTimeout(() => root.classList.remove("dash-in"), 900);
     clearInterval(timer);
     timer = setInterval(async () => {
       if (document.hidden) return;
@@ -82,15 +84,14 @@ function pintar() {
       `${DB.niveles.length > 1 ? `<label class="sr-only" for="dash-carrera">Carrera</label><select class="filter" id="dash-carrera" aria-label="Carrera"><option value="">Todas las carreras</option>${DB.niveles.map((n) => `<option value="${esc(n)}" ${n === carrera ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}
        <label class="sr-only" for="dash-rango">Periodo</label>
        <select class="filter" id="dash-rango" aria-label="Periodo">${[7, 14, 30].map((n) => `<option value="${n}" ${n === rango ? "selected" : ""}>Últimos ${n} días hábiles</option>`).join("")}</select>
-       <button class="btn btn-outline" data-action="dash-export">${icon("download", 16)} Exportar CSV</button>
-       <a class="btn btn-outline" data-admin-link href="#/codigo">${icon("qr", 16)} Código de registro</a>
+       <a class="btn btn-outline" href="#/pasar-lista">${icon("listCheck", 16)} Pasar lista</a>
        <a class="btn btn-primary" href="#/registro-qr">${icon("qr", 16)} Registrar asistencia</a>`)}
 
     <section class="kpi-grid" aria-label="Indicadores del día">
       ${kpi({ label: "Alumnos activos", value: r.activos, hint: `${inactivos} inactivo(s) · ${DB.grados.length} ciclos`, ic: "users", tone: "navy" })}
       ${kpi({ label: "Presentes hoy", value: r.presentes, hint: `${r.puntuales} puntuales · ${r.tardes} tardanzas`, ic: "userCheck", tone: "teal" })}
       ${kpi({ label: "Ausentes hoy", value: finde && !r.presentes ? "—" : r.ausentes, hint: finde && !r.presentes ? "Fin de semana: sin clases" : r.ausentes ? "Sin registro de ingreso" : "¡Asistencia completa!", ic: "userX", tone: r.ausentes && !(finde && !r.presentes) ? "red" : "teal" })}
-      ${kpi({ label: "% de asistencia hoy", value: r.pct + "%", delta: delta !== null ? { val: delta, text: `${Math.abs(delta)} pts` } : null, hint: deltaHint, ic: "percent", tone: "amber" })}
+      ${kpi({ label: "% de asistencia hoy", value: r.pct + "%", delta: delta !== null ? { val: delta, text: `${Math.abs(delta)} pts` } : null, hint: `${deltaHint}<span class="kpi-meter" role="img" aria-label="${r.pct}% de asistencia; meta ${CONFIG.UMBRAL_ASISTENCIA}%"><i style="width:${Math.min(100, r.pct)}%"></i><b style="left:${CONFIG.UMBRAL_ASISTENCIA}%"></b></span>`, ic: "percent", tone: "amber" })}
     </section>
 
     <section class="dash-grid">
@@ -99,12 +100,7 @@ function pintar() {
       <article class="card"><header class="card-head"><h3>Estado de hoy</h3></header>
         <div class="chart-box chart-sm"><canvas id="chart-hoy" role="img" aria-label="Distribución de presentes, tardanzas y ausentes de hoy"></canvas></div></article>
 
-      <article class="card span-2"><header class="card-head"><h3>Asistencia de hoy por ciclo</h3><span class="muted">Meta: ${CONFIG.UMBRAL_ASISTENCIA}%</span></header>
-        <div class="chart-box chart-grados"><canvas id="chart-grados" role="img" aria-label="Porcentaje de asistencia de hoy por ciclo"></canvas></div></article>
-      <article class="card"><header class="card-head"><h3>Alumnos por carrera</h3></header>
-        <div class="chart-box chart-sm"><canvas id="chart-niveles" role="img" aria-label="Alumnos activos por carrera"></canvas></div></article>
-
-      <article class="card span-2"><header class="card-head"><h3>Últimos ingresos</h3><a class="link" href="#/asist-grado">Ver asistencia por ciclo →</a></header>
+      <article class="card span-2"><header class="card-head"><h3>Últimos ingresos</h3><div class="card-tools"><button class="btn btn-ghost btn-sm" type="button" data-action="dash-export">${icon("download", 15)} Exportar CSV</button><a class="btn btn-ghost btn-sm" data-admin-link href="#/codigo">${icon("qr", 15)} Código de registro</a><a class="link" href="#/asist-grado">Por ciclo →</a></div></header>
         ${recientes.length ? `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Ciclo</th><th>Hora</th><th>Estado</th></tr></thead><tbody>
           ${recientes.map((x) => { const a = alum.get(x.alumno_id); const t = esTardanza(x.hora, L); return `<tr>
             <td><div class="person"><span class="avatar">${esc(initials(a?.nombre))}</span><span>${esc(a?.nombre ?? "—")}</span></div></td>
@@ -114,6 +110,11 @@ function pintar() {
       <article class="card"><header class="card-head"><h3>Requieren atención</h3><span class="muted">&lt; ${CONFIG.UMBRAL_ASISTENCIA}% en ${rango} días</span></header>
         ${atencion.length ? `<ul class="alert-list">${atencion.map((x) => `<li><div class="person"><span class="avatar avatar-warn">${esc(initials(x.alumno.nombre))}</span><div><strong>${esc(x.alumno.nombre)}</strong><small>${esc(x.alumno.grado)} · ${x.presentes}/${x.dias} días</small></div></div><span class="pct ${x.pct < 60 ? "pct-red" : "pct-amber"}">${x.pct}%</span></li>`).join("")}</ul>`
           : emptyState("Todo en orden", "Ningún alumno está por debajo de la meta en este periodo.", "check")}</article>
+
+      <article class="card span-2"><header class="card-head"><h3>Asistencia de hoy por ciclo</h3><span class="muted">Meta: ${CONFIG.UMBRAL_ASISTENCIA}%</span></header>
+        <div class="chart-box chart-grados"><canvas id="chart-grados" role="img" aria-label="Porcentaje de asistencia de hoy por ciclo"></canvas></div></article>
+      <article class="card"><header class="card-head"><h3>Alumnos por carrera</h3></header>
+        <div class="chart-box chart-sm"><canvas id="chart-niveles" role="img" aria-label="Alumnos activos por carrera"></canvas></div></article>
 
       <article class="card span-3"><header class="card-head"><h3>Últimos comunicados</h3><a class="link" href="#/comunicados">Gestionar →</a></header>
         ${DB.comunicados.length ? `<div class="news-grid">${DB.comunicados.slice(0, 3).map((c) => `<div class="news"><small>${esc(fmtDate(c.fecha))}</small><strong>${esc(c.titulo)}</strong><p>${esc(c.mensaje)}</p></div>`).join("")}</div>`
