@@ -2,6 +2,7 @@
 import { api } from "../api.js";
 import { CONFIG } from "../config.js";
 import { DB } from "../state.js";
+import { rolActual } from "../permisos.js";
 import { badge, emptyState, icon, kpi, pageHead, registerActions, skeleton, toast } from "../ui.js";
 import { resumenDia, serieDiaria, porGrado, porNivel, bajaAsistencia, esTardanza } from "../stats.js";
 import { downloadFile, esc, fmtDate, fmtDay, greeting, initials, isWeekend, lastWeekdays, todayStr, toCSV } from "../utils.js";
@@ -84,8 +85,8 @@ function pintar() {
       `${DB.niveles.length > 1 ? `<label class="sr-only" for="dash-carrera">Carrera</label><select class="filter" id="dash-carrera" aria-label="Carrera"><option value="">Todas las carreras</option>${DB.niveles.map((n) => `<option value="${esc(n)}" ${n === carrera ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>` : ""}
        <label class="sr-only" for="dash-rango">Periodo</label>
        <select class="filter" id="dash-rango" aria-label="Periodo">${[7, 14, 30].map((n) => `<option value="${n}" ${n === rango ? "selected" : ""}>Últimos ${n} días hábiles</option>`).join("")}</select>
-       <a class="btn btn-outline" href="#/pasar-lista">${icon("listCheck", 16)} Pasar lista</a>
-       <a class="btn btn-primary" href="#/registro-qr">${icon("qr", 16)} Registrar asistencia</a>`)}
+       ${rolActual() === "docente" ? "" : `<a class="btn btn-outline" href="#/pasar-lista">${icon("listCheck", 16)} Pasar lista</a>`}
+       <a class="btn btn-primary" href="${rolActual() === "docente" ? "#/pasar-lista" : "#/registro-qr"}">${icon("qr", 16)} Registrar asistencia</a>`)}
 
     <section class="kpi-grid" aria-label="Indicadores del día">
       ${kpi({ label: "Alumnos activos", value: r.activos, hint: `${inactivos} inactivo(s) · ${DB.grados.length} ciclos`, ic: "users", tone: "navy" })}
@@ -100,7 +101,7 @@ function pintar() {
       <article class="card"><header class="card-head"><h3>Estado de hoy</h3></header>
         <div class="chart-box chart-sm"><canvas id="chart-hoy" role="img" aria-label="Distribución de presentes, tardanzas y ausentes de hoy"></canvas></div></article>
 
-      <article class="card span-2"><header class="card-head"><h3>Últimos ingresos</h3><div class="card-tools"><button class="btn btn-ghost btn-sm" type="button" data-action="dash-export">${icon("download", 15)} Exportar CSV</button><a class="btn btn-ghost btn-sm" data-admin-link href="#/codigo">${icon("qr", 15)} Código de registro</a><a class="link" href="#/asist-grado">Por ciclo →</a></div></header>
+      <article class="card span-2"><header class="card-head"><h3>Últimos ingresos</h3><div class="card-tools"><button class="btn btn-ghost btn-sm" type="button" data-action="dash-export">${icon("download", 15)} Exportar CSV</button><a class="btn btn-ghost btn-sm" data-admin-link href="#/codigo" ${rolActual() === "docente" ? "hidden" : ""}>${icon("qr", 15)} Código de registro</a><a class="link" href="#/asist-grado">Por ciclo →</a></div></header>
         ${recientes.length ? `<div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Ciclo</th><th>Hora</th><th>Estado</th></tr></thead><tbody>
           ${recientes.map((x) => { const a = alum.get(x.alumno_id); const t = esTardanza(x.hora, L); return `<tr>
             <td><div class="person"><span class="avatar">${esc(initials(a?.nombre))}</span><span>${esc(a?.nombre ?? "—")}</span></div></td>

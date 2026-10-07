@@ -100,7 +100,7 @@ let modoCurso = null;   // null = asistencia diaria; si no, el curso donde se pa
 let modoSalida = false; // false = ingreso; true = salida
 
 export const registroQrPage = {
-  id: "registro-qr", title: "Registro por QR", icon: "qr", group: "Registro",
+  noDocente: true, id: "registro-qr", title: "Registro por QR", icon: "qr", group: "Registro",
   render(/** @type {any} */ root) {
     root.innerHTML = `
       ${pageHead("Registro por QR", "Escanea el carnet del alumno o ingresa su código para marcar el ingreso de hoy.")}
@@ -304,7 +304,7 @@ function detenerNfc(/** @type {any} */ silencioso) {
 /* ========================= Por alumno ========================= */
 let ra = { q: "", solo: "todos" };
 export const registroAlumnoPage = {
-  id: "registro-alumno", title: "Registro por Alumno", icon: "userCheck", group: "Registro",
+  noDocente: true, id: "registro-alumno", title: "Registro por Alumno", icon: "userCheck", group: "Registro",
   render(/** @type {any} */ root) {
     root.innerHTML = `
       ${pageHead("Registro por Alumno", "Busca un alumno y marca su asistencia de hoy.")}
@@ -337,7 +337,7 @@ export const registroAlumnoPage = {
 /* ============================ Masivo ============================ */
 let rm = { nivel: "", grado: "", fecha: "" };
 export const registroMasivoPage = {
-  id: "registro-masivo", title: "Registro Masivo por Ciclo", icon: "listCheck", group: "Registro",
+  noDocente: true, id: "registro-masivo", title: "Registro Masivo por Ciclo", icon: "listCheck", group: "Registro",
   async render(/** @type {any} */ root) {
     rm.fecha = rm.fecha || todayStr();
     root.innerHTML = `

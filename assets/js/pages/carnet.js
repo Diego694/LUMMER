@@ -10,7 +10,7 @@ import { qrModoEfectivo } from "../qr-seguro.js";
 let cq = { q: "", sel: null };
 
 export const carnetPage = {
-  id: "carnet", title: "Carnet", icon: "idCard", group: "Gestión",
+  noDocente: true, id: "carnet", title: "Carnet", icon: "idCard", group: "Gestión",
   /**
    * @param {HTMLElement & { _repaint?: () => void }} root
    * @param {{ id?: string }} [params]

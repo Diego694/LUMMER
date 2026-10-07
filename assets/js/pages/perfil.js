@@ -30,7 +30,7 @@ async function pintarFotoGrande(root) {
 }
 
 export const perfilPage = {
-  id: "perfil", title: "Mi perfil", icon: "userCheck", group: "Principal",
+  id: "perfil", title: "Mi perfil", icon: "userCheck", group: "Mi cuenta",
   /** @param {HTMLElement} root */
   async render(root) {
     const p = /** @type {any} */ (DB.perfil || {});

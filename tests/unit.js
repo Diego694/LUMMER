@@ -1,4 +1,5 @@
 // Tests unitarios sin dependencias. Se ejecutan abriendo tests/tests.html (o con scripts/check.py en CI).
+import { alcanceDocente } from "../assets/js/alcance.js";
 import { ahora, esErrorRed, esErrorSesion, fechaZona, horaZona, sincronizarReloj, todayStr, nowHHMM } from "../assets/js/utils.js";
 import { CICLOS, addDays, censurarNombre, cicloCorto, compararCiclos, dateStr, esc, etiquetaCiclo, nombreCiclo, parsearCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
 import { enlaceWhatsApp, matrizAsistencia, mensajeAviso, numeroWhatsApp, perteneceACurso } from "../assets/js/stats.js";
@@ -399,6 +400,19 @@ test("aula · pasar lista: el docente solo ve sus cursos y el resumen cuenta pre
   const al = [{ id: "a" }, { id: "b" }, { id: "c" }];
   same(resumenLista(al, new Set(["a", "c", "zz"])), { total: 3, presentes: 2, faltan: 1, pct: 67 });
   same(resumenLista([], new Map()), { total: 0, presentes: 0, faltan: 0, pct: 0 });
+});
+
+test("alcance del docente: solo alumnos, carreras y ciclos de sus cursos asignados", () => {
+  const datos = {
+    alumnos: [{ nivel: "APSTI", grado: "I" }, { nivel: "APSTI", grado: "II" }, { nivel: "MEC", grado: "I" }],
+    niveles: [{ nombre: "APSTI" }, { nombre: "MEC" }],
+    grados: [{ nivel: "APSTI", nombre: "I" }, { nivel: "APSTI", nombre: "II" }, { nivel: "MEC", nombre: "I" }],
+    cursos: [{ id: "c1", nivel: "APSTI", grado: "II" }, { id: "c2", nivel: "MEC", grado: null }, { id: "c3", nivel: "APSTI", grado: "I" }],
+  };
+  const r = alcanceDocente(datos, ["c1"]);
+  same(r.alumnos.length, 1, "solo el ciclo del curso"); same(r.niveles.map((n) => n.nombre), ["APSTI"]); same(r.grados.length, 1); same(r.cursos.length, 1);
+  same(alcanceDocente(datos, ["c2"]).alumnos.length, 1, "curso sin ciclo = toda la carrera");
+  same(alcanceDocente(datos, []).alumnos.length, 0, "sin asignar no ve nada");
 });
 
 /* render */

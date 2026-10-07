@@ -5,6 +5,8 @@ import { asistenciasPendientesDe, guardarSnapshot, leerSnapshot, salidasPendient
 import { CONFIG } from "./config.js";
 import { mapaNoLectivos, tablaLimites } from "./calendario.js";
 import { configurarLimites } from "./stats.js";
+import { alcanceDocente, asignadosGuardados, recordarAsignados } from "./alcance.js";
+import { rolActual } from "./permisos.js";
 import { cicloCorto, compararCiclos, esErrorRed, todayStr } from "./utils.js";
 
 /** @typedef {import('./tipos.d.ts').Alumno} Alumno */
@@ -50,6 +52,17 @@ function aplicar(d) {
   CONFIG.HORA_LIMITE = lim.general;
 }
 
+/** El docente solo ve lo de sus cursos asignados (sin red usa la última lista conocida; si no hay, nada). */
+async function limitarAlDocente() {
+  if (rolActual() !== "docente" || !DB.userId) return;
+  /** @type {string[]} */
+  let ids;
+  try { ids = await api.aulaCursosDe(DB.userId); recordarAsignados(DB.userId, ids); }
+  catch { ids = asignadosGuardados(DB.userId); }
+  const r = alcanceDocente({ alumnos: DB.alumnos, niveles: DB.nivelesRaw, grados: DB.grados, cursos: DB.cursos }, ids);
+  DB.alumnos = r.alumnos; DB.nivelesRaw = r.niveles; DB.niveles = r.niveles.map((n) => n.nombre); DB.grados = r.grados; DB.cursos = r.cursos;
+}
+
 /** Carga los datos del instituto. Sin red usa la última copia local para poder seguir registrando asistencia. */
 export async function loadAll() {
   try {
@@ -64,6 +77,7 @@ export async function loadAll() {
     aplicar(s);
     DB.sinConexion = true;
   }
+  await limitarAlDocente();
   await refreshHoy();
   try { alCargar?.(); } catch { /* el aviso nunca bloquea la carga */ }
 }

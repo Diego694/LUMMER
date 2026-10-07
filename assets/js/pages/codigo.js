@@ -40,7 +40,7 @@ function textoCompartir(codigo) {
 let actual = null;
 
 export const codigoPage = {
-  id: "codigo", title: "Código de registro", icon: "qr", group: "Gestión",
+  noDocente: true, id: "codigo", title: "Código de registro", icon: "qr", group: "Gestión",
   /** @param {HTMLElement} root */
   async render(root) {
     actual = await api.getCodigoRegistro(/** @type {string} */ (DB.cid));

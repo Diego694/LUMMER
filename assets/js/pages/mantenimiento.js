@@ -24,7 +24,7 @@ async function eliminar(/** @type {any} */ tabla, /** @type {any} */ id, /** @ty
 
 /* ============================ Carreras ============================ */
 export const nivelesPage = {
-  id: "niveles", title: "Carreras", icon: "layers", group: "Gestión",
+  noDocente: true, id: "niveles", title: "Carreras", icon: "layers", group: "Gestión",
   render(/** @type {any} */ el) {
     el.innerHTML = `${pageHead("Carreras", "Carreras o programas de estudio del instituto. Cada una tiene sus propios ciclos y salones.", `<button class="btn btn-primary" data-action="nivel-new">${icon("plus", 16)} Agregar carrera</button>`)}<div class="card flush" id="tbl"></div>`;
     el._repaint = () => {
@@ -44,7 +44,7 @@ const indiceCiclo = (/** @type {any} */ g) => { const i = CICLOS.indexOf(/** @ty
 const porCiclo = (/** @type {any} */ a, /** @type {any} */ b) => indiceCiclo(a) - indiceCiclo(b) || parsearCiclo(a.nombre).seccion.localeCompare(parsearCiclo(b.nombre).seccion, "es") || a.nombre.localeCompare(b.nombre, "es", { numeric: true });
 
 export const gradosPage = {
-  id: "grados", title: "Ciclos y salones", icon: "book", group: "Gestión",
+  noDocente: true, id: "grados", title: "Ciclos y salones", icon: "book", group: "Gestión",
   render(/** @type {any} */ el) {
     el.innerHTML = `${pageHead("Ciclos y salones", "Cada carrera tiene sus ciclos (del I al VI) y, si hace falta, sus salones. Cada uno es independiente: sus propios alumnos, asistencia y reportes.",
       `<button class="btn btn-primary" data-action="ciclos-new">${icon("plus", 16)} Crear ciclos</button>`)}<div id="carreras-lista"></div>`;
@@ -293,7 +293,7 @@ function importarCSV() {
 // El personal se crea en «Personal y accesos»; aquí solo se consulta quién es docente o coordinador.
 let dq = "";
 export const docentesPage = {
-  id: "docentes", title: "Docentes", icon: "briefcase", group: "Gestión",
+  noDocente: true, id: "docentes", title: "Docentes", icon: "briefcase", group: "Gestión",
   async render(/** @type {any} */ el) {
     el.innerHTML = `${pageHead("Docentes", "Docentes y coordinadores con acceso al sistema. Solo lectura: las cuentas se crean en «Personal y accesos».")}
       <div class="toolbar"><div class="search"><span class="search-ic">${icon("search", 16)}</span><input class="input" id="do-q" placeholder="Buscar por nombre, rol o carrera…" value="${esc(dq)}" aria-label="Buscar"></div><span class="muted" id="do-total"></span></div><div class="card flush" id="tbl">${skeleton(4)}</div>`;

@@ -329,7 +329,7 @@ export function reanudarQuiosco() {
 
 /* ------------------------------ Página de inicio del quiosco ------------------------------ */
 export const quioscoPage = {
-  id: "quiosco", title: "Modo quiosco", icon: "idCard", group: "Registro",
+  noDocente: true, id: "quiosco", title: "Modo quiosco", icon: "idCard", group: "Registro",
   render(/** @type {any} */ root) {
     const prev = leer() || {};
     root.innerHTML = `<div class="page-head"><div><h1>Modo quiosco</h1><p class="muted">Deja una tablet o teléfono fijo en la puerta: cada estudiante muestra su carnet y se registra solo, sin que el docente tenga que escanear.</p></div></div>

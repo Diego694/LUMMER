@@ -39,11 +39,12 @@ import { institucionesPage } from "./pages/instituciones.js";
 
 /** @type {any[]} */
 const PAGES = [
-  dashboardPage, perfilPage, aulaPage,
+  dashboardPage, aulaPage,
   pasarListaPage, registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, alertasPage, avisosPage,
   carnetPage, codigoPage, institutoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,
   diagnosticoPage, respaldoPage, offlinePage, historialPage, migrarPage, erroresPage, institucionesPage,
+  perfilPage,   // «Mi cuenta» va al final del menú: no es esencial
 ];
 const $ = (/** @type {any} */ s) => document.querySelector(s);
 /** @type {any} */
@@ -83,7 +84,7 @@ alCargarDatos(pintarSolicitudes);
 setInterval(() => { if (logged && esAdmin() && !document.hidden && api.mode !== "local") loadAll().catch(() => {}); }, 60000);
 
 /* ---------------------------- Navegación ---------------------------- */
-const visibles = () => PAGES.filter((p) => (!p.soloAdmin || esAdmin()) && (!p.soloSuper || esSuper()));
+const visibles = () => PAGES.filter((p) => (!p.soloAdmin || esAdmin()) && (!p.soloSuper || esSuper()) && (!p.noDocente || rolActual() !== "docente"));
 const CHEVRON = '<svg class="icon chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const gruposAbiertos = () => { try { return JSON.parse(localStorage.getItem("ra-nav-abiertos") || "null") || []; } catch { return []; } };
 const guardarAbiertos = (/** @type {any} */ l) => { try { localStorage.setItem("ra-nav-abiertos", JSON.stringify(l)); } catch { /* sin almacenamiento */ } };
@@ -114,7 +115,10 @@ async function route() {
   const { id, params } = parseHash();
   let page = PAGES.find((p) => p.id === id) || dashboardPage;
   if (page.soloSuper && !esSuper()) { toast("Esa sección es solo para el administrador superior.", "error"); page = dashboardPage; history.replaceState(null, "", "#/dashboard"); }
-  else if (page.soloAdmin && !esAdmin()) { toast("Esa sección es solo para el administrador.", "error"); page = dashboardPage; history.replaceState(null, "", "#/dashboard"); }
+  else if (page.noDocente && rolActual() === "docente") {
+    page = PAGES.find((p) => p.id === (page.id === "registro-qr" ? "pasar-lista" : "dashboard")) || dashboardPage;   // el docente marca por curso asignado
+    history.replaceState(null, "", `#/${page.id}`);
+  } else if (page.soloAdmin && !esAdmin()) { toast("Esa sección es solo para el administrador.", "error"); page = dashboardPage; history.replaceState(null, "", "#/dashboard"); }
   if (actual && actual !== page) await actual.onLeave?.();
   actual = page;
   document.querySelectorAll(".nav-item").forEach((/** @type {any} */ n) => { const on = n.dataset.page === page.id; n.classList.toggle("active", on); if (on) { n.setAttribute("aria-current", "page"); abrirGrupoDe(n); } else n.removeAttribute("aria-current"); });
