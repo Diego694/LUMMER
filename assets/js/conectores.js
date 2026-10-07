@@ -73,6 +73,13 @@ export function normalizarDestino(tipo, url) {
 const baseFirestore = (id) => `https://firestore.googleapis.com/v1/projects/${id}/databases/(default)/documents`;
 
 /**
+ * Cabeceras de autenticación de Supabase. Las llaves nuevas (sb_publishable_…) no son JWT: solo van en `apikey`.
+ * @param {string} llave
+ * @returns {Record<string, string>}
+ */
+const cabecerasSupabase = (llave) => (llave.startsWith("sb_") ? { apikey: llave } : { apikey: llave, Authorization: `Bearer ${llave}` });
+
+/**
  * Prueba que el destino responda y acepte la llave.
  * @param {Destino} d
  * @param {FetchFn} [f]
@@ -82,9 +89,15 @@ export async function probarConexion(d, f = (u, i) => fetch(u, i)) {
   const t0 = Date.now();
   try {
     if (d.tipo === "supabase") {
-      const r = await f(`${d.url}/rest/v1/`, { headers: { apikey: d.llave, Authorization: `Bearer ${d.llave}` } });
+      const r = await f(`${d.url}/rest/v1/`, { headers: cabecerasSupabase(d.llave) });
       if (r.ok) return { ok: true, ms: Date.now() - t0, detalle: "Conexión correcta." };
-      if (r.status === 401 || r.status === 403) return { ok: false, ms: Date.now() - t0, detalle: "El servidor respondió, pero rechazó la llave." };
+      if (r.status === 401 || r.status === 403) {
+        // Supabase restringe el listado del esquema (/rest/v1/) a la llave secreta: eso no significa que la llave pública sea mala.
+        // Solo se rechaza si el mensaje dice que la llave no es válida.
+        const cuerpo = await r.text?.().catch(() => "") ?? "";
+        if (/invalid (api key|jwt)|no api key/i.test(cuerpo) || !cuerpo) return { ok: false, ms: Date.now() - t0, detalle: "El servidor respondió, pero rechazó la llave (revisa que sea la llave publishable/anon de ESTE proyecto, completa y sin espacios)." };
+        return { ok: true, ms: Date.now() - t0, detalle: "Llave aceptada (el servidor no permite listar el esquema con una llave pública, es normal)." };
+      }
       return { ok: false, ms: Date.now() - t0, detalle: `El servidor respondió ${r.status}.` };
     }
     if (d.tipo === "rest") {
@@ -182,7 +195,7 @@ export async function importarPaquete(d, paquete, { alProgresar = () => {}, f = 
       for (const grupo of lotes(filas, lote)) {
         let r;
         if (d.tipo === "supabase") {
-          r = await f(`${d.url}/rest/v1/${t}`, { method: "POST", headers: { apikey: d.llave, Authorization: `Bearer ${d.llave}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(grupo) });
+          r = await f(`${d.url}/rest/v1/${t}`, { method: "POST", headers: { ...cabecerasSupabase(d.llave), "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(grupo) });
         } else if (d.tipo === "rest") {
           r = await f(`${d.url}/importar/${t}`, { method: "POST", headers: { Authorization: `Bearer ${d.llave}`, "Content-Type": "application/json" }, body: JSON.stringify({ filas: grupo }) });
         } else {
@@ -215,7 +228,7 @@ export async function importarPaquete(d, paquete, { alProgresar = () => {}, f = 
 export async function contarEnDestino(d, tabla, f = (u, i) => fetch(u, i)) {
   try {
     if (d.tipo === "supabase") {
-      const r = await f(`${d.url}/rest/v1/${tabla}?select=*`, { method: "HEAD", headers: { apikey: d.llave, Authorization: `Bearer ${d.llave}`, Prefer: "count=exact", Range: "0-0" } });
+      const r = await f(`${d.url}/rest/v1/${tabla}?select=*`, { method: "HEAD", headers: { ...cabecerasSupabase(d.llave), Prefer: "count=exact", Range: "0-0" } });
       const m = /\/(\d+|\*)$/.exec(r.headers.get("content-range") || "");
       return m && m[1] !== "*" ? Number(m[1]) : null;
     }

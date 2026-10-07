@@ -456,6 +456,11 @@ test("conectores · importar se detiene ante RLS y probar traduce errores", asyn
   const inf = await importarPaquete({ tipo: "supabase", url: "https://d", llave: "k" }, p, { f: async () => ({ ok: false, status: 403 }) });
   same(inf.length, 1, "no sigue tras el primer fallo"); assert(/RLS/.test(inf[0].error));
   assert((await probarConexion({ tipo: "supabase", url: "https://d", llave: "k" }, async () => ({ ok: false, status: 401 }))).detalle.includes("rechazó"));
+  assert(!(await probarConexion({ tipo: "supabase", url: "https://d", llave: "k" }, async () => ({ ok: false, status: 401, text: async () => '{"message":"Invalid API key"}' }))).ok, "llave inválida se rechaza");
+  assert((await probarConexion({ tipo: "supabase", url: "https://d", llave: "k" }, async () => ({ ok: false, status: 401, text: async () => '{"message":"Access to schema denied"}' }))).ok, "401 por esquema restringido no es llave mala");
+  let cab = {};
+  await probarConexion({ tipo: "supabase", url: "https://d", llave: "sb_publishable_x" }, async (_u, i) => { cab = i?.headers ?? {}; return { ok: true, status: 200 }; });
+  assert(cab.apikey === "sb_publishable_x" && !cab.Authorization, "llave sb_ solo va en apikey");
   assert((await probarConexion({ tipo: "firestore", url: "mi-proyecto-1", llave: "k" }, async () => ({ ok: false, status: 403 }))).ok, "403 = alcanzable");
   assert(!(await probarConexion({ tipo: "rest", url: "https://d", llave: "k" }, async () => { throw new Error("cors"); })).ok);
   assert(TABLAS[0] === "colegios");
