@@ -68,8 +68,24 @@ def main():
         print(r.stdout.strip())
         if r.returncode != 0:
             print("✘ PRUEBAS DEL AULA FALLARON:\n" + (r.stderr or "").strip()); return 1
+
+        # Migraciones extendidas hasta 020 (alcance docente, conexiones, desvincular, matrícula manual)
+        migraciones_020 = [RAIZ / "migrations" / "016_alcance_docente.sql", RAIZ / "migrations" / "017_conexiones_datos.sql",
+                           RAIZ / "migrations" / "018_desvincular_institucion.sql", RAIZ / "migrations" / "020_curso_alumnos.sql"]
+        for f in migraciones_020:
+            r = psql(f, db="prueba")
+            print(("✔ " if r.returncode == 0 else "✘ ") + f.name)
+            if r.returncode != 0:
+                print((r.stderr or "").strip()); return 1
+
+        r = psql(AQUI / "curso_alumnos_test.sql", db="prueba")
+        print(r.stdout.strip())
+        if r.returncode != 0:
+            print("✘ PRUEBAS DE CURSO_ALUMNOS FALLARON:\n" + (r.stderr or "").strip()); return 1
+
         # Idempotencia: volver a aplicar las migraciones no debe fallar ni cambiar el resultado
-        for f in orden[2:]:
+        orden_completo = orden + migraciones_020
+        for f in orden_completo[2:]:
             r = psql(f, db="prueba")
             print(("✔ re-ejecución idempotente: " if r.returncode == 0 else "✘ re-ejecución falló: ") + f.name)
             if r.returncode != 0:
@@ -87,6 +103,9 @@ def main():
         r = psql(AQUI / "aula_test.sql", db="limpia")
         if r.returncode != 0:
             print("✘ PRUEBAS DEL AULA FALLARON (instalación limpia):\n" + (r.stderr or "").strip()); return 1
+        r = psql(AQUI / "curso_alumnos_test.sql", db="limpia")
+        if r.returncode != 0:
+            print("✘ PRUEBAS DE CURSO_ALUMNOS FALLARON (instalación limpia):\n" + (r.stderr or "").strip()); return 1
         print("✔ instalación limpia: pruebas de seguridad correctas")
         estado = 0
     finally:
