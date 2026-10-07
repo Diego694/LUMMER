@@ -5,9 +5,10 @@ Proyecto nativo Android desarrollado en **Kotlin**, **Jetpack Compose** y **Mate
 Este módulo reside de forma independiente en `android-nativo/` y reproduce la totalidad de las entidades, lógica de negocio y navegación de la plataforma web.
 
 > [!IMPORTANT]
-> **Estado del proyecto:** **Completa y lista para release (v4.0.0)**.
-> - Probada satisfactoriamente en hardware real en todas sus pantallas y flujos.
-> - Se distribuye como la **Release Principal** en GitHub (`app-latest` / `registro-academico.apk`) para el perfil **Docente** (`pe.registroacademico.nativo.docente`).
+> **Estado del proyecto:**
+> - **v4.0.0 (Release):** Probada satisfactoriamente en hardware real en todas sus pantallas y flujos originales. Se distribuye como la **Release Principal** en GitHub (`app-latest` / `registro-academico.apk`) para el perfil **Docente** (`pe.registroacademico.nativo.docente`).
+> - **Nuevos módulos («Sin publicar»):** Aula virtual, Pasar lista, alcance docente, Conexiones de datos, Desvincular institución y Base propia.
+> - **Verificación de los nuevos módulos:** Compilan y pasan pruebas unitarias JVM; **NO** han sido verificados en dispositivo físico real ni contra una base de datos real.
 > - El perfil **Estudiante** aún no está portado a Compose; los estudiantes continúan accediendo vía el portal web y la app Lite («LUMMER Estudiante»).
 > - La app anterior WebView (`android/`) se mantiene como versión **Lite** y convive instalada sin interferencias.
 
@@ -61,8 +62,11 @@ android-nativo/app/src/main/java/pe/registroacademico/nativo/
 │   ├── PersonalRepo.kt                 # Directorio de personal, asignación de roles y actualización de perfiles
 │   ├── InstitucionesRepo.kt            # RPCs multi-institución (sa_*) y configuración de instituto / QR
 │   ├── SistemaRepo.kt                  # Hora servidor, auditoría, errores y exportación completa
-│   ├── SupabaseModule.kt               # Proveedor singleton de SupabaseClient
-│   ├── RepositoryModule.kt             # Enlace de dependencias Hilt para repositorios
+│   ├── AulaRepo.kt                     # Cursos, materiales, actividades, entregas, notas y storage
+│   ├── ConexionesRepo.kt               # Conexiones externas (Supabase/Firestore/REST), prueba y copia
+│   ├── SupabaseModule.kt               # Proveedor singleton de SupabaseClient (Auth + Postgrest + Storage)
+│   ├── RepositoryModule.kt             # Enlace de dependencias Hilt para repositorios principales
+│   ├── AulaModule.kt & ConexionesModule.kt # Módulos Hilt para AulaRepo y ConexionesRepo
 │   └── model/                          # Clases @Serializable en snake_case
 │       ├── Alumno.kt
 │       ├── Asistencia.kt & AsistenciaCurso.kt
@@ -71,11 +75,15 @@ android-nativo/app/src/main/java/pe/registroacademico/nativo/
 │       ├── Horario.kt & DiaCalendario.kt
 │       ├── Periodo.kt, Comunicado.kt, Docente.kt
 │       ├── AvisoApoderado.kt, LogCliente.kt, Auditoria.kt
+│       ├── AulaModels.kt                   # Modelos del aula: CursoMaterial, CursoActividad, CursoEntrega, ArchivoAula
+│       ├── Conexion.kt                     # Modelos de conexiones: ConexionDatos, NuevaConexionPayload
 │       ├── Colegio.kt & Perfil.kt
 │       └── RpcModels.kt
 ├── domain/
 │   ├── Permisos.kt                     # Roles (admin, coordinador, docente), acciones y puede()
 │   ├── Sesion.kt & SesionManagerImpl.kt# StateFlow con perfil, rol, institución y qr_modo
+│   ├── AulaUtils.kt                    # Validaciones de archivos, cálculo de notas sobre 20, ponderación y CSV
+│   ├── Conectores.kt                   # Conectores externos, adaptadores (ConectoresHttp), copia de datos, PaqueteLummer y BasePropiaStore
 │   ├── DateUtils.kt                    # Fechas en America/Lima (UTC-5), sincronización de reloj y días hábiles
 │   ├── StringUtils.kt                  # norm(), initials(), censurarNombre(), pct() y sanitización
 │   ├── CiclosUtils.kt                  # Ciclos canónicos I–VI, formateo, comparación y etiquetas
@@ -88,18 +96,28 @@ android-nativo/app/src/main/java/pe/registroacademico/nativo/
 │   ├── login/                          # Pantalla de autenticación y validación
 │   ├── shell/
 │   │   ├── Pantalla.kt                 # Modelos Pantalla y PantallaCtx
-│   │   ├── CatalogoPantallas.kt        # Catálogo canónico de las 33 pantallas (main.js)
-│   │   ├── Pantallas.kt                # Registro unificado que mergea las pantallas de los 3 agentes
+│   │   ├── CatalogoPantallas.kt        # Catálogo canónico de las 36 pantallas (main.js)
+│   │   ├── Pantallas.kt                # Registro unificado que mergea las pantallas de todos los dominios
 │   │   ├── PantallaPendiente.kt        # Pantalla y ViewModel de ejemplo para secciones pendientes
 │   │   ├── ShellScreen.kt              # Scaffold con Navigation Drawer plegable, migas y chip de red
 │   │   ├── ShellViewModel.kt           # ViewModel de sesión para el Shell
 │   │   └── NetworkMonitor.kt           # Monitor reactivo de conectividad a internet
+│   ├── aula/
+│   │   ├── PantallasAula.kt            # Registro de la pantalla Aula
+│   │   ├── AulaScreen.kt               # Composable del Aula virtual (material, actividades, entregas, notas)
+│   │   └── AulaViewModel.kt            # ViewModel de gestión de cursos y contenidos del aula
 │   ├── registro/
-│   │   └── PantallasRegistro.kt        # Registro de pantallas del dominio Registro (ej. registro-qr)
+│   │   ├── PantallasRegistro.kt        # Registro de pantallas de Registro (pasar-lista, registro-qr, etc.)
+│   │   ├── PasarListaScreen.kt         # Pantalla para pasar lista por curso y ciclo (lista, escaneo o manual)
+│   │   └── PasarListaViewModel.kt      # ViewModel para control de asistencia por curso
 │   ├── consultas/
 │   │   └── PantallasConsultas.kt       # Registro de pantallas del dominio Consultas
 │   ├── gestion/
-│   │   └── PantallasGestion.kt         # Registro de pantallas del dominio Gestión (ej. perfil)
+│   │   └── PantallasGestion.kt         # Registro de pantallas del dominio Gestión (alumnos, cursos, etc.)
+│   ├── sistema/
+│   │   ├── PantallasSistema.kt         # Registro de pantallas de Sistema (incluye conexiones)
+│   │   ├── ConexionesScreen.kt         # Pantalla de gestión de bases externas y copia de datos
+│   │   └── ConexionesViewModel.kt      # ViewModel para probar conexiones y copiar datos
 │   ├── components/                     # Componentes accesibles Material 3 (touch targets >= 48dp)
 │   │   ├── PageHeader.kt
 │   │   ├── KpiCard.kt

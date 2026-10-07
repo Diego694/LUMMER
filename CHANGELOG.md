@@ -1,5 +1,17 @@
 # Changelog
 
+## Sin publicar
+
+### Añadido
+- **Android nativo: Aula virtual, Pasar lista, alcance docente, Conexiones de datos, Desvincular institución, Base propia**: integración y cableado completo de las funciones web en la app nativa Android (Kotlin + Jetpack Compose):
+  - **Aula virtual** (`ui/aula/`, `AulaRepo`, `AulaViewModel`): catálogo de cursos asignados, materiales descargables, actividades evaluables, entregas de estudiantes, calificación sobre 20 y subida de archivos adjuntos mediante Supabase Storage (`install(Storage)`).
+  - **Pasar lista** (`ui/registro/`, `PasarListaScreen`, `PasarListaViewModel`): control de asistencia por curso y ciclo con selector por carrera, lista con filtro y búsqueda, escaneo de carnets por cámara (o ingreso manual de código) con verificación de QR seguro, botón «Marcar a todos» para marcar a los estudiantes pendientes y opción de registrar también el ingreso al instituto si aún no ingresó hoy.
+  - **Alcance del docente en móvil**: restricciones y filtros por rol según asignaciones de cursos (el docente accede a «Pasar lista» y «Aula», mientras que las pantallas de gestión administrativa quedan ocultas).
+  - **Conexiones de datos** (`ui/sistema/`, `ConexionesRepo`, `ConexionesViewModel`): gestión y prueba de bases externas (Supabase, Firebase Firestore, REST), validación estricta de llaves públicas, diagnóstico de conectividad/salud y copia por lotes de datos institucionales con verificación de conteos en destino.
+  - **Desvincular institución**: soporte en UI para suspender y reactivar instituciones desde la vista de instituciones del superadministrador.
+  - **Base propia de Supabase**: persistencia de credenciales alternativas en preferencias locales (`BasePropiaStore` en `domain/Conectores.kt`) que permite conectar la aplicación a una instancia Supabase independiente.
+  - *Estado de verificación*: la integración compila y pasa todas las pruebas unitarias en la JVM (`AulaUtilsTest`, `ConectoresTest`, etc.); **NO** ha sido verificada aún en un dispositivo físico real ni contra una base de datos real de producción.
+
 ## 4.0.0 — 2026-10-05
 
 ### Añadido

@@ -16,7 +16,7 @@ El proyecto ofrece dos aplicaciones para dispositivos Android que cubren diferen
 | **ID de aplicación** | `pe.registroacademico.nativo.docente` | `app.registroacademico` (docente) / `.estudiante` |
 | **Nombre visible** | **LUMMER** | **LUMMER Lite** / **LUMMER Estudiante** |
 | **Público objetivo** | Docentes y directivos | Docentes (modo ligero) y Estudiantes |
-| **Pantallas** | Las 33 pantallas completas portadas | Interfaz web servida por HTTPS |
+| **Pantallas** | Catálogo ampliado a 36 pantallas (Aula, Pasar lista, Conexiones, etc.) | Interfaz web servida por HTTPS |
 | **Cámara / Escáner QR** | CameraX + Google ML Kit a alta velocidad | `getUserMedia` HTML5 / WebRTC |
 | **Respaldo offline** | Base de datos Room + cola WorkManager garantizada | Caché del Service Worker (`sw.js`) |
 | **SDK mínimo / destino** | minSdk 24 (Android 7.0+) · targetSdk 37 (Android 17) | minSdk 24 · targetSdk 34 (Android 14) |
@@ -117,3 +117,18 @@ El script generará el archivo `release.jks`, imprimirá la cadena en base64 y t
 2. Abre el archivo descargado. Android solicitará habilitar el permiso de «Instalar aplicaciones desconocidas» para el navegador o gestor de archivos.
 3. Al iniciar la aplicación nativa por primera vez, concede los permisos de cámara solicitados para permitir el escaneo de carnets QR.
 4. Para futuras actualizaciones, simplemente descarga el nuevo APK e instálalo sobre la app existente (requiere que ambos hayan sido firmados con la misma clave).
+
+---
+
+## 6. Historial de integraciones recientes (Sin publicar)
+
+### Android nativo: Aula virtual, Pasar lista, alcance docente, Conexiones de datos, Desvincular institución, Base propia
+Se integraron y cablearon en la aplicación Android nativa (`android-nativo/`) las funciones recientes del ecosistema LUMMER:
+- **Aula virtual (`ui/aula/`, `AulaRepo`, `AulaViewModel`)**: catálogo de cursos asignados, materiales descargables, actividades evaluables, entregas de alumnos, calificación con escala sobre 20 y subida de archivos adjuntos mediante Supabase Storage (`install(Storage)`).
+- **Pasar lista (`ui/registro/`, `PasarListaScreen`, `PasarListaViewModel`)**: asistencia por curso y ciclo con selector por carrera, lista con filtro y búsqueda, escaneo de carnets por cámara (o ingreso manual de código) con verificación de QR seguro, botón «Marcar a todos» para los alumnos pendientes y opción para marcar también el ingreso al instituto si aún no ingresó hoy.
+- **Alcance docente**: filtrado automático en la navegación para que los docentes accedan únicamente a sus cursos asignados, ocultando las pantallas de gestión administrativa.
+- **Conexiones de datos (`ui/sistema/`, `ConexionesRepo`, `ConexionesViewModel`)**: administración de conexiones externas (Supabase, Firebase Firestore, REST), validación de llaves públicas (con rechazo de llaves secretas o service_role), prueba de conectividad/salud y copia por lotes de datos institucionales con verificación de conteos en destino.
+- **Desvincular institución y Base propia**: interfaz para suspender o reactivar instituciones (superadministrador) y configuración de base Supabase alternativa persistida en preferencias locales (`BasePropiaStore` en `domain/Conectores.kt`).
+
+> [!NOTE]
+> **Estado de verificación:** La integración compila y pasa todas las pruebas unitarias en la JVM (`AulaUtilsTest`, `ConectoresTest`, etc.); **NO** ha sido verificada aún en un dispositivo físico real ni contra una base de datos real de producción.

@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import pe.registroacademico.nativo.domain.Permisos
 import pe.registroacademico.nativo.ui.shell.Pantalla
 import pe.registroacademico.nativo.ui.shell.PantallaCtx
-import pe.registroacademico.nativo.ui.sistema.pantallasSistema
 
 @Composable
 fun PerfilScreenContent(ctx: PantallaCtx) {
@@ -282,4 +281,4 @@ val pantallasGestion: List<Pantalla> = listOf(
         grupo = "Gestión",
         contenido = { ctx -> ComunicadosScreen(ctx) }
     )
-) + pantallasSistema
+)
