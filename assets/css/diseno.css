@@ -1177,3 +1177,27 @@ body.est{background:var(--paper)}
 .cx-quitar{color:var(--red)}
 .cx-aviso{display:flex;gap:var(--s-3);align-items:flex-start;padding:var(--s-3) var(--s-4);border-radius:var(--radius-sm);background:var(--amber-soft);color:var(--ink);margin-bottom:var(--s-5);font-size:var(--fs-sm)}
 #cx-progreso{padding:var(--s-5)}
+
+/* ---------- Aula y portales (estudiante / aula) ---------- */
+.aula-tabs{display:flex;flex-wrap:nowrap;gap:var(--s-1);padding:var(--s-1);background:var(--muted-bg);border-radius:var(--radius);overflow-x:auto;scrollbar-width:none;width:fit-content;max-width:100%}
+.aula-tabs::-webkit-scrollbar{display:none}
+.aula-tabs>.pill{flex:0 0 auto;width:auto;border:0;border-radius:calc(var(--radius) - 4px);background:transparent;color:var(--ink-soft);min-height:38px;padding:6px 16px;font-weight:600;transition:background-color var(--t-fast),color var(--t-fast)}
+.aula-tabs>.pill:hover{color:var(--ink)}
+.aula-tabs>.pill.active{background:var(--panel);color:var(--ink);box-shadow:var(--shadow-1)}
+:root[data-theme="dark"] .aula-tabs>.pill.active{background:var(--panel);color:var(--amber)}
+.aula-top{box-shadow:var(--shadow-1)}
+.aula-top .brand strong,.est-top .brand strong{letter-spacing:-.01em}
+.est-card{border-radius:var(--radius-lg);box-shadow:var(--shadow-1)}
+.est-card h1,.est-card h2{letter-spacing:-.015em}
+.est-main>section:first-child:not(.est-card){animation:login-entra var(--t-med) var(--ease) both}
+.aula-est-curso{transition:border-color var(--t-fast),background-color var(--t-fast)}
+.aula-est-curso:hover{background:var(--muted-bg)}
+.aula-est-curso:focus-visible,.aula-tabs>.pill:focus-visible{outline:2px solid var(--teal-solid);outline-offset:2px}
+.aula-est-item{background:var(--panel)}
+@media (max-width:768px){
+  .aula-top .top-right{gap:var(--s-2)}
+}
+@media (prefers-reduced-motion:reduce){.est-main>section:first-child:not(.est-card){animation:none}}
+.aula-barra{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3);margin-bottom:var(--s-4)}
+.aula-barra-sp{flex:1}
+@media (max-width:768px){.aula-barra>.btn{width:100%}.aula-barra-sp{display:none}.aula-tabs{width:100%}.aula-tabs>.pill{flex:1}}

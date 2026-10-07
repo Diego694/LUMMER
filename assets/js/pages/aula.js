@@ -75,11 +75,11 @@ function pintar() {
       <div><strong>${esc(curso.nombre)}</strong><div class="muted">${esc(curso.grado ? etiquetaCiclo(curso.nivel, curso.grado) : curso.nivel + " · todos los ciclos")}${nombresDoc.length ? " · " + esc(nombresDoc.join(", ")) : curso.docente ? " · " + esc(curso.docente) : ""}</div></div>
       ${esAdmin() ? `<button class="btn btn-outline btn-sm" data-action="aula-docentes">${icon("users", 16)} Docentes</button>` : ""}
     </div></div>
-    <div class="toolbar" role="tablist" aria-label="Secciones del curso">
+    <div class="aula-barra"><div class="aula-tabs" role="tablist" aria-label="Secciones del curso">
       <button class="pill ${st.tab === "material" ? "active" : ""}" role="tab" aria-selected="${st.tab === "material"}" data-action="aula-tab" data-tab="material">Material (${materiales.length})</button>
       <button class="pill ${st.tab === "actividades" ? "active" : ""}" role="tab" aria-selected="${st.tab === "actividades"}" data-action="aula-tab" data-tab="actividades">Actividades (${actividades.length})</button>
       ${gestiona ? `<button class="pill ${st.tab === "notas" ? "active" : ""}" role="tab" aria-selected="${st.tab === "notas"}" data-action="aula-tab" data-tab="notas">Notas</button>` : ""}
-      <span style="flex:1"></span>${st.tab === "notas" ? `<button class="btn btn-outline" data-action="aula-notas-csv">${icon("download", 16)} Exportar CSV</button>` : boton}</div>
+      </div><span class="aula-barra-sp"></span>${st.tab === "notas" ? `<button class="btn btn-outline" data-action="aula-notas-csv">${icon("download", 16)} Exportar CSV</button>` : boton}</div>
     <div class="card flush" id="aula-tab-cuerpo">${st.tab === "material" ? htmlMaterial() : st.tab === "actividades" ? htmlActividades() : skeleton(4)}</div>`;
   if (st.tab === "notas") cargarNotas(String(curso.id));
 }
