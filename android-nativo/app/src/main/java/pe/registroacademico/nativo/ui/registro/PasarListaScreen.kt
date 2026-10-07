@@ -6,6 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -273,6 +276,7 @@ private fun VistaSeleccionarCurso(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun VistaClase(
     curso: Curso,
@@ -448,15 +452,21 @@ private fun VistaClase(
                     onClick = { viewModel.toggleCamara(!uiState.camaraActiva) },
                     modifier = Modifier
                         .weight(1f)
-                        .defaultMinSize(minHeight = 44.dp)
+                        .defaultMinSize(minHeight = 44.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     Icon(
                         imageVector = if (uiState.camaraActiva) Icons.Default.Close else Icons.Default.CameraAlt,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (uiState.camaraActiva) "Cerrar cámara" else "Escanear carnets")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (uiState.camaraActiva) "Cerrar" else "Escanear",
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
                 OutlinedButton(
@@ -470,15 +480,21 @@ private fun VistaClase(
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .defaultMinSize(minHeight = 44.dp)
+                        .defaultMinSize(minHeight = 44.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Marcar a todos")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Marcar a todos",
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 
@@ -513,10 +529,11 @@ private fun VistaClase(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(260.dp)
+                        .height(300.dp)
                         .clip(RoundedCornerShape(12.dp))
                 ) {
                     EscanerScreen(
+                        incrustado = true,
                         onCodigoEscaneado = { codigo ->
                             viewModel.procesarCodigo(
                                 texto = codigo,
@@ -637,27 +654,49 @@ private fun VistaClase(
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Filtros: Todos / Sin marcar / Presentes
-        Row(
+        // Filtros: Todos / Faltan / Presentes
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             FilterChip(
                 selected = uiState.filtro == FiltroLista.TODOS,
                 onClick = { viewModel.cambiarFiltro(FiltroLista.TODOS) },
-                label = { Text("Todos (${resumen.total})") }
+                label = {
+                    Text(
+                        text = "Todos (${resumen.total})",
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             )
             FilterChip(
                 selected = uiState.filtro == FiltroLista.FALTAN,
                 onClick = { viewModel.cambiarFiltro(FiltroLista.FALTAN) },
-                label = { Text("Sin marcar (${resumen.faltan})") }
+                label = {
+                    Text(
+                        text = "Faltan (${resumen.faltan})",
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             )
             FilterChip(
                 selected = uiState.filtro == FiltroLista.PRESENTES,
                 onClick = { viewModel.cambiarFiltro(FiltroLista.PRESENTES) },
-                label = { Text("Presentes (${resumen.presentes})") }
+                label = {
+                    Text(
+                        text = "Presentes (${resumen.presentes})",
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             )
         }
 

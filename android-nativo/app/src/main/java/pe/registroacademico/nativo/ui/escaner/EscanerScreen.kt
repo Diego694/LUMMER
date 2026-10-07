@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -61,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -84,6 +86,7 @@ import java.util.concurrent.Executors
 fun EscanerScreen(
     onCodigoEscaneado: (String) -> Unit,
     onVolver: () -> Unit = {},
+    incrustado: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -113,57 +116,12 @@ fun EscanerScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.scanner_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onVolver) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.scanner_back)
-                        )
-                    }
-                },
-                actions = {
-                    if (tienePermisoCamara && camaraReferencia != null) {
-                        IconButton(
-                            onClick = {
-                                val nuevoEstado = !linternaEncendida
-                                camaraReferencia?.cameraControl?.enableTorch(nuevoEstado)
-                                linternaEncendida = nuevoEstado
-                            }
-                        ) {
-                            Icon(
-                                imageVector = if (linternaEncendida) Icons.Default.FlashOn else Icons.Default.FlashOff,
-                                contentDescription = if (linternaEncendida) {
-                                    stringResource(R.string.scanner_torch_off)
-                                } else {
-                                    stringResource(R.string.scanner_torch_on)
-                                },
-                                tint = if (linternaEncendida) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { paddingValores ->
+    @Composable
+    fun ContenidoCamara(innerModifier: Modifier = Modifier) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValores)
+                .then(innerModifier)
                 .background(Color.Black),
             contentAlignment = Alignment.Center
         ) {
@@ -172,7 +130,7 @@ fun EscanerScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(if (incrustado) 12.dp else 24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     ),
@@ -182,19 +140,19 @@ fun EscanerScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(if (incrustado) 12.dp else 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(if (incrustado) 8.dp else 16.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.VideocamOff,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(if (incrustado) 36.dp else 56.dp)
                         )
                         Text(
                             text = stringResource(R.string.scanner_permission_title),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = if (incrustado) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface
@@ -205,9 +163,11 @@ fun EscanerScreen(
                             } else {
                                 stringResource(R.string.scanner_permission_desc)
                             },
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            maxLines = if (incrustado) 2 else Int.MAX_VALUE,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Button(
                             onClick = {
@@ -220,7 +180,7 @@ fun EscanerScreen(
                         ) {
                             Text(
                                 text = stringResource(R.string.scanner_grant_permission),
-                                style = MaterialTheme.typography.labelLarge,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -314,14 +274,14 @@ fun EscanerScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(32.dp),
+                        .padding(if (incrustado) 12.dp else 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
                     // Marco de escaneo
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.85f)
+                            .fillMaxWidth(if (incrustado) 0.65f else 0.85f)
                             .aspectRatio(1f)
                             .border(
                                 width = 3.dp,
@@ -330,7 +290,7 @@ fun EscanerScreen(
                             )
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(if (incrustado) 8.dp else 24.dp))
 
                     // Instrucción para el docente
                     Card(
@@ -342,10 +302,38 @@ fun EscanerScreen(
                         Text(
                             text = stringResource(R.string.scanner_instruction),
                             color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = if (incrustado) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                            modifier = Modifier.padding(
+                                horizontal = if (incrustado) 10.dp else 16.dp,
+                                vertical = if (incrustado) 4.dp else 10.dp
+                            )
+                        )
+                    }
+                }
+
+                // Botón de linterna superpuesto en la esquina superior cuando es incrustado
+                if (incrustado && camaraReferencia != null) {
+                    IconButton(
+                        onClick = {
+                            val nuevoEstado = !linternaEncendida
+                            camaraReferencia?.cameraControl?.enableTorch(nuevoEstado)
+                            linternaEncendida = nuevoEstado
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(10.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (linternaEncendida) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                            contentDescription = if (linternaEncendida) {
+                                stringResource(R.string.scanner_torch_off)
+                            } else {
+                                stringResource(R.string.scanner_torch_on)
+                            },
+                            tint = if (linternaEncendida) MaterialTheme.colorScheme.primary else Color.White
                         )
                     }
                 }
@@ -355,7 +343,7 @@ fun EscanerScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(24.dp),
+                            .padding(if (incrustado) 12.dp else 24.dp),
                         contentAlignment = Alignment.BottomCenter
                     ) {
                         Card(
@@ -368,7 +356,7 @@ fun EscanerScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(if (incrustado) 10.dp else 16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -385,7 +373,9 @@ fun EscanerScreen(
                                     Text(
                                         text = errorCamara ?: stringResource(R.string.scanner_camera_error),
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        maxLines = if (incrustado) 2 else Int.MAX_VALUE,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                                 Button(
@@ -395,7 +385,8 @@ fun EscanerScreen(
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.error
-                                    )
+                                    ),
+                                    contentPadding = if (incrustado) androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp) else ButtonDefaults.ContentPadding
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Refresh,
@@ -413,6 +404,62 @@ fun EscanerScreen(
                     }
                 }
             }
+        }
+    }
+
+    if (incrustado) {
+        Box(modifier = modifier.fillMaxSize()) {
+            ContenidoCamara()
+        }
+    } else {
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.scanner_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onVolver) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.scanner_back)
+                            )
+                        }
+                    },
+                    actions = {
+                        if (tienePermisoCamara && camaraReferencia != null) {
+                            IconButton(
+                                onClick = {
+                                    val nuevoEstado = !linternaEncendida
+                                    camaraReferencia?.cameraControl?.enableTorch(nuevoEstado)
+                                    linternaEncendida = nuevoEstado
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (linternaEncendida) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                                    contentDescription = if (linternaEncendida) {
+                                        stringResource(R.string.scanner_torch_off)
+                                    } else {
+                                        stringResource(R.string.scanner_torch_on)
+                                    },
+                                    tint = if (linternaEncendida) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            }
+        ) { paddingValores ->
+            ContenidoCamara(innerModifier = Modifier.padding(paddingValores))
         }
     }
 }

@@ -4,6 +4,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -36,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
@@ -51,6 +55,7 @@ import pe.registroacademico.nativo.ui.components.SkeletonList
 import pe.registroacademico.nativo.ui.components.SnackbarHelper
 import pe.registroacademico.nativo.ui.shell.PantallaCtx
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AulaScreen(
     ctx: PantallaCtx,
@@ -248,26 +253,40 @@ fun AulaScreen(
                     }
 
                     // Barra segmentada de pestañas (Material, Actividades, Notas)
-                    Row(
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
+                        FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             FilterChip(
                                 selected = uiState.seccionActiva == AulaSeccion.MATERIAL,
                                 onClick = { viewModel.cambiarSeccion(AulaSeccion.MATERIAL) },
-                                label = { Text("Material (${uiState.materiales.size})") },
+                                label = {
+                                    Text(
+                                        text = "Material (${uiState.materiales.size})",
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                },
                                 colors = FilterChipDefaults.filterChipColors()
                             )
 
                             FilterChip(
                                 selected = uiState.seccionActiva == AulaSeccion.ACTIVIDADES,
                                 onClick = { viewModel.cambiarSeccion(AulaSeccion.ACTIVIDADES) },
-                                label = { Text("Actividades (${uiState.actividades.size})") },
+                                label = {
+                                    Text(
+                                        text = "Actividades (${uiState.actividades.size})",
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                },
                                 colors = FilterChipDefaults.filterChipColors()
                             )
 
@@ -275,7 +294,14 @@ fun AulaScreen(
                                 FilterChip(
                                     selected = uiState.seccionActiva == AulaSeccion.NOTAS,
                                     onClick = { viewModel.cambiarSeccion(AulaSeccion.NOTAS) },
-                                    label = { Text("Notas") },
+                                    label = {
+                                        Text(
+                                            text = "Notas",
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    },
                                     colors = FilterChipDefaults.filterChipColors()
                                 )
                             }
@@ -287,22 +313,34 @@ fun AulaScreen(
                                 AulaSeccion.MATERIAL -> {
                                     Button(
                                         onClick = { viewModel.abrirModalMaterial() },
-                                        modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                                        modifier = Modifier.defaultMinSize(minHeight = 44.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp)
                                     ) {
                                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Agregar material")
+                                        Text(
+                                            text = "Agregar material",
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
                                 }
 
                                 AulaSeccion.ACTIVIDADES -> {
                                     Button(
                                         onClick = { viewModel.abrirModalActividad() },
-                                        modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                                        modifier = Modifier.defaultMinSize(minHeight = 44.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp)
                                     ) {
                                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Nueva actividad")
+                                        Text(
+                                            text = "Nueva actividad",
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
                                 }
 
