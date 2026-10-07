@@ -11,10 +11,20 @@ import pe.registroacademico.nativo.ui.shell.PantallaCtx
 
 val pantallasRegistro: List<Pantalla> = listOf(
     Pantalla(
+        id = "pasar-lista",
+        titulo = "Pasar lista",
+        icono = Icons.Default.Checklist,
+        grupo = "Registro",
+        contenido = { ctx: PantallaCtx ->
+            PasarListaScreen(ctx = ctx)
+        }
+    ),
+    Pantalla(
         id = "registro-qr",
         titulo = "Registro por QR",
         icono = Icons.Default.QrCodeScanner,
         grupo = "Registro",
+        noDocente = true,
         contenido = { ctx: PantallaCtx ->
             RegistroQrScreen(ctx = ctx)
         }
@@ -24,6 +34,7 @@ val pantallasRegistro: List<Pantalla> = listOf(
         titulo = "Modo quiosco",
         icono = Icons.Default.Badge,
         grupo = "Registro",
+        noDocente = true,
         contenido = { ctx: PantallaCtx ->
             QuioscoScreen(ctx = ctx)
         }
@@ -43,6 +54,7 @@ val pantallasRegistro: List<Pantalla> = listOf(
         titulo = "Registro por Alumno",
         icono = Icons.Default.PersonSearch,
         grupo = "Registro",
+        noDocente = true,
         contenido = { ctx: PantallaCtx ->
             RegistroAlumnoScreen(ctx = ctx)
         }
@@ -52,6 +64,7 @@ val pantallasRegistro: List<Pantalla> = listOf(
         titulo = "Registro Masivo por Ciclo",
         icono = Icons.Default.Checklist,
         grupo = "Registro",
+        noDocente = true,
         contenido = { ctx: PantallaCtx ->
             RegistroMasivoScreen(ctx = ctx)
         }

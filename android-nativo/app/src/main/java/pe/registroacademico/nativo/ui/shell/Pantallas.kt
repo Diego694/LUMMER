@@ -9,17 +9,27 @@ object Pantallas {
         val registradas = (pantallasRegistro + pantallasConsultas + pantallasGestion).associateBy { it.id }
 
         CatalogoPantallas.catalogo.map { def ->
-            registradas[def.id] ?: Pantalla(
-                id = def.id,
-                titulo = def.titulo,
-                icono = def.icono,
-                grupo = def.grupo,
-                soloAdmin = def.soloAdmin,
-                soloSuper = def.soloSuper,
-                contenido = { ctx ->
-                    PantallaPendiente(titulo = def.titulo, ctx = ctx)
-                }
-            )
+            val reg = registradas[def.id]
+            if (reg != null) {
+                reg.copy(
+                    noDocente = def.noDocente || reg.noDocente,
+                    soloAdmin = def.soloAdmin || reg.soloAdmin,
+                    soloSuper = def.soloSuper || reg.soloSuper
+                )
+            } else {
+                Pantalla(
+                    id = def.id,
+                    titulo = def.titulo,
+                    icono = def.icono,
+                    grupo = def.grupo,
+                    soloAdmin = def.soloAdmin,
+                    soloSuper = def.soloSuper,
+                    noDocente = def.noDocente,
+                    contenido = { ctx ->
+                        PantallaPendiente(titulo = def.titulo, ctx = ctx)
+                    }
+                )
+            }
         }
     }
 }

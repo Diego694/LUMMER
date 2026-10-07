@@ -20,5 +20,6 @@ data class Pantalla(
     val grupo: String,
     val soloAdmin: Boolean = false,
     val soloSuper: Boolean = false,
+    val noDocente: Boolean = false,
     val contenido: @Composable (PantallaCtx) -> Unit = {}
 )

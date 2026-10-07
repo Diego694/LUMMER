@@ -42,21 +42,23 @@ data class DefinicionPantalla(
     val icono: ImageVector,
     val grupo: String,
     val soloAdmin: Boolean = false,
-    val soloSuper: Boolean = false
+    val soloSuper: Boolean = false,
+    val noDocente: Boolean = false
 )
 
 object CatalogoPantallas {
     val catalogo: List<DefinicionPantalla> = listOf(
         // Principal
         DefinicionPantalla("dashboard", "Dashboard", Icons.Default.Dashboard, "Principal"),
-        DefinicionPantalla("perfil", "Mi perfil", Icons.Default.AccountCircle, "Principal"),
+        DefinicionPantalla("aula", "Aula", Icons.Default.MenuBook, "Principal"),
 
         // Registro
-        DefinicionPantalla("registro-qr", "Registro por QR", Icons.Default.QrCodeScanner, "Registro"),
-        DefinicionPantalla("quiosco", "Modo quiosco", Icons.Default.Badge, "Registro"),
+        DefinicionPantalla("pasar-lista", "Pasar lista", Icons.Default.Checklist, "Registro"),
+        DefinicionPantalla("registro-qr", "Registro por QR", Icons.Default.QrCodeScanner, "Registro", noDocente = true),
+        DefinicionPantalla("quiosco", "Modo quiosco", Icons.Default.Badge, "Registro", noDocente = true),
         DefinicionPantalla("solicitudes", "Solicitudes de ingreso", Icons.Default.HowToReg, "Registro", soloAdmin = true),
-        DefinicionPantalla("registro-alumno", "Registro por Alumno", Icons.Default.PersonSearch, "Registro"),
-        DefinicionPantalla("registro-masivo", "Registro Masivo por Ciclo", Icons.Default.Checklist, "Registro"),
+        DefinicionPantalla("registro-alumno", "Registro por Alumno", Icons.Default.PersonSearch, "Registro", noDocente = true),
+        DefinicionPantalla("registro-masivo", "Registro Masivo por Ciclo", Icons.Default.Checklist, "Registro", noDocente = true),
 
         // Consultas
         DefinicionPantalla("asist-grado", "Asistencia por Ciclo", Icons.Default.TableChart, "Consultas"),
@@ -67,14 +69,14 @@ object CatalogoPantallas {
         DefinicionPantalla("avisos", "Avisos a apoderados", Icons.Default.Campaign, "Consultas"),
 
         // Gestión
-        DefinicionPantalla("carnet", "Carnet", Icons.Default.ContactPage, "Gestión"),
-        DefinicionPantalla("codigo", "Código de registro", Icons.Default.QrCode, "Gestión"),
+        DefinicionPantalla("carnet", "Carnet", Icons.Default.ContactPage, "Gestión", noDocente = true),
+        DefinicionPantalla("codigo", "Código de registro", Icons.Default.QrCode, "Gestión", noDocente = true),
         DefinicionPantalla("instituto", "Mi instituto", Icons.Default.Business, "Gestión", soloAdmin = true),
         DefinicionPantalla("alumnos", "Alumnos", Icons.Default.School, "Gestión"),
-        DefinicionPantalla("docentes", "Docentes", Icons.Default.Work, "Gestión"),
+        DefinicionPantalla("docentes", "Docentes", Icons.Default.Work, "Gestión", noDocente = true),
         DefinicionPantalla("personal", "Personal y accesos", Icons.Default.Group, "Gestión", soloAdmin = true),
-        DefinicionPantalla("niveles", "Carreras", Icons.Default.Layers, "Gestión"),
-        DefinicionPantalla("grados", "Ciclos y salones", Icons.Default.MenuBook, "Gestión"),
+        DefinicionPantalla("niveles", "Carreras", Icons.Default.Layers, "Gestión", noDocente = true),
+        DefinicionPantalla("grados", "Ciclos y salones", Icons.Default.MenuBook, "Gestión", noDocente = true),
         DefinicionPantalla("cursos", "Cursos", Icons.Default.Book, "Gestión", soloAdmin = true),
         DefinicionPantalla("calendario", "Calendario y horarios", Icons.Default.CalendarMonth, "Gestión", soloAdmin = true),
         DefinicionPantalla("periodos", "Periodos y cambio de ciclo", Icons.Default.DateRange, "Gestión", soloAdmin = true),
@@ -88,6 +90,10 @@ object CatalogoPantallas {
         DefinicionPantalla("historial", "Historial de cambios", Icons.Default.ManageHistory, "Sistema", soloAdmin = true),
         DefinicionPantalla("migrar", "Datos del modo local", Icons.Default.SyncAlt, "Sistema", soloAdmin = true),
         DefinicionPantalla("errores", "Errores", Icons.Default.ReportProblem, "Sistema", soloAdmin = true),
-        DefinicionPantalla("instituciones", "Instituciones", Icons.Default.Domain, "Sistema", soloSuper = true)
+        DefinicionPantalla("instituciones", "Instituciones", Icons.Default.Domain, "Sistema", soloSuper = true),
+        DefinicionPantalla("conexiones", "Conexiones de datos", Icons.Default.Layers, "Sistema", soloSuper = true),
+
+        // Mi cuenta (al final del menú)
+        DefinicionPantalla("perfil", "Mi perfil", Icons.Default.AccountCircle, "Mi cuenta")
     )
 }

@@ -74,6 +74,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import pe.registroacademico.nativo.domain.Permisos
+import pe.registroacademico.nativo.domain.Rol
 import pe.registroacademico.nativo.ui.theme.LocalTemaOscuro
 import pe.registroacademico.nativo.ui.theme.LocalToggleTema
 
@@ -113,11 +114,12 @@ fun ShellScreen(
     // Filtrar ítems visibles por permisos
     val esAdmin = Permisos.esAdmin(sesionEstado.rol)
     val esSuper = sesionEstado.esSuperadmin
+    val esDocente = sesionEstado.rol == Rol.DOCENTE
     val pantallasVisibles = todasPantallas.filter { p ->
-        (!p.soloAdmin || esAdmin) && (!p.soloSuper || esSuper)
+        (!p.soloAdmin || esAdmin) && (!p.soloSuper || esSuper) && (!p.noDocente || !esDocente)
     }
 
-    val grupos = listOf("Principal", "Registro", "Consultas", "Gestión", "Sistema")
+    val grupos = listOf("Principal", "Registro", "Consultas", "Gestión", "Sistema", "Mi cuenta")
         .filter { g -> pantallasVisibles.any { it.grupo == g } }
 
     ModalNavigationDrawer(
@@ -375,19 +377,61 @@ fun ShellScreen(
                 ) {
                     todasPantallas.forEach { pantalla ->
                         composable(pantalla.id) {
-                            val ctx = PantallaCtx(
-                                snackbarHostState = snackbarHostState,
-                                navegar = { destino ->
+                            val resolverDestinoSeguro: (String) -> String = { destino ->
+                                val target = todasPantallas.find { it.id == destino }
+                                if (target != null) {
+                                    if (target.soloSuper && !esSuper) {
+                                        "dashboard"
+                                    } else if (target.noDocente && esDocente) {
+                                        if (target.id == "registro-qr") "pasar-lista" else "dashboard"
+                                    } else if (target.soloAdmin && !esAdmin) {
+                                        "dashboard"
+                                    } else {
+                                        destino
+                                    }
+                                } else {
+                                    destino
+                                }
+                            }
+
+                            if (pantalla.soloSuper && !esSuper) {
+                                LaunchedEffect(pantalla.id) {
+                                    shellNavController.navigate("dashboard") {
+                                        popUpTo("dashboard") { saveState = true }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            } else if (pantalla.noDocente && esDocente) {
+                                val destino = if (pantalla.id == "registro-qr") "pasar-lista" else "dashboard"
+                                LaunchedEffect(pantalla.id) {
                                     shellNavController.navigate(destino) {
                                         popUpTo("dashboard") { saveState = true }
                                         launchSingleTop = true
-                                        restoreState = true
                                     }
-                                },
-                                sesion = sesionEstado,
-                                scope = scope
-                            )
-                            pantalla.contenido(ctx)
+                                }
+                            } else if (pantalla.soloAdmin && !esAdmin) {
+                                LaunchedEffect(pantalla.id) {
+                                    shellNavController.navigate("dashboard") {
+                                        popUpTo("dashboard") { saveState = true }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            } else {
+                                val ctx = PantallaCtx(
+                                    snackbarHostState = snackbarHostState,
+                                    navegar = { destino ->
+                                        val seguro = resolverDestinoSeguro(destino)
+                                        shellNavController.navigate(seguro) {
+                                            popUpTo("dashboard") { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    sesion = sesionEstado,
+                                    scope = scope
+                                )
+                                pantalla.contenido(ctx)
+                            }
                         }
                     }
                 }

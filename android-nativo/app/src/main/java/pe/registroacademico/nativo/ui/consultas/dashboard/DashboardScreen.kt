@@ -18,12 +18,16 @@ import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,11 +35,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import pe.registroacademico.nativo.domain.DateUtils
+import pe.registroacademico.nativo.domain.Permisos
+import pe.registroacademico.nativo.domain.Rol
 import pe.registroacademico.nativo.domain.StringUtils
 import pe.registroacademico.nativo.ui.components.EmptyState
 import pe.registroacademico.nativo.ui.components.ErrorState
@@ -97,53 +107,29 @@ fun DashboardScreen(
             titulo = tituloHeader,
             subtitulo = subtituloHeader,
             acciones = {
-                OutlinedButton(
+                val esDocente = ctx.sesion.rol == Rol.DOCENTE
+                if (!esDocente) {
+                    OutlinedButton(
+                        onClick = { ctx.navegar("pasar-lista") },
+                        modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Checklist, contentDescription = null)
+                        Spacer(modifier = Modifier.padding(start = 6.dp))
+                        Text("Pasar lista")
+                    }
+                }
+                Button(
                     onClick = {
-                        val csv = viewModel.generarCsv()
-                        ConsultasExportHelper.compartirCsv(
-                            context = context,
-                            titulo = "Exportar Asistencia CSV",
-                            nombreArchivo = "asistencia_${state.diasCache.firstOrNull() ?: DateUtils.todayStr()}_a_${DateUtils.todayStr()}.csv",
-                            csv = csv
-                        )
+                        ctx.navegar(if (esDocente) "pasar-lista" else "registro-qr")
                     },
-                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                    modifier = Modifier.defaultMinSize(minHeight = 44.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.Download, contentDescription = null)
+                    Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null)
                     Spacer(modifier = Modifier.padding(start = 6.dp))
-                    Text("Exportar CSV")
+                    Text("Registrar asistencia")
                 }
             }
         )
-
-        // Botones de acción rápida: Registrar asistencia / Código de registro
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                onClick = { ctx.navegar("registro-qr") },
-                modifier = Modifier
-                    .weight(1f)
-                    .defaultMinSize(minHeight = 48.dp)
-            ) {
-                Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null)
-                Spacer(modifier = Modifier.padding(start = 6.dp))
-                Text("Registrar")
-            }
-            OutlinedButton(
-                onClick = { ctx.navegar("codigo") },
-                modifier = Modifier
-                    .weight(1f)
-                    .defaultMinSize(minHeight = 48.dp)
-            ) {
-                Icon(imageVector = Icons.Default.QrCode, contentDescription = null)
-                Spacer(modifier = Modifier.padding(start = 6.dp))
-                Text("Código")
-            }
-        }
 
         // Filtros: Carrera y Periodo ocupando todo el ancho
         Column(
@@ -244,20 +230,57 @@ fun DashboardScreen(
                 )
             }
 
-            SectionCard(titulo = "Asistencia de hoy por ciclo") {
-                GraficoPorGrado(grados = state.porGrado, metaPct = 85)
-            }
+            // Sección: Últimos ingresos (lo operativo primero con menú secundario)
+            var menuIngresosAbierto by remember { mutableStateOf(false) }
 
-            SectionCard(titulo = "Alumnos por carrera") {
-                GraficoAlumnosPorCarrera(niveles = state.porNivel)
-            }
-
-            // Sección: Últimos ingresos
             SectionCard(
                 titulo = "Últimos ingresos",
                 acciones = {
-                    TextButton(onClick = { ctx.navegar("asist-grado") }) {
-                        Text("Ver asistencia por ciclo →")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { ctx.navegar("asist-grado") }) {
+                            Text("Por ciclo →")
+                        }
+                        Box {
+                            IconButton(onClick = { menuIngresosAbierto = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Opciones secundarias"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuIngresosAbierto,
+                                onDismissRequest = { menuIngresosAbierto = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Exportar CSV") },
+                                    leadingIcon = {
+                                        Icon(imageVector = Icons.Default.Download, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        menuIngresosAbierto = false
+                                        val csv = viewModel.generarCsv()
+                                        ConsultasExportHelper.compartirCsv(
+                                            context = context,
+                                            titulo = "Exportar Asistencia CSV",
+                                            nombreArchivo = "asistencia_${state.diasCache.firstOrNull() ?: DateUtils.todayStr()}_a_${DateUtils.todayStr()}.csv",
+                                            csv = csv
+                                        )
+                                    }
+                                )
+                                if (ctx.sesion.rol != Rol.DOCENTE) {
+                                    DropdownMenuItem(
+                                        text = { Text("Código de registro") },
+                                        leadingIcon = {
+                                            Icon(imageVector = Icons.Default.QrCode, contentDescription = null)
+                                        },
+                                        onClick = {
+                                            menuIngresosAbierto = false
+                                            ctx.navegar("codigo")
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             ) {
@@ -297,6 +320,15 @@ fun DashboardScreen(
                         )
                     }
                 }
+            }
+
+            // Gráficos por ciclo y carrera
+            SectionCard(titulo = "Asistencia de hoy por ciclo") {
+                GraficoPorGrado(grados = state.porGrado, metaPct = 85)
+            }
+
+            SectionCard(titulo = "Alumnos por carrera") {
+                GraficoAlumnosPorCarrera(niveles = state.porNivel)
             }
 
             // Sección: Últimos comunicados

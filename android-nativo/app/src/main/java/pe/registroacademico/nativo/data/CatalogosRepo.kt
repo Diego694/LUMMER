@@ -4,6 +4,8 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import pe.registroacademico.nativo.data.model.AvisoApoderado
 import pe.registroacademico.nativo.data.model.Comunicado
 import pe.registroacademico.nativo.data.model.Curso
@@ -55,6 +57,7 @@ interface CatalogosRepo {
     suspend fun tokenAvisos(): String?
 
     suspend fun listarDocentes(colegioId: String): List<Docente>
+    suspend fun cursosAsignadosADocente(userId: String): List<String>
 }
 
 @Singleton
@@ -410,6 +413,22 @@ class CatalogosRepoImpl @Inject constructor(
                 filter { eq("colegio_id", colegioId) }
                 order("nombre", Order.ASCENDING)
             }.decodeList<Docente>()
+        } catch (e: Throwable) {
+            throw mapearError(e)
+        }
+    }
+
+    @Serializable
+    private data class CursoDocenteRow(
+        @SerialName("curso_id") val cursoId: String
+    )
+
+    override suspend fun cursosAsignadosADocente(userId: String): List<String> {
+        if (userId.isBlank()) return emptyList()
+        return try {
+            supabase.from("curso_docentes").select {
+                filter { eq("user_id", userId) }
+            }.decodeList<CursoDocenteRow>().map { it.cursoId }
         } catch (e: Throwable) {
             throw mapearError(e)
         }
