@@ -6,6 +6,8 @@ import org.junit.Test
 import pe.registroacademico.nativo.data.estudiante.AlumnoPropio
 import pe.registroacademico.nativo.domain.qr.generarQR
 
+import java.util.TimeZone
+
 /**
  * Pruebas unitarias para la lógica pura del módulo de estudiante (EstFormato.kt).
  */
@@ -22,6 +24,12 @@ class EstFormatoTest {
         val f3 = EstFormato.formatearFechaAviso("2026-12-25T15:30:00Z")
         assertEquals("25 de diciembre de 2026", f3)
 
+        val f4 = EstFormato.formatearFechaAviso("2026-12-25T03:30:00Z")
+        assertEquals("24 de diciembre de 2026", f4)
+
+        val f5 = EstFormato.formatearFechaAviso("2026-12-25 03:30:00")
+        assertEquals("24 de diciembre de 2026", f5)
+
         val fVacia = EstFormato.formatearFechaAviso("")
         assertEquals("", fVacia)
 
@@ -30,6 +38,35 @@ class EstFormatoTest {
 
         val fInvalida = EstFormato.formatearFechaAviso("fecha-no-estandar")
         assertEquals("fecha-no-estandar", fInvalida)
+    }
+
+    @Test
+    fun testFormatearFechaAvisoIndependienteDeZonaDelSistema() {
+        val zonaOriginal = TimeZone.getDefault()
+        try {
+            val zonas = listOf("UTC", "America/Lima", "Asia/Tokyo", "America/New_York", "Europe/London", "GMT+12")
+            for (idZona in zonas) {
+                TimeZone.setDefault(TimeZone.getTimeZone(idZona))
+
+                // Solo fecha conserva el día calendario en America/Lima
+                assertEquals("13 de octubre de 2026", EstFormato.formatearFechaAviso("2026-10-13"))
+                assertEquals("1 de mayo de 2026", EstFormato.formatearFechaAviso("2026-05-01"))
+
+                // Instante UTC temprano (03:30 UTC = 22:30 día anterior en Lima UTC-5)
+                assertEquals("24 de diciembre de 2026", EstFormato.formatearFechaAviso("2026-12-25T03:30:00Z"))
+                assertEquals("24 de diciembre de 2026", EstFormato.formatearFechaAviso("2026-12-25 03:30:00"))
+
+                // Instante UTC de la tarde se mantiene en el mismo día en Lima
+                assertEquals("25 de diciembre de 2026", EstFormato.formatearFechaAviso("2026-12-25T15:30:00Z"))
+
+                // Casos borde
+                assertEquals("", EstFormato.formatearFechaAviso(""))
+                assertEquals("", EstFormato.formatearFechaAviso(null))
+                assertEquals("fecha-no-estandar", EstFormato.formatearFechaAviso("fecha-no-estandar"))
+            }
+        } finally {
+            TimeZone.setDefault(zonaOriginal)
+        }
     }
 
     @Test

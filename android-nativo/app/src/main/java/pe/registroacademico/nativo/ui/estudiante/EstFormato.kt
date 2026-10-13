@@ -19,6 +19,10 @@ object EstFormato {
     /**
      * Formatea una fecha ISO o YYYY-MM-DD al estándar amigable de Perú (es-PE),
      * por ejemplo: "13 de octubre de 2026".
+     *
+     * La lógica es independiente de la zona horaria del sistema:
+     * - Fechas sin hora (yyyy-MM-dd) se parsean en zona America/Lima para preservar el día calendario.
+     * - Cadenas con hora ('T' o ' ') representan instantes de Supabase en UTC y se proyectan a America/Lima.
      */
     fun formatearFechaAviso(fechaStr: String?): String {
         if (fechaStr.isNullOrBlank()) return ""
@@ -29,11 +33,18 @@ object EstFormato {
                 texto.contains(" ") -> "yyyy-MM-dd HH:mm"
                 else -> "yyyy-MM-dd"
             }
-            val sdfEntrada = SimpleDateFormat(patron, Locale.ROOT)
+            val sdfEntrada = SimpleDateFormat(patron, Locale.ROOT).apply {
+                timeZone = if (patron == "yyyy-MM-dd") {
+                    TimeZone.getTimeZone("America/Lima")
+                } else {
+                    TimeZone.getTimeZone("UTC")
+                }
+            }
             val fecha = sdfEntrada.parse(texto.take(patron.length))
             if (fecha != null) {
-                val sdfSalida = SimpleDateFormat("d 'de' MMMM 'de' yyyy", Locale("es", "PE"))
-                sdfSalida.timeZone = TimeZone.getTimeZone("America/Lima")
+                val sdfSalida = SimpleDateFormat("d 'de' MMMM 'de' yyyy", Locale("es", "PE")).apply {
+                    timeZone = TimeZone.getTimeZone("America/Lima")
+                }
                 sdfSalida.format(fecha)
             } else {
                 texto
