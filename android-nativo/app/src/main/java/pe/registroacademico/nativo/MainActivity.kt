@@ -25,6 +25,7 @@ import pe.registroacademico.nativo.data.AuthRepository
 import pe.registroacademico.nativo.push.PushRegistrar
 import pe.registroacademico.nativo.push.crearCanalAvisos
 import pe.registroacademico.nativo.ui.AppNav
+import pe.registroacademico.nativo.ui.estudiante.AppNavEstudiante
 import pe.registroacademico.nativo.ui.theme.LocalTemaOscuro
 import pe.registroacademico.nativo.ui.theme.LocalToggleTema
 import pe.registroacademico.nativo.ui.theme.RegistroAcademicoTheme
@@ -87,7 +88,11 @@ class MainActivity : ComponentActivity() {
                 LocalToggleTema provides { temaManual = !oscuro }
             ) {
                 RegistroAcademicoTheme(darkTheme = oscuro) {
-                    AppNav(authRepository = authRepository)
+                    if (BuildConfig.PERFIL == "estudiante") {
+                        AppNavEstudiante(authRepository = authRepository)
+                    } else {
+                        AppNav(authRepository = authRepository)
+                    }
                 }
             }
         }

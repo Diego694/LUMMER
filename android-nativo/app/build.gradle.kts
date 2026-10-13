@@ -158,6 +158,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
 
+    // ZXing Core (Generación de códigos QR)
+    implementation(libs.zxing.core)
+
     // Unit Testing
     testImplementation(libs.junit)
 }

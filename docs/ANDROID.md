@@ -98,6 +98,7 @@ Ambos workflows (`.github/workflows/android-nativo.yml` y `.github/workflows/and
 | `ANDROID_KEYSTORE_PASSWORD` | Contraseña del almacén de claves (keystore). |
 | `ANDROID_KEY_ALIAS` | Alias de la clave de firmado. |
 | `ANDROID_KEY_PASSWORD` | Contraseña de la clave privada. |
+| `GOOGLE_SERVICES_JSON` | Contenido del archivo `google-services.json` (texto o base64) para notificaciones push FCM (ver [NOTIFICACIONES.md](NOTIFICACIONES.md)). |
 
 ### Generar la clave de firma (una sola vez)
 Ejecuta el script asistido en la raíz del repositorio:
@@ -121,6 +122,11 @@ El script generará el archivo `release.jks`, imprimirá la cadena en base64 y t
 ---
 
 ## 6. Historial de integraciones recientes (Sin publicar)
+
+### Android nativo: Notificaciones push (FCM) y flavors Docente y Estudiante
+- Compilación de ambos flavors nativos (`docente` y `estudiante`) con soporte de Firebase Cloud Messaging mediante `PushRegistrar`.
+- Registro de token con RPC `registrar_dispositivo_push` y desregistro con `quitar_dispositivo_push`.
+- Para la arquitectura completa y pasos de configuración/prueba, ver [NOTIFICACIONES.md](NOTIFICACIONES.md).
 
 ### Android nativo: Aula virtual, Pasar lista, alcance docente, Conexiones de datos, Desvincular institución, Base propia
 Se integraron y cablearon en la aplicación Android nativa (`android-nativo/`) las funciones recientes del ecosistema LUMMER:

@@ -50,10 +50,12 @@ object CatalogoPantallas {
     val catalogo: List<DefinicionPantalla> = listOf(
         // Principal
         DefinicionPantalla("dashboard", "Dashboard", Icons.Default.Dashboard, "Principal"),
+        DefinicionPantalla("mi-resumen", "Mi resumen", Icons.Default.Assessment, "Principal"),
         DefinicionPantalla("aula", "Aula", Icons.Default.MenuBook, "Principal"),
 
         // Registro
         DefinicionPantalla("pasar-lista", "Pasar lista", Icons.Default.Checklist, "Registro"),
+        DefinicionPantalla("qr-curso", "QR por curso", Icons.Default.QrCode, "Registro"),
         DefinicionPantalla("registro-qr", "Registro por QR", Icons.Default.QrCodeScanner, "Registro", noDocente = true),
         DefinicionPantalla("quiosco", "Modo quiosco", Icons.Default.Badge, "Registro", noDocente = true),
         DefinicionPantalla("solicitudes", "Solicitudes de ingreso", Icons.Default.HowToReg, "Registro", soloAdmin = true),
@@ -65,6 +67,7 @@ object CatalogoPantallas {
         DefinicionPantalla("asist-alumno", "Asistencia por Alumno", Icons.Default.History, "Consultas"),
         DefinicionPantalla("asist-curso", "Asistencia por Curso", Icons.Default.ChecklistRtl, "Consultas"),
         DefinicionPantalla("reporte", "Reporte mensual", Icons.Default.Assessment, "Consultas"),
+        DefinicionPantalla("bitacora", "Bitácora", Icons.Default.History, "Consultas"),
         DefinicionPantalla("alertas", "Alertas de inasistencia", Icons.Default.Warning, "Consultas"),
         DefinicionPantalla("avisos", "Avisos a apoderados", Icons.Default.Campaign, "Consultas"),
 

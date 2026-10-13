@@ -2,6 +2,7 @@ package pe.registroacademico.nativo.ui.shell
 
 import pe.registroacademico.nativo.ui.aula.pantallasAula
 import pe.registroacademico.nativo.ui.consultas.pantallasConsultas
+import pe.registroacademico.nativo.ui.docente.pantallasDocente
 import pe.registroacademico.nativo.ui.gestion.pantallasGestion
 import pe.registroacademico.nativo.ui.registro.pantallasRegistro
 import pe.registroacademico.nativo.ui.sistema.pantallasSistema
@@ -13,6 +14,7 @@ object Pantallas {
             pantallasConsultas +
             pantallasGestion +
             pantallasAula +
+            pantallasDocente +
             pantallasSistema
         ).associateBy { it.id }
 

@@ -76,7 +76,8 @@ jobs:
             VERSION_NAME="4.0.0"
           fi
           echo "Compilando con VERSION_CODE=$VERSION_CODE y VERSION_NAME=$VERSION_NAME"
-          gradle testDocenteDebugUnitTest assembleDocenteRelease --no-daemon \
+          gradle testDocenteDebugUnitTest testEstudianteDebugUnitTest \
+            assembleDocenteDebug assembleEstudianteDebug assembleDocenteRelease --no-daemon \
             -PAPP_VERSION_CODE="$VERSION_CODE" \
             -PAPP_VERSION_NAME="$VERSION_NAME"
 
@@ -95,6 +96,16 @@ jobs:
         with:
           name: registro-academico
           path: registro-academico.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-docente-debug
+          path: android-nativo/app/build/outputs/apk/docente/debug/app-docente-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-estudiante-debug
+          path: android-nativo/app/build/outputs/apk/estudiante/debug/app-estudiante-debug.apk
 
       - name: Publicar en GitHub Release
         env:

@@ -16,6 +16,7 @@ ktor = "3.6.0"
 kotlinxSerialization = "1.11.0"
 kotlinxCoroutines = "1.11.0"
 junit = "4.13.2"
+zxing = "3.5.3"
 room = "2.8.5"
 workManager = "2.12.0"
 dataStore = "1.2.1"
@@ -66,6 +67,7 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 

@@ -3,6 +3,10 @@
 ## Sin publicar
 
 ### Añadido
+- **Apps nativas Android (Docente y Estudiante) con notificaciones push (FCM)**: soporte completo de flavors nativos independientes (`docente` y `estudiante`) con integración de Firebase Cloud Messaging (FCM):
+  - **Notificaciones push (FCM)**: registro de tokens en Supabase (`dispositivos_push` mediante RPC `registrar_dispositivo_push`), canal de avisos en Android 13+ y recepción en segundo plano de alertas institucionales.
+  - **Docente**: herramientas de gestión con **QR de asistencia por curso** dinámico con rotación automática, **bitácora** de registros con trazabilidad y auditoría de eventos, y **mi resumen (docente)** con indicadores clave de cursos asignados, entregas pendientes y avance de asistencia.
+  - **Estudiante**: portal nativo completo con **carnet con QR** digital, **escaneo de QR** para auto-registro de asistencia en clase, acceso a **cursos/aula** virtual, desglose de **asistencia**, consulta de **notas** y recepción de **avisos**.
 - **Selectores de curso ordenados**: en Aula, Asistencia por curso y el registro por curso, los cursos aparecen agrupados por carrera y ciclo (en el orden de los ciclos) y por nombre dentro de cada grupo.
 - **Mi resumen (docente)**: página de inicio con cada curso asignado: presentes hoy con barra de avance, entregas por calificar, actividades abiertas y próximo vencimiento, y los estudiantes con baja asistencia en la última semana (menos de 60 % de las clases con registro), con atajos a «Pasar lista» y al aula. No requiere migración.
 - **Estudiantes del curso y matrícula manual (migración 020)**:

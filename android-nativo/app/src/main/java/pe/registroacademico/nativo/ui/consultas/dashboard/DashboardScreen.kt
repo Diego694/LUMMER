@@ -108,7 +108,16 @@ fun DashboardScreen(
             subtitulo = subtituloHeader,
             acciones = {
                 val esDocente = ctx.sesion.rol == Rol.DOCENTE
-                if (!esDocente) {
+                if (esDocente) {
+                    OutlinedButton(
+                        onClick = { ctx.navegar("mi-resumen") },
+                        modifier = Modifier.defaultMinSize(minHeight = 44.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Assessment, contentDescription = null)
+                        Spacer(modifier = Modifier.padding(start = 6.dp))
+                        Text("Mi resumen")
+                    }
+                } else {
                     OutlinedButton(
                         onClick = { ctx.navegar("pasar-lista") },
                         modifier = Modifier.defaultMinSize(minHeight = 44.dp)
@@ -276,6 +285,17 @@ fun DashboardScreen(
                                         onClick = {
                                             menuIngresosAbierto = false
                                             ctx.navegar("codigo")
+                                        }
+                                    )
+                                } else {
+                                    DropdownMenuItem(
+                                        text = { Text("Mi resumen") },
+                                        leadingIcon = {
+                                            Icon(imageVector = Icons.Default.Assessment, contentDescription = null)
+                                        },
+                                        onClick = {
+                                            menuIngresosAbierto = false
+                                            ctx.navegar("mi-resumen")
                                         }
                                     )
                                 }
