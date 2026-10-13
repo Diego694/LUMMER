@@ -284,7 +284,7 @@ class AsistenciaEstVM @Inject constructor(
             val asistencias = asisRes.getOrDefault(emptyList())
             val asistenciasCurso = asisCursoRes.getOrDefault(emptyList())
             val horas = asistencias.map { it.hora }
-            val dias = maxOf(asistencias.size, 1)
+            val dias = asistencias.size
             val resumen = calcularResumenAsistencia(horas, diasClase = dias)
 
             _uiState.value = EstUiState.Datos(
