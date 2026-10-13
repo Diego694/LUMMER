@@ -520,3 +520,18 @@ export function resumenCursoDocente(alumnos, marcados, actividades, entregas, ah
   const proxima = abiertas.filter((a) => a.fecha_limite).sort((x, y) => String(x.fecha_limite).localeCompare(String(y.fecha_limite)))[0] || null;
   return { ...lista, actividades: actividades.length, abiertas: abiertas.length, porCalificar, proxima: proxima ? { titulo: proxima.titulo, fecha_limite: String(proxima.fecha_limite) } : null };
 }
+
+/**
+ * Estudiantes con baja asistencia en un curso. Solo cuentan los días en que alguien marcó (hubo clase); con menos de 2 días no hay base.
+ * @param {{ id: string, nombre: string }[]} alumnos
+ * @param {(Set<string> | Map<string, unknown>)[]} dias Quiénes marcaron en cada día reciente
+ * @param {number} [minimo] Porcentaje por debajo del cual se avisa
+ */
+export function bajaAsistenciaCurso(alumnos, dias, minimo = 60) {
+  const clases = dias.filter((d) => d.size > 0);
+  if (clases.length < 2) return [];
+  return alumnos
+    .map((a) => { const presentes = clases.filter((d) => d.has(a.id)).length; return { id: a.id, nombre: a.nombre, presentes, de: clases.length, pct: Math.round((presentes / clases.length) * 100) }; })
+    .filter((x) => x.pct < minimo)
+    .sort((x, y) => x.pct - y.pct || x.nombre.localeCompare(y.nombre, "es"));
+}

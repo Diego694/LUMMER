@@ -309,7 +309,7 @@ import { DB } from "../assets/js/state.js";
 import { qrModoEfectivo, ventana } from "../assets/js/qr-seguro.js";
 import { codigoApoderado } from "../assets/js/api.js";
 import { vocabulario } from "../assets/js/estudiante/api.js";
-import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso, periodoDe, periodosDe, agendaEstudiante, cursosParaPasarLista, resumenLista, resumenCursoDocente } from "../assets/js/api-aula.js";
+import { validarArchivoAula, rutaArchivoAula, rutaEntrega, validarNota, libroNotas, alumnosDelCurso, periodoDe, periodosDe, agendaEstudiante, cursosParaPasarLista, resumenLista, resumenCursoDocente, bajaAsistenciaCurso } from "../assets/js/api-aula.js";
 import { candidatosParaCurso, filtrarPorBusqueda, tipoPertenencia } from "../assets/js/estudiantes-curso.js";
 
 test("permisos · puede: rol docente no puede acciones de administración", () => {
@@ -610,6 +610,11 @@ test("resumen docente · cuenta presentes, abiertas, por calificar y próximo ve
     [{ id: "x", titulo: "T1", publicado: true, fecha_limite: "2026-10-20T00:00:00Z" }, { id: "y", titulo: "T2", publicado: true, fecha_limite: "2026-10-01T00:00:00Z" }, { id: "z", titulo: "Borrador", publicado: false }],
     [{ actividad_id: "x", nota: null }, { actividad_id: "x", nota: 15 }, { actividad_id: "q", nota: null }], ahora);
   same([r.total, r.presentes, r.faltan, r.pct, r.abiertas, r.porCalificar, r.proxima?.titulo], [3, 1, 2, 33, 1, 1, "T1"]);
+});
+test("resumen docente · detecta baja asistencia solo en días con clase", () => {
+  const al = [{ id: "a", nombre: "Ana" }, { id: "b", nombre: "Beto" }];
+  same(bajaAsistenciaCurso(al, [new Set(["a"]), new Set(["a", "b"]), new Set()], 60).map((x) => [x.id, x.pct, x.de]), [["b", 50, 2]]);
+  same(bajaAsistenciaCurso(al, [new Set(["a"]), new Set()]), []);
 });
 /* render */
 const fail = results.filter((r) => !r.ok);

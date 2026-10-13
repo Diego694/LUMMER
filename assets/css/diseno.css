@@ -1214,3 +1214,4 @@ body.est{background:var(--paper)}
 .bt-hora{font-family:var(--font-mono,'JetBrains Mono',monospace);font-variant-numeric:tabular-nums;font-weight:600}
 
 .rd-curso{display:flex;flex-direction:column;gap:6px;padding:16px}.rd-barra{height:8px;border-radius:99px;background:var(--surface-2,rgba(128,128,128,.2));overflow:hidden}.rd-barra>span{display:block;height:100%;background:var(--green,#16a34a)}.rd-acc{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.rd-baja{display:flex;flex-direction:column;gap:2px;font-size:.85rem;border-inline-start:3px solid var(--amber,#d97706);padding-inline-start:10px;margin-block:4px}
