@@ -45,7 +45,7 @@ import pe.registroacademico.nativo.ui.login.LoginScreen
 import pe.registroacademico.nativo.ui.theme.LocalTemaOscuro
 import pe.registroacademico.nativo.ui.theme.LocalToggleTema
 
-private sealed class DestinoEstudiante(
+internal sealed class DestinoEstudiante(
     val ruta: String,
     val titulo: String,
     val icono: ImageVector
@@ -57,7 +57,7 @@ private sealed class DestinoEstudiante(
     data object Avisos : DestinoEstudiante("avisos", "Avisos", Icons.Default.Campaign)
 
     companion object {
-        val items = listOf(Inicio, Escanear, Cursos, Asistencia, Avisos)
+        val items: List<DestinoEstudiante> get() = listOf(Inicio, Escanear, Cursos, Asistencia, Avisos)
     }
 }
 
