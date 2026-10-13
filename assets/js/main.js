@@ -18,6 +18,7 @@ import { periodosPage } from "./pages/periodos.js";
 import { alertasPage } from "./pages/alertas.js";
 import { historialPage } from "./pages/historial.js";
 import { bitacoraPage } from "./pages/bitacora.js";
+import { resumenDocentePage } from "./pages/resumen-docente.js";
 import { migrarPage } from "./pages/migrar.js";
 import { quioscoPage, reanudarQuiosco } from "./pages/quiosco.js";
 import { pendientes, solicitudesPage } from "./pages/solicitudes.js";
@@ -41,7 +42,7 @@ import { conexionesPage } from "./pages/conexiones.js";
 
 /** @type {any[]} */
 const PAGES = [
-  dashboardPage, aulaPage,
+  dashboardPage, resumenDocentePage, aulaPage,
   pasarListaPage, registroQrPage, quioscoPage, solicitudesPage, registroAlumnoPage, registroMasivoPage,
   asistGradoPage, asistAlumnoPage, asistCursoPage, reportePage, alertasPage, avisosPage,
   carnetPage, codigoPage, institutoPage, alumnosPage, docentesPage, personalPage, nivelesPage, gradosPage, cursosPage, calendarioPage, periodosPage, justificacionesPage, comunicadosPage,

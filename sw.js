@@ -15,7 +15,7 @@ const SHELL = [
   "assets/js/marca.js", "assets/js/pages/instituciones.js", "assets/js/pages/instituto.js",
   // Portal del estudiante
   "estudiante/", "estudiante/manifest.webmanifest", "apoderado/", "assets/js/apoderado/main.js", "assets/css/estudiante.css", "assets/css/diseno.css",
-  "assets/js/estudiante/main.js", "assets/js/estudiante/api.js", "assets/js/estudiante/aula.js", "assets/js/estudiante/escanear.js", "assets/js/api-qrcurso.js", "assets/js/pages/bitacora.js",
+  "assets/js/estudiante/main.js", "assets/js/estudiante/api.js", "assets/js/estudiante/aula.js", "assets/js/estudiante/escanear.js", "assets/js/api-qrcurso.js", "assets/js/pages/bitacora.js", "assets/js/pages/resumen-docente.js",
   // Portal del aula
   "aula/", "aula/manifest.webmanifest", "assets/css/aula.css", "assets/js/aula-portal/main.js",
 ];

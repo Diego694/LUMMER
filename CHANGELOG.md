@@ -3,6 +3,7 @@
 ## Sin publicar
 
 ### Añadido
+- **Mi resumen (docente)**: página de inicio con cada curso asignado: presentes hoy con barra de avance, entregas por calificar, actividades abiertas y próximo vencimiento, con atajos a «Pasar lista» y al aula. No requiere migración.
 - **Estudiantes del curso y matrícula manual (migración 020)**:
   - **Pertenencia ampliada en `perteneceACurso`**: un estudiante pertenece a un curso si coincide automáticamente con su carrera y ciclo o si ha sido matriculado manualmente en la tabla `curso_alumnos` (manteniendo la condición de activo y aprobado).
   - **Diálogo accesible de estudiantes (`abrirEstudiantesCurso`)**: botón «Estudiantes» en Gestión → Cursos, Asistencia por curso, Pasar lista y Aula virtual. Distingue entre alumnos automáticos («Por su ciclo») y matriculados manualmente («Manual» con acción «Quitar»). Permite matricular nuevos estudiantes («Agregar alumnos») con buscador reactivo, selección múltiple y marcado masivo de visibles para soportar arrastres y convalidaciones entre carreras o ciclos.

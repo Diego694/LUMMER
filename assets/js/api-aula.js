@@ -503,3 +503,20 @@ export function entregarDemo(db, alumno, actividad, texto, file) {
   if (previa) Object.assign(previa, datos);
   else l.push({ id: uid(), curso_id: actividad.curso_id, actividad_id: actividad.id, alumno_id: alumno.id, nota: null, comentario: "", ...datos });
 }
+
+/**
+ * Resumen de un curso para el docente: asistencia de hoy, actividades abiertas, entregas por calificar y próximo vencimiento.
+ * @param {{ id: string }[]} alumnos Estudiantes del curso
+ * @param {Set<string> | Map<string, unknown>} marcados Quiénes ya marcaron asistencia hoy
+ * @param {{ id?: string, titulo: string, fecha_limite?: string | null, publicado: boolean }[]} actividades
+ * @param {{ actividad_id: string, nota: number | null }[]} entregas
+ * @param {number} [ahora] Marca de tiempo actual en ms
+ */
+export function resumenCursoDocente(alumnos, marcados, actividades, entregas, ahora = Date.now()) {
+  const lista = resumenLista(alumnos, marcados);
+  const abiertas = actividades.filter((a) => a.publicado && (!a.fecha_limite || new Date(a.fecha_limite).getTime() >= ahora));
+  const ids = new Set(actividades.map((a) => a.id));
+  const porCalificar = entregas.filter((e) => ids.has(e.actividad_id) && e.nota == null).length;
+  const proxima = abiertas.filter((a) => a.fecha_limite).sort((x, y) => String(x.fecha_limite).localeCompare(String(y.fecha_limite)))[0] || null;
+  return { ...lista, actividades: actividades.length, abiertas: abiertas.length, porCalificar, proxima: proxima ? { titulo: proxima.titulo, fecha_limite: String(proxima.fecha_limite) } : null };
+}

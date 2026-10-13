@@ -1212,3 +1212,5 @@ body.est{background:var(--paper)}
 .bt-resumen{display:flex;flex-wrap:wrap;gap:8px;margin:var(--s-3) 0}
 .bt-chip{padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:.85rem}
 .bt-hora{font-family:var(--font-mono,'JetBrains Mono',monospace);font-variant-numeric:tabular-nums;font-weight:600}
+
+.rd-curso{display:flex;flex-direction:column;gap:6px;padding:16px}.rd-barra{height:8px;border-radius:99px;background:var(--surface-2,rgba(128,128,128,.2));overflow:hidden}.rd-barra>span{display:block;height:100%;background:var(--green,#16a34a)}.rd-acc{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
