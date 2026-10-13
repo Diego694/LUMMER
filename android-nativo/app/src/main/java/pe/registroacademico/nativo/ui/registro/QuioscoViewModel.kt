@@ -1,5 +1,6 @@
 package pe.registroacademico.nativo.ui.registro
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 import pe.registroacademico.nativo.data.AlumnosRepo
 import pe.registroacademico.nativo.data.AsistenciaRepo
 import pe.registroacademico.nativo.data.CatalogosRepo
+import pe.registroacademico.nativo.data.docente.DocenteQrRepo
 import pe.registroacademico.nativo.data.model.Alumno
 import pe.registroacademico.nativo.data.model.Asistencia
 import pe.registroacademico.nativo.data.model.Horario
@@ -21,6 +23,7 @@ import pe.registroacademico.nativo.data.model.SalidaFila
 import pe.registroacademico.nativo.domain.CalendarioUtils
 import pe.registroacademico.nativo.domain.DateUtils
 import pe.registroacademico.nativo.domain.StatsUtils
+import pe.registroacademico.nativo.domain.docente.DocenteQrUtils
 import pe.registroacademico.nativo.domain.qr.MotivoRechazo
 import pe.registroacademico.nativo.domain.qr.QrResultado
 import pe.registroacademico.nativo.domain.qr.verificarQR
@@ -46,7 +49,15 @@ data class QuioscoUiState(
     val fechaLimaActual: String = "",
     val solicitandoPinSalida: Boolean = false,
     val pinIngresado: String = "",
-    val errorPin: String? = null
+    val errorPin: String? = null,
+    val mostrarQr: Boolean = false,
+    val intervaloQrSegundos: Int = 30, // 15 o 30
+    val sesionQrId: String? = null,
+    val tokenQrActual: String? = null,
+    val segundosRestantesQr: Long = 30L,
+    val qrBitmap: Bitmap? = null,
+    val cargandoQr: Boolean = false,
+    val errorQr: String? = null
 )
 
 @HiltViewModel
@@ -54,7 +65,8 @@ class QuioscoViewModel @Inject constructor(
     private val alumnosRepo: AlumnosRepo,
     private val asistenciaRepo: AsistenciaRepo,
     private val catalogosRepo: CatalogosRepo,
-    private val colaOfflineRepo: ColaOfflineRepository
+    private val colaOfflineRepo: ColaOfflineRepository,
+    private val docenteQrRepo: DocenteQrRepo
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuioscoUiState())
@@ -64,6 +76,8 @@ class QuioscoViewModel @Inject constructor(
     private var ultimoTiempoEscaneado: Long = 0L
     private var clockJob: Job? = null
     private var clearResultJob: Job? = null
+    private var qrLoopJob: Job? = null
+    private var colegioIdActual: String = ""
 
     init {
         viewModelScope.launch {
@@ -91,6 +105,7 @@ class QuioscoViewModel @Inject constructor(
 
     fun cargarDatos(colegioId: String) {
         if (colegioId.isBlank()) return
+        colegioIdActual = colegioId
         viewModelScope.launch {
             _uiState.update { it.copy(cargando = true, error = null) }
             try {
@@ -138,6 +153,186 @@ class QuioscoViewModel @Inject constructor(
         _uiState.update { it.copy(camaraFrontal = frontal) }
     }
 
+    fun configurarIntervaloQr(segundos: Int) {
+        val valido = DocenteQrUtils.normalizarIntervaloIngreso(segundos)
+        _uiState.update { it.copy(intervaloQrSegundos = valido) }
+        if (_uiState.value.mostrarQr && _uiState.value.sesionQrId != null) {
+            activarVistaQr(colegioIdActual)
+        }
+    }
+
+    fun cambiarIntervaloQr(segundos: Int, colegioId: String = "") {
+        val cid = colegioId.ifBlank { colegioIdActual }
+        val valido = DocenteQrUtils.normalizarIntervaloIngreso(segundos)
+        _uiState.update { it.copy(intervaloQrSegundos = valido) }
+        if (_uiState.value.mostrarQr) {
+            activarVistaQr(cid)
+        }
+    }
+
+    fun activarVistaQr(colegioId: String = "") {
+        val cid = colegioId.ifBlank { colegioIdActual }
+        _uiState.update {
+            it.copy(
+                mostrarQr = true,
+                cargandoQr = true,
+                errorQr = null
+            )
+        }
+        abrirSesionQrIngreso(cid)
+    }
+
+    fun activarVistaCamara() {
+        cerrarSesionQrInterna()
+        _uiState.update {
+            it.copy(
+                mostrarQr = false,
+                sesionQrId = null,
+                tokenQrActual = null,
+                qrBitmap = null,
+                cargandoQr = false,
+                errorQr = null
+            )
+        }
+    }
+
+    fun reintentarQr(colegioId: String = "") {
+        val cid = colegioId.ifBlank { colegioIdActual }
+        val sesionId = _uiState.value.sesionQrId
+        if (sesionId.isNullOrBlank()) {
+            abrirSesionQrIngreso(cid)
+        } else {
+            _uiState.update { it.copy(segundosRestantesQr = 0L, errorQr = null) }
+        }
+    }
+
+    private fun abrirSesionQrIngreso(colegioId: String) {
+        val sesionPrevia = _uiState.value.sesionQrId
+        qrLoopJob?.cancel()
+        if (!sesionPrevia.isNullOrBlank()) {
+            viewModelScope.launch {
+                runCatching { docenteQrRepo.cerrarQrIngreso(sesionPrevia) }
+            }
+        }
+
+        qrLoopJob = viewModelScope.launch {
+            _uiState.update { it.copy(cargandoQr = true, errorQr = null) }
+            val intervalo = _uiState.value.intervaloQrSegundos
+            val resAbrir = docenteQrRepo.abrirQrIngreso(segundos = intervalo, minutos = 600)
+            resAbrir.fold(
+                onSuccess = { sesionResp ->
+                    val sesionId = sesionResp.sesion
+                    val intervaloReal = sesionResp.intervalo ?: intervalo
+                    _uiState.update {
+                        it.copy(
+                            cargandoQr = false,
+                            sesionQrId = sesionId,
+                            intervaloQrSegundos = intervaloReal,
+                            segundosRestantesQr = intervaloReal.toLong(),
+                            errorQr = null
+                        )
+                    }
+                    iniciarBucleRotacionQr(sesionId, intervaloReal, colegioId)
+                },
+                onFailure = { err ->
+                    _uiState.update {
+                        it.copy(
+                            cargandoQr = false,
+                            errorQr = "No se pudo iniciar el QR de ingreso: " + (err.localizedMessage ?: "Error de red. Toca reintentar.")
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    private fun iniciarBucleRotacionQr(sesionId: String, intervalo: Int, colegioId: String) {
+        qrLoopJob?.cancel()
+        qrLoopJob = viewModelScope.launch {
+            var vueltas = 0
+            while (isActive) {
+                val estado = _uiState.value
+                if (!estado.mostrarQr || estado.sesionQrId != sesionId) {
+                    break
+                }
+
+                val faltan = estado.segundosRestantesQr
+                if (faltan <= 1L || estado.tokenQrActual == null) {
+                    val resToken = docenteQrRepo.tokenQrIngreso(sesionId)
+                    resToken.fold(
+                        onSuccess = { tokenResp ->
+                            if (tokenResp.cerrada) {
+                                _uiState.update {
+                                    it.copy(
+                                        sesionQrId = null,
+                                        tokenQrActual = null,
+                                        qrBitmap = null,
+                                        errorQr = "La sesión QR fue cerrada en el servidor."
+                                    )
+                                }
+                                return@launch
+                            }
+                            val nuevoToken = tokenResp.token.orEmpty()
+                            val nuevosSegundos = tokenResp.segundos ?: intervalo.toLong()
+                            val bitmap = if (nuevoToken.isNotBlank()) {
+                                DocenteQrUtils.generarQrBitmap(nuevoToken, sizePx = 600)
+                            } else null
+
+                            _uiState.update {
+                                it.copy(
+                                    tokenQrActual = nuevoToken,
+                                    segundosRestantesQr = if (nuevosSegundos <= 0L) intervalo.toLong() else nuevosSegundos,
+                                    qrBitmap = bitmap,
+                                    errorQr = null
+                                )
+                            }
+                        },
+                        onFailure = { err ->
+                            _uiState.update {
+                                it.copy(
+                                    errorQr = "Error de red al actualizar el QR: " + (err.localizedMessage ?: "Reintentando..."),
+                                    segundosRestantesQr = 0L
+                                )
+                            }
+                        }
+                    )
+                } else {
+                    _uiState.update { it.copy(segundosRestantesQr = it.segundosRestantesQr - 1L) }
+                }
+
+                if (vueltas % 5 == 0 && colegioId.isNotBlank()) {
+                    refrescarAsistenciasHoy(colegioId)
+                }
+                vueltas++
+
+                delay(1000L)
+            }
+        }
+    }
+
+    private fun refrescarAsistenciasHoy(colegioId: String) {
+        viewModelScope.launch {
+            try {
+                val hoy = DateUtils.todayStr()
+                val lista = asistenciaRepo.asistenciasPorFecha(colegioId, hoy)
+                _uiState.update { it.copy(asistenciasHoy = lista) }
+            } catch (_: Throwable) {
+                // Silencioso para no interferir con la interfaz del QR
+            }
+        }
+    }
+
+    private fun cerrarSesionQrInterna() {
+        val sesionId = _uiState.value.sesionQrId
+        qrLoopJob?.cancel()
+        qrLoopJob = null
+        if (!sesionId.isNullOrBlank()) {
+            viewModelScope.launch {
+                runCatching { docenteQrRepo.cerrarQrIngreso(sesionId) }
+            }
+        }
+    }
+
     fun iniciarQuiosco(pin: String): Boolean {
         if (!pin.matches(Regex("""^\d{4,6}$"""))) {
             return false
@@ -182,12 +377,19 @@ class QuioscoViewModel @Inject constructor(
         val pin = _uiState.value.pinIngresado
         val hash = hashPin(pin)
         return if (hash == _uiState.value.pinHashConfigurado) {
+            cerrarSesionQrInterna()
             _uiState.update {
                 it.copy(
                     quioscoActivo = false,
                     solicitandoPinSalida = false,
                     pinIngresado = "",
-                    errorPin = null
+                    errorPin = null,
+                    mostrarQr = false,
+                    sesionQrId = null,
+                    tokenQrActual = null,
+                    qrBitmap = null,
+                    cargandoQr = false,
+                    errorQr = null
                 )
             }
             true
@@ -517,5 +719,12 @@ class QuioscoViewModel @Inject constructor(
         super.onCleared()
         clockJob?.cancel()
         clearResultJob?.cancel()
+        val sesionId = _uiState.value.sesionQrId
+        qrLoopJob?.cancel()
+        if (!sesionId.isNullOrBlank()) {
+            viewModelScope.launch {
+                runCatching { docenteQrRepo.cerrarQrIngreso(sesionId) }
+            }
+        }
     }
 }

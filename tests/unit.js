@@ -2,6 +2,8 @@
 import { TABLAS, aFirestore, clasificarLlave, crearPaquete, idDeFila, importarPaquete, lotes, normalizarDestino, probarConexion, validarPaquete } from "../assets/js/conectores.js";
 import { alcanceDocente } from "../assets/js/alcance.js";
 import { etiquetaOrigen, marcarQrCursoDemo, momentoExacto, parsearTokenQrCurso, resumenBitacora } from "../assets/js/api-qrcurso.js";
+import { parsearTokenQrIngreso, qrIngresoDemo } from "../assets/js/api-qringreso.js";
+import { normalizarConfigQuiosco, segundosRestantesQr } from "../assets/js/pages/quiosco.js";
 import { ahora, esErrorRed, esErrorSesion, fechaZona, horaZona, sincronizarReloj, todayStr, nowHHMM } from "../assets/js/utils.js";
 import { CICLOS, addDays, censurarNombre, cicloCorto, compararCiclos, dateStr, esc, etiquetaCiclo, nombreCiclo, parsearCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV, agruparCursos } from "../assets/js/utils.js";
 import { enlaceWhatsApp, matrizAsistencia, mensajeAviso, numeroWhatsApp, perteneceACurso } from "../assets/js/stats.js";
@@ -620,6 +622,50 @@ test("agruparCursos · ordena por carrera y ciclo y deja sin ciclo al final", ()
   const g = agruparCursos([{ nombre: "Redes", nivel: "APSTI", grado: "II CICLO" }, { nombre: "Bases", nivel: "APSTI", grado: "IV CICLO" }, { nombre: "Ética", nivel: "APSTI", grado: null }, { nombre: "Audio", nivel: "APSTI", grado: "II CICLO" }]);
   same(g.map((x) => [x.etiqueta, x.cursos.map((c) => c.nombre)]), [["APSTI · II CICLO", ["Audio", "Redes"]], ["APSTI · IV CICLO", ["Bases"]], ["APSTI · todos los ciclos", ["Ética"]]]);
 });
+
+/* QR rotativo de ingreso al instituto y quiosco (migración 022) */
+test("qr ingreso · parsearTokenQrIngreso acepta el formato LI y rechaza el resto", () => {
+  const ok = parsearTokenQrIngreso("LI." + "b".repeat(32) + ".12345.abcdef123456");
+  same(ok, { sesion: "b".repeat(32), ventana: 12345, firma: "abcdef123456" });
+  same([
+    parsearTokenQrIngreso("LQ." + "b".repeat(32) + ".12345.abcdef123456"),
+    parsearTokenQrIngreso("LI.xyz.1.f"),
+    parsearTokenQrIngreso(null),
+    parsearTokenQrIngreso("carnet123"),
+    parsearTokenQrIngreso("LI." + "b".repeat(32) + ".letras.firma"),
+  ], [null, null, null, null, null]);
+});
+
+test("quiosco · normalizarConfigQuiosco valida vista y rotación qrSeg", () => {
+  same(normalizarConfigQuiosco(), { pinHash: "", modo: "auto", camara: "user", sonido: true, voz: false, vista: "camara", qrSeg: 30 });
+  same(normalizarConfigQuiosco({ vista: "qr", qrSeg: 15, modo: "salida", camara: "environment", sonido: false, voz: true, pinHash: "9999" }),
+    { pinHash: "9999", modo: "salida", camara: "environment", sonido: false, voz: true, vista: "qr", qrSeg: 15 });
+  same(normalizarConfigQuiosco({ vista: "desconocida", qrSeg: 45 }),
+    { pinHash: "", modo: "auto", camara: "user", sonido: true, voz: false, vista: "camara", qrSeg: 30 });
+});
+
+test("quiosco · segundosRestantesQr calcula correctamente la ventana de rotación", () => {
+  same(segundosRestantesQr(0, 30), 30);
+  same(segundosRestantesQr(1, 30), 29);
+  same(segundosRestantesQr(29, 30), 1);
+  same(segundosRestantesQr(30, 30), 30);
+  same(segundosRestantesQr(10, 15), 5);
+  same(segundosRestantesQr(14, 15), 1);
+  same(segundosRestantesQr(15, 15), 15);
+});
+
+test("qr ingreso · el backend demo/local rechaza con error controlado", async () => {
+  let errAbrir = "", errToken = "", errCerrar = "";
+  try { await qrIngresoDemo.qrIngresoAbrir(); } catch (e) { errAbrir = e.message; }
+  try { await qrIngresoDemo.qrIngresoToken("s1"); } catch (e) { errToken = e.message; }
+  try { await qrIngresoDemo.qrIngresoCerrar("s1"); } catch (e) { errCerrar = e.message; }
+  same(errAbrir, "Disponible solo con conexión al servidor");
+  same(errToken, "Disponible solo con conexión al servidor");
+  same(errCerrar, "Disponible solo con conexión al servidor");
+});
+
+await Promise.all(pendientes);
+
 /* render */
 const fail = results.filter((r) => !r.ok);
 if (typeof document !== "undefined") {

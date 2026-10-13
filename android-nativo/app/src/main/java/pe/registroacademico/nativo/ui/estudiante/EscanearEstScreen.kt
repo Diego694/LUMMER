@@ -74,6 +74,8 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import pe.registroacademico.nativo.data.estudiante.ResultadoQrCurso
+import pe.registroacademico.nativo.data.estudiante.ResultadoQrIngreso
+import pe.registroacademico.nativo.data.estudiante.formatearTextoExitoIngreso
 import pe.registroacademico.nativo.ui.components.PageHeader
 import java.util.concurrent.Executors
 
@@ -124,6 +126,12 @@ fun EscanearEstScreen(
     when (val estado = uiState) {
         is EscanearUiState.Exito -> {
             PantallaResultadoExito(
+                resultado = estado.resultado,
+                onEscanearOtraVez = { viewModel.reiniciar() }
+            )
+        }
+        is EscanearUiState.ExitoIngreso -> {
+            PantallaResultadoExitoIngreso(
                 resultado = estado.resultado,
                 onEscanearOtraVez = { viewModel.reiniciar() }
             )
@@ -516,6 +524,105 @@ private fun PantallaResultadoExito(
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = onEscanearOtraVez,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Escanear otra vez")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PantallaResultadoExitoIngreso(
+    resultado: ResultadoQrIngreso,
+    onEscanearOtraVez: () -> Unit
+) {
+    val esYaMarcado = resultado is ResultadoQrIngreso.YaMarcado
+    val textoPrincipal = formatearTextoExitoIngreso(resultado)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (esYaMarcado) {
+                    MaterialTheme.colorScheme.secondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer
+                }
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(68.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (esYaMarcado) {
+                                MaterialTheme.colorScheme.secondary
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (esYaMarcado) Icons.Default.Info else Icons.Default.CheckCircle,
+                        contentDescription = "Resultado de asistencia de ingreso",
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+
+                Text(
+                    text = textoPrincipal,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = if (esYaMarcado) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    }
+                )
+
+                if (!resultado.nombre.isNullOrBlank()) {
+                    Text(
+                        text = resultado.nombre.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 

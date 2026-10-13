@@ -8,6 +8,7 @@ import { buildDemoDB } from "./demo-data.js";
 import { extrasDemo, extrasSupabase } from "./api-extra.js";
 import { aulaDemo, aulaSupabase } from "./api-aula.js";
 import { qrCursoDemo, qrCursoSupabase } from "./api-qrcurso.js";
+import { qrIngresoDemo, qrIngresoSupabase } from "./api-qringreso.js";
 import { uid } from "./utils.js";
 
 /** @typedef {import('./tipos.d.ts').Alumno} Alumno */
@@ -473,6 +474,8 @@ Object.assign(DemoBackend.prototype, aulaDemo);
 Object.assign(SupabaseBackend.prototype, aulaSupabase);
 Object.assign(DemoBackend.prototype, qrCursoDemo);
 Object.assign(SupabaseBackend.prototype, qrCursoSupabase);
+Object.assign(DemoBackend.prototype, qrIngresoDemo);
+Object.assign(SupabaseBackend.prototype, qrIngresoSupabase);
 // Las operaciones nuevas de red del demo también fallan con la red simulada caída
 ["cursosLista", "cursoAlumnosLista", "ajustesLista", "registrarSalidas", "justificacionesRango", "guardarJustificacion", "asistenciasCursoPorFecha", "registrarAsistenciaCurso", "registrarMasivoCurso", "avisosPorFecha", "registrarAviso", "exportarTodo"].forEach((m) => {
   const original = /** @type {any} */ (DemoBackend.prototype)[m];
@@ -517,3 +520,5 @@ function crearBackend() {
 }
 export const api = crearBackend();
 export { DB } from "./state.js";
+export { parsearTokenQrIngreso, marcarQrIngresoSb } from "./api-qringreso.js";
+

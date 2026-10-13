@@ -140,4 +140,66 @@ object DocenteQrUtils {
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
         return bitmap
     }
+
+    const val INTERVALO_DEFECTO_SEG = 30
+    val INTERVALOS_VALIDOS_INGRESO = listOf(15, 30)
+
+    /**
+     * Valida si un intervalo en segundos para el QR rotativo de ingreso está dentro
+     * del rango permitido por la base de datos (10 a 60 segundos).
+     */
+    fun esIntervaloValido(segundos: Int): Boolean {
+        return segundos in 10..60
+    }
+
+    /**
+     * Normaliza el intervalo seleccionado para el quiosco (15 s o 30 s).
+     * Si no coincide con ninguna opción admitida, retorna el valor por defecto (30 s).
+     */
+    fun normalizarIntervaloIngreso(segundos: Int?): Int {
+        return if (segundos == 15 || segundos == 30) segundos else INTERVALO_DEFECTO_SEG
+    }
+
+    /**
+     * Calcula los segundos restantes en una ventana con intervalo dinámico (15 o 30 s).
+     * Si faltan <= 0 retorna el intervalo completo.
+     */
+    fun calcularSegundosRestantesIntervalo(epochMs: Long, intervaloSeg: Int): Long {
+        val intervalo = if (intervaloSeg <= 0) INTERVALO_DEFECTO_SEG.toLong() else intervaloSeg.toLong()
+        val segTotal = epochMs / 1000L
+        val rem = segTotal % intervalo
+        val restantes = intervalo - rem
+        return if (restantes <= 0L) intervalo else restantes
+    }
+
+    /**
+     * Calcula los milisegundos restantes hasta el siguiente refresco programado,
+     * considerando un margen de anticipación en ms (por defecto 1000 ms = 1 s antes de expirar).
+     * Si el tiempo calculado es <= 0 ms, retorna 0 ms indicando refresco inmediato.
+     */
+    fun calcularMsHastaSiguienteRefresco(epochMs: Long, intervaloSeg: Int, margenMs: Long = 1000L): Long {
+        val segsRestantes = calcularSegundosRestantesIntervalo(epochMs, intervaloSeg)
+        val msRestantesEnSegundo = 1000L - (epochMs % 1000L)
+        val msTotalesRestantes = ((segsRestantes - 1L) * 1000L) + msRestantesEnSegundo
+        val esperaMs = msTotalesRestantes - margenMs
+        return if (esperaMs <= 0L) 0L else esperaMs
+    }
+
+    /**
+     * Calcula el índice de ventana según epochMs y el intervalo en segundos (floor(epoch_segundos / intervalo)).
+     */
+    fun calcularVentanaIngreso(epochMs: Long, intervaloSeg: Int): Long {
+        val intervalo = if (intervaloSeg <= 0) INTERVALO_DEFECTO_SEG.toLong() else intervaloSeg.toLong()
+        val segTotal = epochMs / 1000L
+        return Math.floorDiv(segTotal, intervalo)
+    }
+
+    /**
+     * Verifica si una cadena corresponde al formato de token rotativo de ingreso (prefijo 'LI.').
+     */
+    fun esTokenQrIngreso(texto: String?): Boolean {
+        if (texto.isNullOrBlank()) return false
+        return texto.startsWith("LI.")
+    }
 }
+

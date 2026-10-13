@@ -3,7 +3,7 @@
 //    Así cada cambio publicado (p. ej. la conexión a la base de datos en config.js) llega solo, sin reinstalar el APK.
 //  - Librerías de CDN (versión fijada): cache primero.
 //  - Cualquier otro origen (Supabase API, etc.): no se intercepta jamás.
-const CACHE = "ra-shell-v2";
+const CACHE = "ra-shell-v3";
 const SHELL = [
   "./", "index.html", "manifest.webmanifest", "assets/css/styles.css", "assets/icons/icon-192.png",
   "assets/js/theme-init.js", "assets/js/main.js", "assets/js/config.js", "assets/js/api.js", "assets/js/demo-data.js",
@@ -15,7 +15,7 @@ const SHELL = [
   "assets/js/marca.js", "assets/js/pages/instituciones.js", "assets/js/pages/instituto.js",
   // Portal del estudiante
   "estudiante/", "estudiante/manifest.webmanifest", "apoderado/", "assets/js/apoderado/main.js", "assets/css/estudiante.css", "assets/css/diseno.css",
-  "assets/js/estudiante/main.js", "assets/js/estudiante/api.js", "assets/js/estudiante/aula.js", "assets/js/estudiante/escanear.js", "assets/js/api-qrcurso.js", "assets/js/pages/bitacora.js", "assets/js/pages/resumen-docente.js",
+  "assets/js/estudiante/main.js", "assets/js/estudiante/api.js", "assets/js/estudiante/aula.js", "assets/js/estudiante/escanear.js", "assets/js/api-qrcurso.js", "assets/js/api-qringreso.js", "assets/js/pages/bitacora.js", "assets/js/pages/resumen-docente.js",
   // Portal del aula
   "aula/", "aula/manifest.webmanifest", "assets/css/aula.css", "assets/js/aula-portal/main.js",
 ];

@@ -162,3 +162,218 @@ data class ResultadoQrCurso(
     @SerialName("curso") val curso: String? = null,
     @SerialName("hora") val hora: String? = null
 )
+
+/**
+ * Estados posibles devueltos por la RPC marcar_asistencia_qr_ingreso según el contrato compartido.
+ */
+@Serializable
+enum class EstadoQrIngreso(val clave: String) {
+    @SerialName("ok") OK("ok"),
+    @SerialName("ya_marcado") YA_MARCADO("ya_marcado"),
+    @SerialName("invalido") INVALIDO("invalido"),
+    @SerialName("vencido") VENCIDO("vencido"),
+    @SerialName("cerrado") CERRADO("cerrado"),
+    @SerialName("no_pertenece") NO_PERTENECE("no_pertenece"),
+    @SerialName("temprano") TEMPRANO("temprano"),
+    @SerialName("fuera_horario") FUERA_HORARIO("fuera_horario"),
+    @SerialName("pendiente") PENDIENTE("pendiente"),
+    @SerialName("inactivo") INACTIVO("inactivo"),
+    @SerialName("desconocido") DESCONOCIDO("desconocido");
+
+    companion object {
+        fun desdeString(raw: String?): EstadoQrIngreso {
+            val normalizado = raw?.trim()?.lowercase() ?: return DESCONOCIDO
+            return entries.firstOrNull { it.clave == normalizado } ?: when (normalizado) {
+                "cerrado_ingreso" -> CERRADO
+                else -> DESCONOCIDO
+            }
+        }
+    }
+}
+
+/**
+ * DTO para deserializar el JSON devuelto por marcar_asistencia_qr_ingreso.
+ */
+@Serializable
+data class QrIngresoRespuestaDto(
+    @SerialName("estado") val estado: String? = null,
+    @SerialName("hora") val hora: String? = null,
+    @SerialName("tarde") val tarde: Boolean? = null,
+    @SerialName("nombre") val nombre: String? = null
+)
+
+/**
+ * Jerarquía sellada que representa el resultado de marcar asistencia por QR de ingreso.
+ */
+sealed class ResultadoQrIngreso {
+    abstract val estado: EstadoQrIngreso
+    abstract val hora: String?
+    abstract val tarde: Boolean
+    abstract val nombre: String?
+
+    data class Ok(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.OK
+    }
+
+    data class YaMarcado(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.YA_MARCADO
+    }
+
+    data class Invalido(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.INVALIDO
+    }
+
+    data class Vencido(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.VENCIDO
+    }
+
+    data class Cerrado(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.CERRADO
+    }
+
+    data class NoPertenece(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.NO_PERTENECE
+    }
+
+    data class Temprano(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.TEMPRANO
+    }
+
+    data class FueraHorario(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.FUERA_HORARIO
+    }
+
+    data class Pendiente(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.PENDIENTE
+    }
+
+    data class Inactivo(
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.INACTIVO
+    }
+
+    data class Desconocido(
+        val rawEstado: String? = null,
+        override val hora: String? = null,
+        override val tarde: Boolean = false,
+        override val nombre: String? = null
+    ) : ResultadoQrIngreso() {
+        override val estado: EstadoQrIngreso get() = EstadoQrIngreso.DESCONOCIDO
+    }
+}
+
+/**
+ * Función pura que mapea el DTO del JSON devuelto por Supabase al modelo sellado ResultadoQrIngreso.
+ */
+fun mapearResultadoQrIngreso(dto: QrIngresoRespuestaDto): ResultadoQrIngreso {
+    val tarde = dto.tarde ?: false
+    return when (EstadoQrIngreso.desdeString(dto.estado)) {
+        EstadoQrIngreso.OK -> ResultadoQrIngreso.Ok(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.YA_MARCADO -> ResultadoQrIngreso.YaMarcado(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.INVALIDO -> ResultadoQrIngreso.Invalido(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.VENCIDO -> ResultadoQrIngreso.Vencido(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.CERRADO -> ResultadoQrIngreso.Cerrado(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.NO_PERTENECE -> ResultadoQrIngreso.NoPertenece(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.TEMPRANO -> ResultadoQrIngreso.Temprano(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.FUERA_HORARIO -> ResultadoQrIngreso.FueraHorario(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.PENDIENTE -> ResultadoQrIngreso.Pendiente(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.INACTIVO -> ResultadoQrIngreso.Inactivo(dto.hora, tarde, dto.nombre)
+        EstadoQrIngreso.DESCONOCIDO -> ResultadoQrIngreso.Desconocido(dto.estado, dto.hora, tarde, dto.nombre)
+    }
+}
+
+/**
+ * Sobrecarga de conveniencia para mapear campos individuales a ResultadoQrIngreso.
+ */
+fun mapearResultadoQrIngreso(
+    estado: String?,
+    hora: String? = null,
+    tarde: Boolean? = null,
+    nombre: String? = null
+): ResultadoQrIngreso = mapearResultadoQrIngreso(QrIngresoRespuestaDto(estado, hora, tarde, nombre))
+
+/**
+ * Formatea el texto principal a mostrar en la pantalla para los estados de éxito (ok, ya_marcado).
+ */
+fun formatearTextoExitoIngreso(resultado: ResultadoQrIngreso): String {
+    val h = resultado.hora?.take(8).orEmpty()
+    return when (resultado) {
+        is ResultadoQrIngreso.Ok -> {
+            val base = if (h.isNotBlank()) "Ingreso registrado a las $h" else "Ingreso registrado"
+            if (resultado.tarde) "$base · con tardanza" else base
+        }
+        is ResultadoQrIngreso.YaMarcado -> {
+            if (h.isNotBlank()) "Ya registraste tu ingreso a las $h" else "Ya registraste tu ingreso"
+        }
+        else -> ""
+    }
+}
+
+/**
+ * Devuelve el mensaje en español correspondiente a estados no exitosos de QR de ingreso.
+ */
+fun mensajeErrorIngreso(resultado: ResultadoQrIngreso): String {
+    return when (resultado) {
+        is ResultadoQrIngreso.Vencido -> "El código venció, escanea el que se muestra ahora"
+        is ResultadoQrIngreso.Cerrado -> "El registro de ingreso está cerrado"
+        is ResultadoQrIngreso.Temprano,
+        is ResultadoQrIngreso.FueraHorario -> "Fuera del horario de ingreso"
+        is ResultadoQrIngreso.NoPertenece -> "Este código QR no corresponde a tu colegio"
+        is ResultadoQrIngreso.Invalido -> "Código QR de ingreso no válido"
+        is ResultadoQrIngreso.Pendiente -> "Tu registro de estudiante está pendiente de aprobación"
+        is ResultadoQrIngreso.Inactivo -> "Tu cuenta de estudiante se encuentra inactiva"
+        is ResultadoQrIngreso.Desconocido -> "No se pudo registrar el ingreso"
+        is ResultadoQrIngreso.Ok,
+        is ResultadoQrIngreso.YaMarcado -> ""
+    }
+}
+
+/**
+ * Devuelve el texto descriptivo asociado a cualquier estado de ingreso.
+ */
+fun mensajeParaResultadoIngreso(resultado: ResultadoQrIngreso): String {
+    return when (resultado) {
+        is ResultadoQrIngreso.Ok,
+        is ResultadoQrIngreso.YaMarcado -> formatearTextoExitoIngreso(resultado)
+        else -> mensajeErrorIngreso(resultado)
+    }
+}

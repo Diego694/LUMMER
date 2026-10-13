@@ -36,6 +36,46 @@ let buffer = "", bufferT = 0;
 const leer = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return null; } };
 const guardar = (/** @type {any} */ a) => { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch { /* sin almacenamiento */ } };
 
+/**
+ * Normaliza la configuración persistida del quiosco garantizando tipos y valores válidos.
+ * @param {any} [raw]
+ * @returns {{ pinHash: string, modo: 'auto'|'entrada'|'salida', camara: 'user'|'environment', sonido: boolean, voz: boolean, vista: 'camara'|'qr', qrSeg: 15|30 }}
+ */
+export function normalizarConfigQuiosco(raw = {}) {
+  const c = raw || {};
+  const modo = c.modo === "entrada" || c.modo === "salida" ? c.modo : "auto";
+  const camara = c.camara === "environment" ? "environment" : "user";
+  const vista = c.vista === "qr" ? "qr" : "camara";
+  const qrSeg = Number(c.qrSeg) === 15 ? 15 : 30;
+  return {
+    pinHash: String(c.pinHash || ""),
+    modo,
+    camara,
+    sonido: c.sonido !== false,
+    voz: !!c.voz,
+    vista,
+    qrSeg,
+  };
+}
+
+/**
+ * Calcula los segundos restantes en la ventana actual para un intervalo dado.
+ * @param {number} epochSegundos
+ * @param {number} [intervaloSeg]
+ * @returns {number}
+ */
+export function segundosRestantesQr(epochSegundos, intervaloSeg = 30) {
+  const i = Math.max(10, Math.min(60, Number(intervaloSeg) || 30));
+  const s = Math.floor(Number(epochSegundos) || 0);
+  const mod = ((s % i) + i) % i;
+  return i - mod;
+}
+
+/** @type {{ sesionId: string, timer: any, qr: any, ultimoToken: number, restante: number, intervaloSeg: number } | null} */
+let qrActivo = null;
+let ocupadoQrTick = false;
+
+
 export async function hashPin(/** @type {any} */ pin) {
   const texto = `ra-quiosco:${pin}`;
   try {
@@ -105,7 +145,11 @@ function reposo() {
   const el = /** @type {HTMLElement} */ (document.getElementById("q-resultado"));
   if (!el) return;
   el.className = "q-resultado q-espera";
-  el.innerHTML = `<div class="q-guia-texto"><h2>Acerca tu carnet</h2><p>Muestra el código QR a la cámara o acerca tu tag NFC.</p></div>`;
+  if (ajustes?.vista === "qr") {
+    el.innerHTML = `<div class="q-guia-texto"><h2>Escanea el código</h2><p>Abre la app LUMMER en tu celular y toca <b>Escanear</b>.</p></div>`;
+  } else {
+    el.innerHTML = `<div class="q-guia-texto"><h2>Acerca tu carnet</h2><p>Muestra el código QR a la cámara o acerca tu tag NFC.</p></div>`;
+  }
 }
 
 function pintarContadores() {
@@ -232,6 +276,157 @@ function pintarBotonPantalla() {
   b.title = b.getAttribute("aria-label") || "";
 }
 
+/* ------------------------------ Código QR rotativo de ingreso ------------------------------ */
+function asegurarEstilosQr() {
+  if (typeof document === "undefined" || document.getElementById("q-qr-style")) return;
+  const st = document.createElement("style");
+  st.id = "q-qr-style";
+  st.textContent = `
+    .q-qr-panel{background:#16223D;border-radius:24px;border:3px solid #22335A;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px;text-align:center;box-sizing:border-box}
+    .q-qr-card{background:#ffffff;padding:12px;border-radius:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.28);line-height:0}
+    .q-qr-meta{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px}
+    .q-qr-timer{font-size:16px;font-weight:600;color:#C9D3EA;font-variant-numeric:tabular-nums}
+    .q-qr-barra{width:100%;height:8px;border-radius:99px;background:#22335A;overflow:hidden}
+    #q-qr-barra-fill{display:block;height:100%;background:#E8A33D;border-radius:99px;transition:width .9s linear}
+    @media (prefers-reduced-motion:reduce){#q-qr-barra-fill{transition:none!important}}
+    .q-qr-aviso{margin:0;font-size:14px;color:#9AA7C6;line-height:1.45;max-width:32ch}
+  `;
+  document.head.appendChild(st);
+}
+
+function pintarBotonVista() {
+  const b = /** @type {HTMLElement} */ (document.getElementById("q-vista-btn"));
+  if (!b) return;
+  const esQr = ajustes?.vista === "qr";
+  b.textContent = esQr ? "Cámara frontal" : "Mostrar QR";
+  b.setAttribute("aria-label", esQr ? "Cambiar a cámara frontal" : "Mostrar código QR para los estudiantes");
+  b.title = b.getAttribute("aria-label") || "";
+}
+
+function actualizarVisibilidadVistas() {
+  const secCam = document.getElementById("q-camara-box");
+  const secQr = document.getElementById("q-qr-panel");
+  const esQr = ajustes?.vista === "qr";
+  if (secCam) secCam.hidden = esQr;
+  if (secQr) secQr.hidden = !esQr;
+  pintarBotonVista();
+  reposo();
+}
+
+function pintarQrCuentaAtras(/** @type {number} */ restante, /** @type {number} */ total) {
+  const txt = document.getElementById("q-qr-seg-txt");
+  const fill = document.getElementById("q-qr-barra-fill");
+  if (txt) txt.textContent = `El código cambia en ${restante} s`;
+  if (fill) {
+    const tot = total || 30;
+    const p = Math.max(0, Math.min(100, Math.round((restante / tot) * 100)));
+    fill.style.width = `${p}%`;
+  }
+}
+
+function limpiarQr() {
+  if (qrActivo) {
+    if (qrActivo.timer) clearInterval(qrActivo.timer);
+    const sid = qrActivo.sesionId;
+    qrActivo = null;
+    if (sid) {
+      /** @type {any} */ (api).qrIngresoCerrar?.(sid)?.catch?.(() => {});
+    }
+  }
+}
+
+async function activarVistaQr() {
+  if (typeof window !== "undefined" && !(/** @type {any} */ (window)).QRCode) {
+    toast("No se cargó el generador de QR. Revisa tu conexión.", "error");
+    ajustes.vista = "camara";
+    guardar(ajustes);
+    actualizarVisibilidadVistas();
+    iniciarCamara();
+    return false;
+  }
+  detenerCamara();
+  let sesion;
+  try {
+    sesion = await /** @type {any} */ (api).qrIngresoAbrir(ajustes?.qrSeg || 30, 600);
+  } catch (/** @type {any} */ e) {
+    const msg = /Disponible solo/i.test(e.message)
+      ? "El código QR rotativo está disponible solo con conexión al servidor."
+      : /Failed to fetch|network|conexi[oó]n/i.test(e.message)
+      ? "Sin conexión al servidor para abrir la sesión de QR."
+      : "No se pudo abrir el QR: " + (e.message || "error");
+    toast(msg, "error");
+    ajustes.vista = "camara";
+    guardar(ajustes);
+    actualizarVisibilidadVistas();
+    iniciarCamara();
+    return false;
+  }
+
+  ajustes.vista = "qr";
+  guardar(ajustes);
+  actualizarVisibilidadVistas();
+
+  const caja = document.getElementById("q-qr-canvas");
+  if (caja) {
+    caja.innerHTML = "";
+    const qr = new (/** @type {any} */ (window)).QRCode(caja, {
+      width: 280,
+      height: 280,
+      correctLevel: (/** @type {any} */ (window)).QRCode.CorrectLevel.M,
+    });
+    const sesionId = String(sesion.sesion || sesion.id || "");
+    const intervaloSeg = Number(sesion.intervalo) || ajustes?.qrSeg || 30;
+    qrActivo = { sesionId, timer: null, qr, ultimoToken: 0, restante: 0, intervaloSeg };
+
+    const tick = async () => {
+      if (!qrActivo || ocupadoQrTick || !activo) return;
+      ocupadoQrTick = true;
+      try {
+        const ahora = Date.now();
+        if (qrActivo.restante <= 1 || !qrActivo.ultimoToken) {
+          const t = await /** @type {any} */ (api).qrIngresoToken(qrActivo.sesionId);
+          if (t.cerrada) {
+            toast("La sesión de QR de ingreso terminó.", "info");
+            activarVistaCamara();
+            return;
+          }
+          qr.makeCode(String(t.token));
+          qrActivo.ultimoToken = ahora;
+          qrActivo.restante = Number(t.segundos) || qrActivo.intervaloSeg;
+        } else {
+          qrActivo.restante--;
+        }
+        pintarQrCuentaAtras(qrActivo.restante, qrActivo.intervaloSeg);
+      } catch (/** @type {any} */ e) {
+        const txt = document.getElementById("q-qr-seg-txt");
+        if (txt) txt.textContent = "Reintentando conexión… (" + (e.message || "error") + ")";
+        qrActivo.restante = 0;
+      } finally {
+        ocupadoQrTick = false;
+      }
+    };
+    qrActivo.timer = setInterval(tick, 1000);
+    tick();
+  }
+  return true;
+}
+
+function activarVistaCamara() {
+  limpiarQr();
+  ajustes.vista = "camara";
+  guardar(ajustes);
+  actualizarVisibilidadVistas();
+  iniciarCamara();
+}
+
+async function alternarVista() {
+  if (ajustes?.vista === "qr") {
+    activarVistaCamara();
+  } else {
+    await activarVistaQr();
+  }
+}
+
 /* ------------------------------ Construcción ------------------------------ */
 function pintarReloj() {
   const r = /** @type {HTMLElement} */ (document.getElementById("q-reloj")), f = /** @type {HTMLElement} */ (document.getElementById("q-fecha"));
@@ -240,18 +435,29 @@ function pintarReloj() {
 }
 
 export async function abrirQuiosco(/** @type {any} */ config) {
-  ajustes = config; guardar(ajustes);
+  ajustes = normalizarConfigQuiosco(config); guardar(ajustes);
   await asegurarHoy();
   if (/** @type {HTMLElement} */ (document.getElementById("quiosco"))) return;
+  asegurarEstilosQr();
   const hoy = todayStr(), noLect = DB.noLectivos.get(hoy);
   const ov = document.createElement("div");
   ov.id = "quiosco"; ov.className = "quiosco"; ov.setAttribute("role", "application"); ov.setAttribute("aria-label", "Modo quiosco");
   ov.innerHTML = `<header class="q-top"><div class="q-marca"><div><strong>${esc(DB.perfil?.colegio || "LUMMER")}</strong><small id="q-modo">${ajustes.modo === "salida" ? "SALIDA" : ajustes.modo === "entrada" ? "INGRESO" : "INGRESO Y SALIDA"}</small></div></div>
       <div class="q-hora"><div id="q-reloj" class="q-reloj"></div><div id="q-fecha" class="q-fecha"></div></div>
-      <div class="q-botones"><button class="q-btn" id="q-pantalla" type="button"></button><button class="q-btn q-salir" id="q-salir" type="button" aria-label="Salir del modo quiosco" title="Salir del modo quiosco">🔒</button></div></header>
+      <div class="q-botones"><button class="q-btn" id="q-vista-btn" type="button"></button><button class="q-btn" id="q-pantalla" type="button"></button><button class="q-btn q-salir" id="q-salir" type="button" aria-label="Salir del modo quiosco" title="Salir del modo quiosco">🔒</button></div></header>
     ${noLect ? `<div class="q-aviso">Hoy es ${esc(noLect.tipo.toLowerCase())}: ${esc(noLect.nombre)}. Los registros se guardan igual.</div>` : ""}
-    <main class="q-main"><section class="q-camara"><video id="q-video" playsinline muted></video><div class="q-marco" aria-hidden="true"></div><p id="q-video-msg" class="q-video-msg"></p></section>
-      <section id="q-resultado" class="q-resultado q-espera"></section></main>
+    <main class="q-main">
+      <section class="q-camara" id="q-camara-box"><video id="q-video" playsinline muted></video><div class="q-marco" aria-hidden="true"></div><p id="q-video-msg" class="q-video-msg"></p></section>
+      <section class="q-qr-panel" id="q-qr-panel" hidden aria-label="Código QR rotativo de ingreso">
+        <div class="q-qr-card"><div id="q-qr-canvas" class="qrc-qr" aria-label="Código QR de ingreso"></div></div>
+        <div class="q-qr-meta">
+          <div class="q-qr-timer" role="status" aria-live="polite"><span id="q-qr-seg-txt">Generando código…</span></div>
+          <div class="q-qr-barra" aria-hidden="true"><span id="q-qr-barra-fill" style="width:100%"></span></div>
+          <p class="q-qr-aviso">Los estudiantes escanean este código con la app LUMMER → Escanear</p>
+        </div>
+      </section>
+      <section id="q-resultado" class="q-resultado q-espera"></section>
+    </main>
     <footer class="q-pie" id="q-contadores"></footer>`;
   document.body.appendChild(ov);
   activo = true;
@@ -266,6 +472,7 @@ export async function abrirQuiosco(/** @type {any} */ config) {
   addEventListener("contextmenu", sinMenu);
   document.addEventListener("visibilitychange", alVolver);
   /** @type {HTMLElement} */ (ov.querySelector("#q-salir")).addEventListener("click", pedirSalida);
+  /** @type {HTMLElement} */ (ov.querySelector("#q-vista-btn")).addEventListener("click", alternarVista);
   const bp = /** @type {HTMLElement} */ (ov.querySelector("#q-pantalla"));
   if (!document.documentElement.requestFullscreen) bp.hidden = true;   // p. ej. iPhone/Safari: no existe pantalla completa para páginas
   bp.addEventListener("click", alternarPantallaCompleta);
@@ -275,13 +482,20 @@ export async function abrirQuiosco(/** @type {any} */ config) {
   pintarBotonPantalla();
   mantenerPantalla(true);
   iniciarNfc();
-  iniciarCamara();
+  if (ajustes.vista === "qr") {
+    activarVistaQr();
+  } else {
+    pintarBotonVista();
+    iniciarCamara();
+  }
 }
 
 function cerrarQuiosco() {
   activo = false;
+  limpiarQr();
   detenerCamara(); detenerNfc(); mantenerPantalla(false);
   clearInterval(timerReloj); clearInterval(timerRefresco); clearTimeout(timerFin); quitarEstado?.();
+
   removeEventListener("hashchange", bloquearHash); removeEventListener("keydown", teclado, true); removeEventListener("contextmenu", sinMenu);
   document.removeEventListener("visibilitychange", alVolver);
   document.removeEventListener("fullscreenchange", pintarBotonPantalla);
@@ -331,11 +545,13 @@ export function reanudarQuiosco() {
 export const quioscoPage = {
   noDocente: true, id: "quiosco", title: "Modo quiosco", icon: "idCard", group: "Registro",
   render(/** @type {any} */ root) {
-    const prev = leer() || {};
+    const prev = normalizarConfigQuiosco(leer());
     root.innerHTML = `<div class="page-head"><div><h1>Modo quiosco</h1><p class="muted">Deja una tablet o teléfono fijo en la puerta: cada estudiante muestra su carnet y se registra solo, sin que el docente tenga que escanear.</p></div></div>
       <div class="grid-2"><section class="card">
         <h3 style="margin-top:0">Configurar</h3>
         <div class="field"><label for="qk-modo">Qué registra</label><select id="qk-modo"><option value="auto">Ingreso y salida (automático)</option><option value="entrada">Solo ingreso</option><option value="salida">Solo salida</option></select></div>
+        <div class="field"><label for="qk-vista">Modo de escaneo</label><select id="qk-vista"><option value="camara">Cámara (el quiosco escanea carnets)</option><option value="qr">Mostrar QR (el estudiante escanea con su celular)</option></select></div>
+        <div class="field" id="qk-qrseg-box"><label for="qk-qrseg">Rotación del código QR</label><select id="qk-qrseg"><option value="30">Cada 30 segundos (recomendado)</option><option value="15">Cada 15 segundos</option></select></div>
         <div class="field"><label for="qk-cam">Cámara</label><select id="qk-cam"><option value="user">Frontal (tablet de pie)</option><option value="environment">Trasera</option></select></div>
         <div class="field"><label for="qk-pin">PIN para salir (4 a 6 números) <span class="req">*</span></label><input id="qk-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Ej: 4821"></div>
         <label class="check-row"><input type="checkbox" id="qk-son" checked> Sonido de confirmación</label>
@@ -347,12 +563,15 @@ export const quioscoPage = {
         <ul class="muted" style="margin:6px 0 0;padding-left:20px;line-height:1.7">
           <li>Pantalla completa y sin menús; la pantalla no se apaga. <b>Solo se sale con el PIN.</b></li>
           <li>Acepta el <b>QR del carnet</b> (también el dinámico), <b>tags NFC</b> (en la app Android) y <b>lectores USB/Bluetooth</b>.</li>
+          <li>Permite cambiar en vivo entre <b>cámara</b> y <b>código QR proyectado</b> que rota cada 15 o 30 segundos.</li>
           <li>En «automático»: el primer pase es el <b>ingreso</b>; la <b>salida</b> solo se habilita pasado el tiempo mínimo del horario (por defecto <b>2 horas</b> después del ingreso: evita fugas); antes de eso se avisa desde qué hora podrá salir. El ingreso respeta la <b>ventana</b> del horario (no antes de la apertura ni después del cierre).</li>
           <li>Muestra <b>foto y nombre</b> (apellidos protegidos), puntual o tardanza, con sonido.</li>
           <li><b>Sin internet</b> sigue funcionando y envía todo al volver la conexión.</li>
           <li>Si el aparato se reinicia, el quiosco <b>vuelve a abrirse solo</b>.</li></ul></section></div>`;
-    /** @type {HTMLInputElement} */ (root.querySelector("#qk-modo")).value = prev.modo || "auto";
-    /** @type {HTMLInputElement} */ (root.querySelector("#qk-cam")).value = prev.camara || "user";
+    /** @type {HTMLSelectElement} */ (root.querySelector("#qk-modo")).value = prev.modo;
+    /** @type {HTMLSelectElement} */ (root.querySelector("#qk-cam")).value = prev.camara;
+    /** @type {HTMLSelectElement} */ (root.querySelector("#qk-vista")).value = prev.vista;
+    /** @type {HTMLSelectElement} */ (root.querySelector("#qk-qrseg")).value = String(prev.qrSeg);
   },
 };
 
@@ -362,7 +581,15 @@ registerActions({
     const pin = $("#qk-pin").value.trim();
     if (!/^\d{4,6}$/.test(pin)) { err.textContent = "El PIN debe tener de 4 a 6 números."; err.hidden = false; return; }
     err.hidden = true;
-    await abrirQuiosco({ pinHash: await hashPin(pin), modo: $("#qk-modo").value, camara: $("#qk-cam").value, sonido: $("#qk-son").checked, voz: $("#qk-voz").checked });
+    await abrirQuiosco({
+      pinHash: await hashPin(pin),
+      modo: $("#qk-modo").value,
+      camara: $("#qk-cam").value,
+      vista: $("#qk-vista").value,
+      qrSeg: Number($("#qk-qrseg").value) === 15 ? 15 : 30,
+      sonido: $("#qk-son").checked,
+      voz: $("#qk-voz").checked,
+    });
   },
 });
 void nowHHMM;

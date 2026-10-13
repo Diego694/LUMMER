@@ -39,6 +39,7 @@ interface EstudianteRepo {
     suspend fun miAsistenciaCurso(cursoId: String? = null): Result<List<AsistenciaCursoEstudiante>>
     suspend fun misNotas(cursoId: String? = null): Result<List<NotaEstudiante>>
     suspend fun marcarAsistenciaQr(token: String): Result<ResultadoQrCurso>
+    suspend fun marcarIngresoQr(token: String): Result<ResultadoQrIngreso>
     suspend fun fotoUrl(fotoPath: String): Result<String?>
 }
 
@@ -221,6 +222,14 @@ class EstudianteRepoImpl @Inject constructor(
             put("p_token", token)
         }
         supabase.postgrest.rpc("marcar_asistencia_qr_curso", params).decodeAs<ResultadoQrCurso>()
+    }
+
+    override suspend fun marcarIngresoQr(token: String): Result<ResultadoQrIngreso> = runCatching {
+        val params = buildJsonObject {
+            put("p_token", token)
+        }
+        val dto = supabase.postgrest.rpc("marcar_asistencia_qr_ingreso", params).decodeAs<QrIngresoRespuestaDto>()
+        mapearResultadoQrIngreso(dto)
     }
 
     override suspend fun fotoUrl(fotoPath: String): Result<String?> = runCatching {

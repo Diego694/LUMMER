@@ -41,6 +41,21 @@ data class TokenQrRespuesta(
 )
 
 @Serializable
+data class SesionQrIngresoRespuesta(
+    @SerialName("sesion") val sesion: String,
+    @SerialName("intervalo") val intervalo: Int? = null,
+    @SerialName("expira_en") val expiraEn: String? = null
+)
+
+@Serializable
+data class TokenQrIngresoRespuesta(
+    @SerialName("token") val token: String? = null,
+    @SerialName("segundos") val segundos: Long? = null,
+    @SerialName("expira_en") val expiraEn: String? = null,
+    @SerialName("cerrada") val cerrada: Boolean = false
+)
+
+@Serializable
 data class BitacoraItem(
     @SerialName("tipo") val tipo: String,
     @SerialName("cuando") val cuando: String,
@@ -101,6 +116,9 @@ interface DocenteQrRepo {
     suspend fun abrirSesion(cursoId: String, minutos: Int = 20): Result<SesionQrRespuesta>
     suspend fun tokenActual(sesionId: String): Result<TokenQrRespuesta>
     suspend fun cerrarSesion(sesionId: String): Result<Unit>
+    suspend fun abrirQrIngreso(segundos: Int = 30, minutos: Int = 600): Result<SesionQrIngresoRespuesta>
+    suspend fun tokenQrIngreso(sesion: String): Result<TokenQrIngresoRespuesta>
+    suspend fun cerrarQrIngreso(sesion: String): Result<Unit>
     suspend fun bitacora(filtros: BitacoraFiltros = BitacoraFiltros()): Result<List<BitacoraItem>>
     suspend fun resumenDocente(colegioId: String = "", userId: String = "", esAdmin: Boolean = false): Result<List<ResumenDocenteItem>>
     suspend fun bajaAsistencia(cursoId: String, colegioId: String = ""): Result<List<AlumnoBajaAsistencia>>
@@ -137,6 +155,29 @@ class DocenteQrRepoImpl @Inject constructor(
             put("p_sesion", sesionId)
         }
         supabase.postgrest.rpc("qr_curso_cerrar", params)
+        Unit
+    }
+
+    override suspend fun abrirQrIngreso(segundos: Int, minutos: Int): Result<SesionQrIngresoRespuesta> = runCatching {
+        val params = buildJsonObject {
+            put("p_segundos", segundos)
+            put("p_minutos", minutos)
+        }
+        supabase.postgrest.rpc("qr_ingreso_abrir", params).decodeAs<SesionQrIngresoRespuesta>()
+    }
+
+    override suspend fun tokenQrIngreso(sesion: String): Result<TokenQrIngresoRespuesta> = runCatching {
+        val params = buildJsonObject {
+            put("p_sesion", sesion)
+        }
+        supabase.postgrest.rpc("qr_ingreso_token", params).decodeAs<TokenQrIngresoRespuesta>()
+    }
+
+    override suspend fun cerrarQrIngreso(sesion: String): Result<Unit> = runCatching {
+        val params = buildJsonObject {
+            put("p_sesion", sesion)
+        }
+        supabase.postgrest.rpc("qr_ingreso_cerrar", params)
         Unit
     }
 

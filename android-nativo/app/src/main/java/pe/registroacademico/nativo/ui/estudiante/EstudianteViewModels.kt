@@ -19,11 +19,16 @@ import pe.registroacademico.nativo.data.estudiante.EstudianteRepo
 import pe.registroacademico.nativo.data.estudiante.MaterialEstudiante
 import pe.registroacademico.nativo.data.estudiante.NotaEstudiante
 import pe.registroacademico.nativo.data.estudiante.ResultadoQrCurso
+import pe.registroacademico.nativo.data.estudiante.ResultadoQrIngreso
+import pe.registroacademico.nativo.data.estudiante.mensajeErrorIngreso
+import pe.registroacademico.nativo.domain.estudiante.FlujoQr
 import pe.registroacademico.nativo.domain.estudiante.NotaEvaluada
 import pe.registroacademico.nativo.domain.estudiante.ResumenAsistenciaEstudiante
 import pe.registroacademico.nativo.domain.estudiante.calcularPromedioNotas
 import pe.registroacademico.nativo.domain.estudiante.calcularResumenAsistencia
+import pe.registroacademico.nativo.domain.estudiante.parsearQrIngreso
 import pe.registroacademico.nativo.domain.estudiante.parsearTokenQrCurso
+import pe.registroacademico.nativo.domain.estudiante.seleccionarFlujoQr
 import javax.inject.Inject
 
 /**
@@ -348,6 +353,7 @@ sealed interface EscanearUiState {
     data object Idle : EscanearUiState
     data object Cargando : EscanearUiState
     data class Exito(val resultado: ResultadoQrCurso) : EscanearUiState
+    data class ExitoIngreso(val resultado: ResultadoQrIngreso) : EscanearUiState
     data class Error(val mensaje: String) : EscanearUiState
 }
 
@@ -368,30 +374,71 @@ class EscanearEstVM @Inject constructor(
     }
 
     fun escanear(textoQr: String) {
-        val token = parsearTokenQrCurso(textoQr)
-        if (token == null) {
-            _uiState.value = EscanearUiState.Error("Ese código QR no es de asistencia de curso.")
-            return
-        }
+        // Evita doble envío mientras hay una llamada en curso
+        if (_uiState.value is EscanearUiState.Cargando) return
 
-        viewModelScope.launch {
-            _uiState.value = EscanearUiState.Cargando
-            repo.marcarAsistenciaQr(textoQr.trim()).fold(
-                onSuccess = { resultado ->
-                    if (resultado.estado == "ok" || resultado.estado == "ya_marcado") {
-                        _uiState.value = EscanearUiState.Exito(resultado)
-                    } else {
-                        _uiState.value = EscanearUiState.Error(
-                            resultado.mensaje.ifBlank { "No se pudo registrar la asistencia." }
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.value = EscanearUiState.Error(
-                        error.message ?: "Error al registrar la asistencia."
+        when (seleccionarFlujoQr(textoQr)) {
+            FlujoQr.INGRESO -> {
+                val token = parsearQrIngreso(textoQr)
+                if (token == null) {
+                    _uiState.value = EscanearUiState.Error("Código QR de ingreso no válido")
+                    return
+                }
+
+                viewModelScope.launch {
+                    _uiState.value = EscanearUiState.Cargando
+                    repo.marcarIngresoQr(textoQr.trim()).fold(
+                        onSuccess = { resultado ->
+                            when (resultado) {
+                                is ResultadoQrIngreso.Ok,
+                                is ResultadoQrIngreso.YaMarcado -> {
+                                    _uiState.value = EscanearUiState.ExitoIngreso(resultado)
+                                }
+                                else -> {
+                                    _uiState.value = EscanearUiState.Error(
+                                        mensajeErrorIngreso(resultado)
+                                    )
+                                }
+                            }
+                        },
+                        onFailure = { error ->
+                            _uiState.value = EscanearUiState.Error(
+                                error.message ?: "Error al registrar la asistencia."
+                            )
+                        }
                     )
                 }
-            )
+            }
+            FlujoQr.CURSO -> {
+                val token = parsearTokenQrCurso(textoQr)
+                if (token == null) {
+                    _uiState.value = EscanearUiState.Error("Ese código QR no es de asistencia de curso.")
+                    return
+                }
+
+                viewModelScope.launch {
+                    _uiState.value = EscanearUiState.Cargando
+                    repo.marcarAsistenciaQr(textoQr.trim()).fold(
+                        onSuccess = { resultado ->
+                            if (resultado.estado == "ok" || resultado.estado == "ya_marcado") {
+                                _uiState.value = EscanearUiState.Exito(resultado)
+                            } else {
+                                _uiState.value = EscanearUiState.Error(
+                                    resultado.mensaje.ifBlank { "No se pudo registrar la asistencia." }
+                                )
+                            }
+                        },
+                        onFailure = { error ->
+                            _uiState.value = EscanearUiState.Error(
+                                error.message ?: "Error al registrar la asistencia."
+                            )
+                        }
+                    )
+                }
+            }
+            FlujoQr.DESCONOCIDO -> {
+                _uiState.value = EscanearUiState.Error("Ese código QR no es de asistencia.")
+            }
         }
     }
 }

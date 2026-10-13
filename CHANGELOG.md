@@ -3,6 +3,11 @@
 ## Sin publicar
 
 ### Añadido
+- **QR rotativo de ingreso al instituto y modo quiosco proyectado (migración 022)**:
+  - **Modo quiosco bimodal**: configuración con campos `vista` (`camara` o `qr`) y `qrSeg` (`15` o `30` s), selectores `#qk-vista` y `#qk-qrseg` persistidos en almacenamiento local y botón conmutador dentro del overlay para alternar en vivo entre cámara y QR proyectado sin salir del quiosco.
+  - **Rotación y temporizador de cuenta atrás**: renderizado de QR grande mediante `QRCode` con barra y contador de segundos restantes; limpieza de temporizadores y cierre de sesión (`qr_ingreso_cerrar`) al alternar de vista o salir con PIN.
+  - **RPCs y migración 022**: tabla `sesiones_qr_ingreso`, RPCs `qr_ingreso_abrir`, `qr_ingreso_token`, `qr_ingreso_cerrar` y `marcar_asistencia_qr_ingreso` con cálculo de tardanza por horario, control de horario (`ingreso_desde`/`ingreso_hasta`), rate limit en `intentos_codigo` e integración en `bitacora_registros`.
+  - **Cliente web y tolerancia a fallos**: cliente `assets/js/api-qringreso.js`, cableado en `api.js` y mensaje claro en español con permanencia en cámara en modo demo/local o ante fallos de conexión.
 - **Apps nativas Android (Docente y Estudiante) con notificaciones push (FCM)**: soporte completo de flavors nativos independientes (`docente` y `estudiante`) con integración de Firebase Cloud Messaging (FCM):
   - **Notificaciones push (FCM)**: registro de tokens en Supabase (`dispositivos_push` mediante RPC `registrar_dispositivo_push`), canal de avisos en Android 13+ y recepción en segundo plano de alertas institucionales.
   - **Docente**: herramientas de gestión con **QR de asistencia por curso** dinámico con rotación automática, **bitácora** de registros con trazabilidad y auditoría de eventos, y **mi resumen (docente)** con indicadores clave de cursos asignados, entregas pendientes y avance de asistencia.
