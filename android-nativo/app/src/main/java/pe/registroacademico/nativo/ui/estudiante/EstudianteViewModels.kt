@@ -253,7 +253,8 @@ class AulaEstVM @Inject constructor(
 data class AsistenciaEstudianteDatos(
     val asistencias: List<AsistenciaEstudiante>,
     val asistenciasCurso: List<AsistenciaCursoEstudiante>,
-    val resumen: ResumenAsistenciaEstudiante
+    val resumen: ResumenAsistenciaEstudiante,
+    val cursos: Map<String, CursoEstudiante> = emptyMap()
 )
 
 @HiltViewModel
@@ -284,6 +285,8 @@ class AsistenciaEstVM @Inject constructor(
             val asistencias = asisRes.getOrDefault(emptyList())
             val asistenciasCurso = asisCursoRes.getOrDefault(emptyList())
             val horas = asistencias.map { it.hora }
+            val cursos = if (asistenciasCurso.isEmpty()) emptyMap() else
+                repo.misCursos().getOrDefault(emptyList()).mapNotNull { c -> c.id?.let { it to c } }.toMap()
             val dias = asistencias.size
             val resumen = calcularResumenAsistencia(horas, diasClase = dias)
 
@@ -291,7 +294,8 @@ class AsistenciaEstVM @Inject constructor(
                 AsistenciaEstudianteDatos(
                     asistencias = asistencias,
                     asistenciasCurso = asistenciasCurso,
-                    resumen = resumen
+                    resumen = resumen,
+                    cursos = cursos
                 )
             )
         }

@@ -28,10 +28,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import pe.registroacademico.nativo.data.estudiante.AsistenciaCursoEstudiante
 import pe.registroacademico.nativo.data.estudiante.AsistenciaEstudiante
+import pe.registroacademico.nativo.data.estudiante.CursoEstudiante
 import pe.registroacademico.nativo.data.estudiante.NotaEstudiante
 import pe.registroacademico.nativo.domain.estudiante.ResumenAsistenciaEstudiante
 import pe.registroacademico.nativo.ui.components.EmptyState
@@ -187,7 +190,7 @@ private fun AsistenciaSeccion(
                     }
 
                     items(datos.asistenciasCurso, key = { it.id ?: "${it.cursoId}-${it.fecha}-${it.hora}" }) { ac ->
-                        TarjetaAsistenciaCurso(asistenciaCurso = ac)
+                        TarjetaAsistenciaCurso(asistenciaCurso = ac, curso = datos.cursos[ac.cursoId])
                     }
                 }
 
@@ -323,49 +326,96 @@ private fun TarjetaAsistencia(asistencia: AsistenciaEstudiante) {
 }
 
 @Composable
-private fun TarjetaAsistenciaCurso(asistenciaCurso: AsistenciaCursoEstudiante) {
+private fun TarjetaAsistenciaCurso(
+    asistenciaCurso: AsistenciaCursoEstudiante,
+    curso: CursoEstudiante?
+) {
+    var expandido by rememberSaveable(asistenciaCurso.id, asistenciaCurso.fecha, asistenciaCurso.hora) {
+        mutableStateOf(false)
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.QrCode,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Column {
-                    Text(
-                        text = asistenciaCurso.fecha,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCode,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
-                    Text(
-                        text = "Hora: ${asistenciaCurso.hora}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                    Column {
+                        Text(
+                            text = curso?.nombre ?: "Curso",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${asistenciaCurso.fecha} · ${asistenciaCurso.hora}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.size(8.dp))
+                EstadoBadge(
+                    texto = "QR Curso",
+                    tipo = TipoEstadoBadge.AZUL
+                )
+            }
+
+            TextButton(onClick = { expandido = !expandido }) {
+                Text(if (expandido) "Ocultar información" else "Más información")
+            }
+
+            if (expandido) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    DetalleAsistencia("Curso", curso?.nombre ?: "No disponible")
+                    if (!curso?.docente.isNullOrBlank()) DetalleAsistencia("Docente", curso?.docente.orEmpty())
+                    if (curso != null) {
+                        DetalleAsistencia(
+                            "Carrera / ciclo",
+                            listOfNotNull(curso.nivel, curso.grado?.takeIf { it.isNotBlank() }).joinToString(" · ")
+                        )
+                    }
+                    DetalleAsistencia("Fecha", asistenciaCurso.fecha)
+                    DetalleAsistencia("Hora de registro", asistenciaCurso.hora)
+                    DetalleAsistencia(
+                        "Método",
+                        if (asistenciaCurso.origen == "qr-docente") "QR del docente" else (asistenciaCurso.origen ?: "Registro")
                     )
                 }
             }
-
-            EstadoBadge(
-                texto = "QR Curso",
-                tipo = TipoEstadoBadge.AZUL
-            )
         }
+    }
+}
+
+@Composable
+private fun DetalleAsistencia(etiqueta: String, valor: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(
+            text = etiqueta,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        Text(
+            text = valor,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
