@@ -51,10 +51,14 @@ jobs:
           GS_SECRET: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           if [ -n "$GS_SECRET" ]; then
-            if printf '%s' "$GS_SECRET" | tr -d '[:space:]' | grep -q '^{'; then
-              printf '%s\n' "$GS_SECRET" > android-nativo/app/google-services.json
+            printf '%s' "$GS_SECRET" | sed '1s/^\xEF\xBB\xBF//' | tr -d '\r' > "$RUNNER_TEMP/gs.raw"
+            if grep -q 'project_info' "$RUNNER_TEMP/gs.raw"; then
+              cp "$RUNNER_TEMP/gs.raw" android-nativo/app/google-services.json
+            elif tr -d '[:space:]' < "$RUNNER_TEMP/gs.raw" | base64 -d > "$RUNNER_TEMP/gs.decoded" 2>/dev/null && grep -q 'project_info' "$RUNNER_TEMP/gs.decoded"; then
+              cp "$RUNNER_TEMP/gs.decoded" android-nativo/app/google-services.json
             else
-              printf '%s' "$GS_SECRET" | tr -d '\r\n ' | base64 -d > android-nativo/app/google-services.json
+              echo "::error::GOOGLE_SERVICES_JSON no es JSON ni base64 válido"
+              exit 1
             fi
             echo "google-services.json configurado correctamente para Firebase."
           else
@@ -77,17 +81,19 @@ jobs:
           fi
           echo "Compilando con VERSION_CODE=$VERSION_CODE y VERSION_NAME=$VERSION_NAME"
           gradle testDocenteDebugUnitTest testEstudianteDebugUnitTest \
-            assembleDocenteDebug assembleEstudianteDebug assembleDocenteRelease --no-daemon \
+            assembleDocenteRelease assembleEstudianteRelease --no-daemon \
             -PAPP_VERSION_CODE="$VERSION_CODE" \
             -PAPP_VERSION_NAME="$VERSION_NAME"
 
       - name: Renombrar y verificar
         run: |
           cp android-nativo/app/build/outputs/apk/docente/release/app-docente-release.apk registro-academico.apk
-          ls -lh registro-academico.apk
+          cp android-nativo/app/build/outputs/apk/estudiante/release/app-estudiante-release.apk lummer-estudiante.apk
+          ls -lh registro-academico.apk lummer-estudiante.apk
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
           if [ -n "$APKSIGNER" ] && [ -x "$APKSIGNER" ]; then
             "$APKSIGNER" verify --print-certs registro-academico.apk | head -5
+            "$APKSIGNER" verify --print-certs lummer-estudiante.apk | head -5
           else
             echo "::warning::apksigner no disponible"
           fi
@@ -99,13 +105,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: android-docente-debug
-          path: android-nativo/app/build/outputs/apk/docente/debug/app-docente-debug.apk
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-estudiante-debug
-          path: android-nativo/app/build/outputs/apk/estudiante/debug/app-estudiante-debug.apk
+          name: lummer-estudiante
+          path: lummer-estudiante.apk
 
       - name: Publicar en GitHub Release
         env:
@@ -114,7 +115,7 @@ jobs:
           cp .github/release-notes/app-nativa.md "$RUNNER_TEMP/notas.md"
           printf '\n\nCompilación #%s · commit %s\n' "${{ github.run_number }}" "${GITHUB_SHA::7}" >> "$RUNNER_TEMP/notas.md"
           gh release delete app-latest --cleanup-tag --yes || true
-          gh release create app-latest registro-academico.apk \
+          gh release create app-latest registro-academico.apk lummer-estudiante.apk \
             --title "LUMMER — app nativa (última versión)" \
             --notes-file "$RUNNER_TEMP/notas.md"
 
@@ -122,7 +123,7 @@ jobs:
             TAG="${{ github.ref_name }}"
             echo "Publicando release oficial para el tag $TAG..."
             gh release view "$TAG" > /dev/null 2>&1 && gh release delete "$TAG" --yes || true
-            gh release create "$TAG" registro-academico.apk \
+            gh release create "$TAG" registro-academico.apk lummer-estudiante.apk \
               --title "LUMMER $TAG — app nativa" \
               --notes-file .github/release-notes/app-nativa-tag.md \
               --latest
