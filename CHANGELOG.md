@@ -3,6 +3,7 @@
 ## Sin publicar
 
 ### Añadido
+- **Selectores de curso ordenados**: en Aula, Asistencia por curso y el registro por curso, los cursos aparecen agrupados por carrera y ciclo (en el orden de los ciclos) y por nombre dentro de cada grupo.
 - **Mi resumen (docente)**: página de inicio con cada curso asignado: presentes hoy con barra de avance, entregas por calificar, actividades abiertas y próximo vencimiento, y los estudiantes con baja asistencia en la última semana (menos de 60 % de las clases con registro), con atajos a «Pasar lista» y al aula. No requiere migración.
 - **Estudiantes del curso y matrícula manual (migración 020)**:
   - **Pertenencia ampliada en `perteneceACurso`**: un estudiante pertenece a un curso si coincide automáticamente con su carrera y ciclo o si ha sido matriculado manualmente en la tabla `curso_alumnos` (manteniendo la condición de activo y aprobado).

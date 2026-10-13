@@ -3,7 +3,7 @@ import { TABLAS, aFirestore, clasificarLlave, crearPaquete, idDeFila, importarPa
 import { alcanceDocente } from "../assets/js/alcance.js";
 import { etiquetaOrigen, marcarQrCursoDemo, momentoExacto, parsearTokenQrCurso, resumenBitacora } from "../assets/js/api-qrcurso.js";
 import { ahora, esErrorRed, esErrorSesion, fechaZona, horaZona, sincronizarReloj, todayStr, nowHHMM } from "../assets/js/utils.js";
-import { CICLOS, addDays, censurarNombre, cicloCorto, compararCiclos, dateStr, esc, etiquetaCiclo, nombreCiclo, parsearCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
+import { CICLOS, addDays, censurarNombre, cicloCorto, compararCiclos, dateStr, esc, etiquetaCiclo, nombreCiclo, parsearCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV, agruparCursos } from "../assets/js/utils.js";
 import { enlaceWhatsApp, matrizAsistencia, mensajeAviso, numeroWhatsApp, perteneceACurso } from "../assets/js/stats.js";
 import { bajaAsistencia, esTardanza, normalizarFilasImport, porGrado, resumenAlumno, resumenDia, serieDiaria } from "../assets/js/stats.js";
 
@@ -615,6 +615,10 @@ test("resumen docente · detecta baja asistencia solo en días con clase", () =>
   const al = [{ id: "a", nombre: "Ana" }, { id: "b", nombre: "Beto" }];
   same(bajaAsistenciaCurso(al, [new Set(["a"]), new Set(["a", "b"]), new Set()], 60).map((x) => [x.id, x.pct, x.de]), [["b", 50, 2]]);
   same(bajaAsistenciaCurso(al, [new Set(["a"]), new Set()]), []);
+});
+test("agruparCursos · ordena por carrera y ciclo y deja sin ciclo al final", () => {
+  const g = agruparCursos([{ nombre: "Redes", nivel: "APSTI", grado: "II CICLO" }, { nombre: "Bases", nivel: "APSTI", grado: "IV CICLO" }, { nombre: "Ética", nivel: "APSTI", grado: null }, { nombre: "Audio", nivel: "APSTI", grado: "II CICLO" }]);
+  same(g.map((x) => [x.etiqueta, x.cursos.map((c) => c.nombre)]), [["APSTI · II CICLO", ["Audio", "Redes"]], ["APSTI · IV CICLO", ["Bases"]], ["APSTI · todos los ciclos", ["Ética"]]]);
 });
 /* render */
 const fail = results.filter((r) => !r.ok);

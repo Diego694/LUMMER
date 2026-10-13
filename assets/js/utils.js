@@ -422,3 +422,28 @@ export async function archivoACuadrado(file, lado = 400) {
   });
   return dibujar(img, img.naturalWidth, img.naturalHeight);
 }
+
+/**
+ * Cursos agrupados por carrera y ciclo, en orden: [{ etiqueta: "APSTI · II CICLO", cursos: [...] }]. Los cursos sin ciclo van al final de su carrera.
+ * @param {{ id?: string, nombre: string, nivel: string, grado?: string | null }[]} cursos
+ */
+export function agruparCursos(cursos) {
+  const cmp = (/** @type {string} */ a, /** @type {string} */ b) => a.localeCompare(b, "es", { numeric: true });
+  /** @type {Map<string, typeof cursos>} */
+  const m = new Map();
+  for (const c of cursos) { const k = `${c.nivel}\u0001${c.grado || "ÿ"}`; (m.get(k) || m.set(k, []).get(k))?.push(c); }
+  const orden = (/** @type {string} */ k) => { const [n, g] = k.split(""); return [n, g]; };
+  return [...m.entries()].sort(([a], [b]) => { const [na, ga] = orden(a), [nb, gb] = orden(b); return cmp(na, nb) || (!ga ? 1 : 0) - (!gb ? 1 : 0) || compararCiclos(ga, gb); }).map(([, lista]) => ({
+    etiqueta: lista[0].grado ? etiquetaCiclo(lista[0].nivel, lista[0].grado) : `${lista[0].nivel} · todos los ciclos`,
+    cursos: lista.sort((x, y) => cmp(x.nombre, y.nombre)),
+  }));
+}
+
+/**
+ * <option> de cursos con <optgroup> por carrera y ciclo.
+ * @param {{ id?: string, nombre: string, nivel: string, grado?: string | null }[]} cursos
+ * @param {string | null | undefined} seleccionado
+ */
+export function opcionesCursos(cursos, seleccionado) {
+  return agruparCursos(cursos).map((g) => `<optgroup label="${esc(g.etiqueta)}">${g.cursos.map((c) => `<option value="${esc(String(c.id))}" ${c.id === seleccionado ? "selected" : ""}>${esc(c.nombre)}</option>`).join("")}</optgroup>`).join("");
+}

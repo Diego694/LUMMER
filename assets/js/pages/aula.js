@@ -7,7 +7,7 @@ import { alumnosDelCurso, libroNotas, periodoDe, periodosDe, PERIODOS_MAX, valid
 import { DB } from "../state.js";
 import { esAdmin } from "../permisos.js";
 import { badge, confirmDialog, emptyState, icon, openModal, pageHead, registerActions, skeleton, toast } from "../ui.js";
-import { downloadFile, esc, etiquetaCiclo, fmtDate } from "../utils.js";
+import { downloadFile, esc, etiquetaCiclo, fmtDate, opcionesCursos } from "../utils.js";
 import { abrirEstudiantesCurso } from "../estudiantes-curso.js";
 
 /** @typedef {import('../tipos.d.ts').CursoMaterial} CursoMaterial */
@@ -34,7 +34,7 @@ export const aulaPage = {
     const cursos = DB.cursos.filter((c) => c.activo !== false);
     if (!cursos.some((c) => c.id === st.cursoId)) st.cursoId = cursos[0]?.id || "";
     el.innerHTML = `${pageHead("Aula", "Material y actividades de cada curso. Lo que publicas aquí lo ven solo los estudiantes de ese curso.")}
-      ${cursos.length ? `<div class="toolbar"><select class="filter" id="aula-curso" aria-label="Curso">${cursos.map((c) => `<option value="${c.id}" ${c.id === st.cursoId ? "selected" : ""}>${esc(c.nombre)} · ${esc(c.grado ? etiquetaCiclo(c.nivel, c.grado) : c.nivel)}</option>`).join("")}</select></div>
+      ${cursos.length ? `<div class="toolbar"><select class="filter" id="aula-curso" aria-label="Curso">${opcionesCursos(cursos, st.cursoId)}</select></div>
         <div id="aula-cuerpo" aria-live="polite">${skeleton(4)}</div>`
         : `<div class="card">${emptyState("Aún no hay cursos", esAdmin() ? "Crea el primer curso en Gestión → Cursos y asígnale un docente." : "El administrador debe crear los cursos y asignarte a ellos.", "book")}</div>`}`;
     if (!cursos.length) return;

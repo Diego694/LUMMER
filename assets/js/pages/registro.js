@@ -11,7 +11,7 @@ import { emitir, guardarAsistencias, red, registrarEnvio } from "../sync.js";
 import { qrModoEfectivo, verificarQR } from "../qr-seguro.js";
 import { mostrarAlertaAsistencia } from "../alerta.js";
 import { cargarCursoHoy, cursosActivos, etiquetaCurso, registrarEnCurso } from "./cursos.js";
-import { ahora, censurarNombre, debounce, esErrorRed, esc, etiquetaCiclo, initials, norm, nowHHMM, todayStr } from "../utils.js";
+import { ahora, censurarNombre, debounce, esErrorRed, esc, etiquetaCiclo, initials, norm, opcionesCursos, nowHHMM, todayStr } from "../utils.js";
 
 /**
  * Registra la asistencia de hoy con la hora confiable (servidor + zona del instituto).
@@ -113,7 +113,7 @@ export const registroQrPage = {
             <button class="btn btn-outline" id="flip-camera-btn" data-action="scan-flip" hidden>${icon("flip", 16)} Voltear</button>
           </div>
           <div class="field" style="margin:14px 0 0"><label for="modo-tipo">Estoy registrando</label><select id="modo-tipo"><option value="ingreso" ${modoSalida ? "" : "selected"}>Ingreso</option><option value="salida" ${modoSalida ? "selected" : ""}>Salida</option></select></div>
-          ${cursosActivos().length ? `<div class="field" style="margin:14px 0 0"><label for="modo-registro">Registrar en</label><select id="modo-registro"><option value="">Asistencia diaria</option>${cursosActivos().map((c) => `<option value="${c.id}" ${modoCurso?.id === c.id ? "selected" : ""}>${esc(etiquetaCurso(c))}</option>`).join("")}</select></div>` : ""}
+          ${cursosActivos().length ? `<div class="field" style="margin:14px 0 0"><label for="modo-registro">Registrar en</label><select id="modo-registro"><option value="">Asistencia diaria</option>${opcionesCursos(cursosActivos(), modoCurso?.id)}</select></div>` : ""}
           <div id="scan-result" class="scan-result" role="status" aria-live="polite" hidden></div>
           <hr>
           <form id="manual-form" class="inline-form"><label class="sr-only" for="manual-qr-code">Código del alumno</label>

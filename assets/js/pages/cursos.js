@@ -7,7 +7,7 @@ import { DB, asegurarHoy, opcionesGrado, opcionesNivel } from "../state.js";
 import { emitir, registrarEnvio } from "../sync.js";
 import { badge, emptyState, formModal, icon, pageHead, registerActions, skeleton, toast } from "../ui.js";
 import { perteneceACurso, esTardanza } from "../stats.js";
-import { cicloCorto, downloadFile, esErrorRed, esc, etiquetaCiclo, initials, nowHHMM, todayStr, toCSV } from "../utils.js";
+import { cicloCorto, downloadFile, esErrorRed, esc, etiquetaCiclo, initials, opcionesCursos, nowHHMM, todayStr, toCSV } from "../utils.js";
 import { red } from "../sync.js";
 import { abrirEstudiantesCurso } from "../estudiantes-curso.js";
 
@@ -119,7 +119,7 @@ export const asistCursoPage = {
     ac.cursoId = ac.cursoId || cursos[0]?.id || "";
     root.innerHTML = `${pageHead("Asistencia por Curso", "Quién asistió a cada curso en la fecha elegida. Para pasar lista, usa «Registro por QR» y elige el curso.",
       `<button class="btn btn-outline" data-action="ac-export">${icon("download", 16)} CSV</button>`)}
-      ${cursos.length ? `<div class="toolbar"><select class="filter" id="ac-curso" aria-label="Curso">${cursos.map((c) => `<option value="${c.id}" ${c.id === ac.cursoId ? "selected" : ""}>${esc(etiquetaCurso(c))}</option>`).join("")}</select>
+      ${cursos.length ? `<div class="toolbar"><select class="filter" id="ac-curso" aria-label="Curso">${opcionesCursos(cursos, ac.cursoId)}</select>
         <input class="filter" type="date" id="ac-fecha" max="${todayStr()}" value="${ac.fecha}" aria-label="Fecha">
         <button class="btn btn-outline" data-action="ac-estudiantes">${icon("users", 16)} Estudiantes</button></div><div class="card flush" id="ac-tabla">${skeleton(4)}</div>`
         : `<div class="card">${emptyState("Sin cursos", "El administrador debe crear cursos en Gestión → Cursos.", "book")}</div>`}`;
