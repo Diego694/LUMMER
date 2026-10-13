@@ -8,6 +8,10 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // Lectura de configuración pública de Supabase desde assets/js/config.js
 val configFile = rootProject.file("../assets/js/config.js")
 val configText = if (configFile.exists()) configFile.readText() else ""
@@ -39,11 +43,13 @@ android {
             dimension = "perfil"
             applicationIdSuffix = ".docente"
             resValue("string", "app_name", "Registro Acad\u00e9mico")
+            buildConfigField("String", "PERFIL", "\"docente\"")
         }
         create("estudiante") {
             dimension = "perfil"
             applicationIdSuffix = ".estudiante"
             resValue("string", "app_name", "Carnet del Estudiante")
+            buildConfigField("String", "PERFIL", "\"estudiante\"")
         }
     }
 
@@ -147,6 +153,10 @@ dependencies {
 
     // DataStore Preferences
     implementation(libs.androidx.datastore.preferences)
+
+    // Firebase Cloud Messaging (FCM)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     // Unit Testing
     testImplementation(libs.junit)

@@ -46,6 +46,21 @@ jobs:
             echo "::warning::Sin secretos de firma: el APK se firma con una clave debug efímera y NO podrá actualizar una instalación anterior. Ver docs/ANDROID.md."
           fi
 
+      - name: Preparar google-services.json (si hay secreto)
+        env:
+          GS_SECRET: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GS_SECRET" ]; then
+            if printf '%s' "$GS_SECRET" | tr -d '[:space:]' | grep -q '^{'; then
+              printf '%s\n' "$GS_SECRET" > android-nativo/app/google-services.json
+            else
+              printf '%s' "$GS_SECRET" | tr -d '\r\n ' | base64 -d > android-nativo/app/google-services.json
+            fi
+            echo "google-services.json configurado correctamente para Firebase."
+          else
+            echo "::warning::Sin secreto GOOGLE_SERVICES_JSON: compilando sin Firebase Cloud Messaging."
+          fi
+
       - name: Compilar APK y ejecutar tests unitarios
         working-directory: android-nativo
         env:

@@ -7,6 +7,7 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.flow.StateFlow
+import pe.registroacademico.nativo.push.PushRegistrar
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,7 +21,8 @@ interface AuthRepository {
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val pushRegistrar: PushRegistrar
 ) : AuthRepository {
 
     override val sessionStatus: StateFlow<SessionStatus>
@@ -42,6 +44,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signOut(): Result<Unit> {
+        runCatching { pushRegistrar.quitar() }
         return runCatching {
             supabase.auth.signOut()
         }

@@ -13,6 +13,7 @@ android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
+android-nativo/app/google-services.json
 *.jks
 *.keystore
 secretos-github.txt
