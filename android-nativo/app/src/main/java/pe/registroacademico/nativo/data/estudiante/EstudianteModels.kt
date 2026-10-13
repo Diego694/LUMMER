@@ -61,6 +61,12 @@ data class CursoEstudiante(
 )
 
 @Serializable
+data class DocenteDeCursoDto(
+    @SerialName("curso_id") val cursoId: String,
+    @SerialName("docente") val docente: String? = null
+)
+
+@Serializable
 data class AsistenciaEstudiante(
     @SerialName("id") val id: String? = null,
     @SerialName("colegio_id") val colegioId: String? = null,

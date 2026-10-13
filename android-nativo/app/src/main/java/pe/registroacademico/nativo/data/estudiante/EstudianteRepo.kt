@@ -86,12 +86,17 @@ class EstudianteRepoImpl @Inject constructor(
     }
 
     override suspend fun misCursos(): Result<List<CursoEstudiante>> = runCatching {
-        supabase.from("cursos").select {
+        val cursos = supabase.from("cursos").select {
             filter {
                 eq("activo", true)
             }
             order("nombre", Order.ASCENDING)
         }.decodeList<CursoEstudiante>()
+        // El docente asignado está en curso_docentes (no legible por el estudiante): la migración 024 lo expone por RPC.
+        val docentes = runCatching {
+            supabase.postgrest.rpc("docentes_de_mis_cursos").decodeList<DocenteDeCursoDto>()
+        }.getOrDefault(emptyList()).associate { it.cursoId to it.docente }
+        cursos.map { c -> if (c.docente.isNullOrBlank()) c.copy(docente = docentes[c.id]) else c }
     }
 
     override suspend fun aulaMateriales(cursoId: String): Result<List<MaterialEstudiante>> = runCatching {

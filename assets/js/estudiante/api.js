@@ -341,7 +341,10 @@ class SupabaseEstudiante {
   async aulaCursos() {
     const { data, error } = await this.sb.from("cursos").select("*").eq("activo", true).order("nombre");
     if (error) throw err(error.message, error.code);
-    return data;
+    // El docente asignado está en curso_docentes (no legible por el estudiante): la migración 024 lo expone por RPC.
+    const { data: docs } = await this.sb.rpc("docentes_de_mis_cursos");
+    const porCurso = new Map((docs || []).map((/** @type {any} */ d) => [d.curso_id, d.docente]));
+    return data.map((/** @type {any} */ c) => ({ ...c, docente: c.docente || porCurso.get(c.id) || "" }));
   }
   /** @param {string} cursoId */
   aulaMateriales(cursoId) { return materialesDe(this.sb, cursoId); }
