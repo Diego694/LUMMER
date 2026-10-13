@@ -23,6 +23,8 @@
 ## 4.0.0 — 2026-10-05
 
 ### Añadido
+- **Asistencia por QR del docente (migración 019)**: en «Pasar lista» el docente pulsa «Mostrar QR para que escaneen» y proyecta un código que cambia cada 30 segundos; el estudiante lo escanea desde su portal o su app («Marcar asistencia (QR)») y el servidor le marca presente en ese curso con la hora del servidor. Solo estudiantes activos del curso, con límite de intentos; el docente ve en vivo cuántos marcaron.
+- **Bitácora de registros**: coordinación (solo su carrera), administración y superadministrador ven cada ingreso, asistencia en curso, QR abierto, justificación y aviso con fecha y hora exacta (hh:mm:ss), quién lo registró y por qué medio, con filtros, búsqueda y exportación CSV.
 - **Superadmin · Desvincular institución (migración 018)**: botón «Desvincular» / «Vincular» en cada institución de Instituciones. Desvincular la deja inactiva y su personal deja de ver o escribir datos; no borra nada y se revierte con «Vincular». No se puede desvincular la institución en la que estás dentro.
 - **Base propia de Supabase**: nueva página `conexion.html` (enlace en el login y botón en «Conexiones de datos») para asociar a este equipo otro proyecto Supabase con su URL y llave publishable, y volver a la original. Web, aula, estudiante y apoderado usan la base elegida. Documentado el alojamiento privado en `docs/CONEXIONES.md`.
 - **Rediseño del aula y de los portales de estudiante y aula**: las secciones del curso (Material, Actividades, Notas) son una barra segmentada con la acción principal aparte, tarjetas y cursos del estudiante con estados de foco y hover consistentes, y entrada suave que respeta «reducir movimiento». Sin cambios de datos.

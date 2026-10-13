@@ -1201,3 +1201,14 @@ body.est{background:var(--paper)}
 .aula-barra{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3);margin-bottom:var(--s-4)}
 .aula-barra-sp{flex:1}
 @media (max-width:768px){.aula-barra>.btn{width:100%}.aula-barra-sp{display:none}.aula-tabs{width:100%}.aula-tabs>.pill{flex:1}}
+
+/* QR de asistencia por curso (docente) y bitácora de registros */
+.qrc{display:grid;gap:10px;justify-items:center;text-align:center}
+.qrc-qr{padding:14px;background:#fff;border-radius:16px;border:1px solid var(--line);line-height:0}
+.qrc-n{font-size:var(--fs-lg,1.15rem);margin:0}.qrc-n b{font-size:1.6em}
+.qrc-ayuda{max-width:46ch;margin:0}
+.bt-filtros{display:flex;flex-wrap:wrap;gap:var(--s-3);align-items:flex-end}
+.bt-campo{display:grid;gap:4px;font-size:.8rem;color:var(--ink-soft)}.bt-buscar{flex:1;min-width:200px}
+.bt-resumen{display:flex;flex-wrap:wrap;gap:8px;margin:var(--s-3) 0}
+.bt-chip{padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:.85rem}
+.bt-hora{font-family:var(--font-mono,'JetBrains Mono',monospace);font-variant-numeric:tabular-nums;font-weight:600}

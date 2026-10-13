@@ -809,6 +809,10 @@ export interface Api {
   aulaEntregas(actividadId: string): Promise<CursoEntrega[]>;
   aulaEntregasCurso(cursoId: string): Promise<CursoEntrega[]>;
   aulaCalificar(id: string, nota: number | null, comentario: string): Promise<void>;
+  qrCursoAbrir(cursoId: string, minutos?: number): Promise<{ id: string; expira_en: string }>;
+  qrCursoToken(sesionId: string): Promise<{ token?: string; segundos?: number; cerrada?: boolean }>;
+  qrCursoCerrar(sesionId: string): Promise<void>;
+  bitacoraRegistros(o?: { desde?: string; hasta?: string; tipo?: string; limite?: number; colegio?: string }): Promise<BitacoraFila[]>;
   aulaAsignarDocente(cursoId: string, userId: string): Promise<void>;
   aulaQuitarDocente(cursoId: string, userId: string): Promise<void>;
   justificacionesRango(cid: string | null | undefined, desde: string, hasta: string): Promise<Justificacion[]>;
@@ -1017,6 +1021,28 @@ export interface BackendEstudiante {
   aulaUrlArchivo(path: string): Promise<string>;
   aulaMiEntrega(actividadId: string): Promise<CursoEntrega | null>;
   aulaEntregar(user: { id: string }, actividad: CursoActividad, texto: string, file?: File): Promise<void>;
+  marcarQrCurso(user: { id: string }, token: string): Promise<ResultadoQrCurso>;
+}
+
+export interface ResultadoQrCurso {
+  estado: 'ok' | 'ya_marcado' | 'invalido' | 'vencido' | 'cerrado' | 'no_pertenece' | string;
+  mensaje: string;
+  curso?: string;
+  hora?: string;
+}
+
+/** Fila de la bitácora de registros (bitacora_registros, migración 019). */
+export interface BitacoraFila {
+  tipo: 'ingreso' | 'curso' | 'qr_abierto' | 'justificacion' | 'aviso' | string;
+  cuando: string;
+  persona: string | null;
+  carrera: string | null;
+  ciclo: string | null;
+  curso: string | null;
+  hora: string | null;
+  origen: string | null;
+  actor: string;
+  actor_rol: string;
 }
 
 declare global {

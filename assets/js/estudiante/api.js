@@ -6,6 +6,7 @@
 import { CONFIG, DEMO_SCHOOL_CODE, isDemoMode } from "../config.js";
 import { buildDemoDB } from "../demo-data.js";
 import { uid } from "../utils.js";
+import { marcarQrCursoDemo, marcarQrCursoSb } from "../api-qrcurso.js";
 import { materialesDe, actividadesDe, urlArchivoAula, miEntregaDe, entregarSb, entregarDemo } from "../api-aula.js";
 
 /** @typedef {import('../tipos.d.ts').Alumno} Alumno */
@@ -196,6 +197,8 @@ class DemoEstudiante {
   async aulaActividades(cursoId) { const db = /** @type {any} */ (this.load()); return (db.curso_actividades || []).filter((/** @type {any} */ m) => m.curso_id === cursoId && m.publicado !== false); }
   /** @returns {Promise<string>} */
   async aulaUrlArchivo() { throw err("En el modo demostración los archivos no se guardan."); }
+  /** @param {{ id: string }} user @param {string} token */
+  marcarQrCurso(user, token) { const db = this.load(); return marcarQrCursoDemo(db, () => this.save(db), user.id, token); }
   /** @param {string} actividadId */
   async aulaMiEntrega(actividadId) {
     const db = /** @type {any} */ (this.load());
@@ -346,6 +349,8 @@ class SupabaseEstudiante {
   aulaActividades(cursoId) { return actividadesDe(this.sb, cursoId); }
   /** @param {string} path */
   aulaUrlArchivo(path) { return urlArchivoAula(this.sb, path); }
+  /** @param {{ id: string }} _user @param {string} token */
+  marcarQrCurso(_user, token) { return marcarQrCursoSb(this.sb, token); }
   /** @param {string} actividadId */
   aulaMiEntrega(actividadId) { return miEntregaDe(this.sb, actividadId); }
   /**

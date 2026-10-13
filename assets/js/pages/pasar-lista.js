@@ -8,7 +8,7 @@ import { DB } from "../state.js";
 import { cursosParaPasarLista, resumenLista } from "../api-aula.js";
 import { esAdmin } from "../permisos.js";
 import { esTardanza, perteneceACurso } from "../stats.js";
-import { badge, confirmDialog, emptyState, icon, pageHead, registerActions, skeleton, toast } from "../ui.js";
+import { badge, confirmDialog, emptyState, icon, openModal, pageHead, registerActions, skeleton, toast } from "../ui.js";
 import { censurarNombre, cicloCorto, esc, initials, norm, todayStr } from "../utils.js";
 import { cargarCursoHoy, cursosActivos, registrarEnCurso } from "./cursos.js";
 import { registrarHoy, resolverAlumno } from "./registro.js";
@@ -52,7 +52,7 @@ export const pasarListaPage = {
     }
     if (st.cursoId && cursoActual()) await abrirCurso(st.cursoId); else lista();
   },
-  onLeave() { apagarCamara(); },
+  onLeave() { apagarCamara(); cerrarQr(); },
 };
 
 const cuerpo = () => /** @type {HTMLElement} */ (document.getElementById("pl-cuerpo"));
@@ -99,7 +99,8 @@ function pintarClase() {
       <button type="button" class="btn btn-outline btn-sm" style="margin-left:auto" data-action="pl-estudiantes" data-id="${esc(String(c.id))}">${icon("users", 15)} Estudiantes</button></div>
     <div class="pl-resumen" id="pl-resumen" role="status" aria-live="polite"></div>
     <div class="pl-acciones">
-      <button type="button" class="btn btn-primary" data-action="pl-cam" id="pl-cam-btn">${icon("camera", 16)} Escanear carnets</button>
+      <button type="button" class="btn btn-primary" data-action="pl-qr">${icon("qr", 16)} Mostrar QR para que escaneen</button>
+      <button type="button" class="btn btn-outline" data-action="pl-cam" id="pl-cam-btn">${icon("camera", 16)} Escanear carnets</button>
       <button type="button" class="btn btn-outline" data-action="pl-todos">${icon("check", 16)} Marcar a todos presentes</button>
       <label class="check-row pl-ingreso"><input type="checkbox" id="pl-ingreso" ${st.tambienIngreso ? "checked" : ""}> Marcar también su ingreso al instituto si aún no ingresó hoy</label>
     </div>
@@ -188,6 +189,66 @@ function mostrarResultado(a, m) {
   box.innerHTML = a ? `<span class="avatar">${esc(initials(a.nombre))}</span><div><strong>${esc(censurarNombre(a))}</strong><em>${esc(m.texto)}</em></div>` : `<div><em>${esc(m.texto)}</em></div>`;
 }
 
+/* ------------------------------ QR del docente: los estudiantes se marcan solos ------------------------------ */
+/** @type {{ sesion: string, modal: { el: HTMLElement, close: () => void }, timer: number, ultimoToken: number, qr: any, curso: Curso } | null} */
+let qrActivo = null;
+
+async function mostrarQr() {
+  const c = cursoActual();
+  if (!c || qrActivo) return;
+  if (!(/** @type {any} */ (window).QRCode)) { toast("No se cargó el generador de QR. Revisa tu conexión.", "error"); return; }
+  /** @type {{ id: string }} */
+  let sesion;
+  try { sesion = await api.qrCursoAbrir(String(c.id), 20); }
+  catch (/** @type {any} */ e) { toast(/does not exist|schema cache|function/i.test(e.message) ? "Falta aplicar la migración 019 en Supabase." : "No se pudo abrir el QR: " + e.message, "error"); return; }
+  const modal = openModal({ title: `Asistencia con QR · ${c.nombre}`, wide: true,
+    body: `<div class="qrc"><div class="qrc-qr" id="qrc-qr" aria-label="Código QR de asistencia"></div>
+      <p class="qrc-n" role="status" aria-live="polite"><b id="qrc-n">0</b> estudiantes marcaron</p>
+      <p class="muted" id="qrc-info">Generando código…</p>
+      <p class="muted qrc-ayuda">Los estudiantes abren su portal o app, tocan «Marcar asistencia (QR)» y escanean este código. Cambia cada 30 segundos; se cierra solo a los 20 minutos.</p></div>`,
+    footer: `<button type="button" class="btn btn-primary" data-action="qrc-cerrar">Cerrar asistencia</button>` });
+  const caja = /** @type {HTMLElement} */ (modal.el.querySelector("#qrc-qr"));
+  const qr = new (/** @type {any} */ (window)).QRCode(caja, { width: 300, height: 300, correctLevel: (/** @type {any} */ (window)).QRCode.CorrectLevel.M });
+  qrActivo = { sesion: sesion.id, modal, timer: 0, ultimoToken: 0, qr, curso: c };
+  let restante = 0, ocupadoTick = false, vueltas = 0;
+  const tick = async () => {
+    if (!qrActivo || ocupadoTick) return;
+    if (!modal.el.isConnected) { cerrarQr(); return; }   // se cerró con la X o con Esc
+    ocupadoTick = true;
+    try {
+      const ahora = Date.now();
+      if (restante <= 2 || !qrActivo.ultimoToken) {
+        const t = await api.qrCursoToken(qrActivo.sesion);
+        if (t.cerrada) { toast("La sesión de asistencia terminó.", "info"); cerrarQr(); return; }
+        qr.makeCode(String(t.token)); qrActivo.ultimoToken = ahora; restante = Number(t.segundos) || 30;
+      } else restante--;
+      const info = modal.el.querySelector("#qrc-info"); if (info) info.textContent = `El código cambia en ${restante} s`;
+      if (vueltas++ % 4 === 0) await refrescarMarcados();
+    } catch (/** @type {any} */ e) { const info = modal.el.querySelector("#qrc-info"); if (info) info.textContent = "Sin conexión… reintentando (" + (e.message || "error") + ")"; restante = 0; }
+    finally { ocupadoTick = false; }
+  };
+  qrActivo.timer = window.setInterval(tick, 1000);
+  tick();
+}
+
+async function refrescarMarcados() {
+  const c = qrActivo?.curso;
+  if (!c) return;
+  const filas = await api.asistenciasCursoPorFecha(String(DB.cid), String(c.id), todayStr());
+  filas.forEach((r) => marcados.set(r.alumno_id, { hora: String(r.hora).slice(0, 5) }));
+  const n = document.getElementById("qrc-n"); if (n) n.textContent = String(filas.length);
+  pintarFilas();
+}
+
+function cerrarQr() {
+  if (!qrActivo) return;
+  const { timer, modal, sesion } = qrActivo;
+  qrActivo = null;
+  clearInterval(timer);
+  api.qrCursoCerrar(sesion).catch(() => { /* expira solo a los 20 min */ });
+  if (modal.el.isConnected) modal.close();
+}
+
 /* ------------------------------ Cámara ------------------------------ */
 async function encenderCamara() {
   const marco = document.getElementById("pl-scan"), video = /** @type {HTMLVideoElement | null} */ (document.getElementById("pl-video"));
@@ -222,7 +283,6 @@ function apagarCamara() {
 
 registerActions({
   "pl-curso": (/** @type {HTMLElement} */ b) => abrirCurso(b.dataset.id || ""),
-  "pl-volver": () => lista(),
   "pl-estudiantes": (/** @type {HTMLElement} */ el) => {
     const c = mios.find((x) => x.id === el.dataset.id) || cursoActual();
     if (!c) return;
@@ -232,6 +292,9 @@ registerActions({
       else lista();
     });
   },
+  "pl-volver": () => { cerrarQr(); lista(); },
+  "pl-qr": () => { mostrarQr(); },
+  "qrc-cerrar": () => { cerrarQr(); },
   "pl-filtro": (/** @type {HTMLElement} */ b) => { st.filtro = /** @type {any} */ (b.dataset.filtro || "todos"); pintarFilas(); },
   "pl-cam": () => (stream ? apagarCamara() : encenderCamara()),
   "pl-marcar": async (/** @type {HTMLElement} */ b) => {

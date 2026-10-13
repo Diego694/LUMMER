@@ -7,6 +7,7 @@ import { CONFIG, DEMO_USER, isDemoMode, modoLocal } from "./config.js";
 import { buildDemoDB } from "./demo-data.js";
 import { extrasDemo, extrasSupabase } from "./api-extra.js";
 import { aulaDemo, aulaSupabase } from "./api-aula.js";
+import { qrCursoDemo, qrCursoSupabase } from "./api-qrcurso.js";
 import { uid } from "./utils.js";
 
 /** @typedef {import('./tipos.d.ts').Alumno} Alumno */
@@ -470,6 +471,8 @@ Object.assign(DemoBackend.prototype, extrasDemo);
 Object.assign(SupabaseBackend.prototype, extrasSupabase);
 Object.assign(DemoBackend.prototype, aulaDemo);
 Object.assign(SupabaseBackend.prototype, aulaSupabase);
+Object.assign(DemoBackend.prototype, qrCursoDemo);
+Object.assign(SupabaseBackend.prototype, qrCursoSupabase);
 // Las operaciones nuevas de red del demo también fallan con la red simulada caída
 ["cursosLista", "cursoAlumnosLista", "ajustesLista", "registrarSalidas", "justificacionesRango", "guardarJustificacion", "asistenciasCursoPorFecha", "registrarAsistenciaCurso", "registrarMasivoCurso", "avisosPorFecha", "registrarAviso", "exportarTodo"].forEach((m) => {
   const original = /** @type {any} */ (DemoBackend.prototype)[m];

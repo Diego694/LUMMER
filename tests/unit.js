@@ -1,6 +1,7 @@
 // Tests unitarios sin dependencias. Se ejecutan abriendo tests/tests.html (o con scripts/check.py en CI).
 import { TABLAS, aFirestore, clasificarLlave, crearPaquete, idDeFila, importarPaquete, lotes, normalizarDestino, probarConexion, validarPaquete } from "../assets/js/conectores.js";
 import { alcanceDocente } from "../assets/js/alcance.js";
+import { etiquetaOrigen, marcarQrCursoDemo, momentoExacto, parsearTokenQrCurso, resumenBitacora } from "../assets/js/api-qrcurso.js";
 import { ahora, esErrorRed, esErrorSesion, fechaZona, horaZona, sincronizarReloj, todayStr, nowHHMM } from "../assets/js/utils.js";
 import { CICLOS, addDays, censurarNombre, cicloCorto, compararCiclos, dateStr, esc, etiquetaCiclo, nombreCiclo, parsearCiclo, initials, isWeekend, lastWeekdays, norm, pct, toCSV } from "../assets/js/utils.js";
 import { enlaceWhatsApp, matrizAsistencia, mensajeAviso, numeroWhatsApp, perteneceACurso } from "../assets/js/stats.js";
@@ -568,6 +569,41 @@ test("conectores · importar se detiene ante RLS y probar traduce errores", asyn
 });
 
 await Promise.all(pendientes);   // pruebas asíncronas
+/* QR de asistencia por curso y bitácora */
+test("qr curso · parsearTokenQrCurso acepta el formato LQ y rechaza el resto", () => {
+  const ok = parsearTokenQrCurso("LQ." + "a".repeat(32) + ".12345.abc123");
+  same(ok, { sesion: "a".repeat(32), ventana: 12345, firma: "abc123" });
+  same([parsearTokenQrCurso("e1234567890"), parsearTokenQrCurso("LQ.xyz.1.f"), parsearTokenQrCurso(null), parsearTokenQrCurso("LQ." + "a".repeat(32) + ".x.f")], [null, null, null, null]);
+});
+test("qr curso · momentoExacto muestra segundos en la zona del instituto", () => {
+  same(momentoExacto("2026-10-12T15:04:09Z"), { fecha: "12/10/2026", hora: "10:04:09" });
+  same(momentoExacto(null), { fecha: "—", hora: "—" });
+  same(momentoExacto("no es fecha"), { fecha: "—", hora: "—" });
+});
+test("qr curso · etiquetaOrigen y resumenBitacora", () => {
+  same([etiquetaOrigen("qr-docente"), etiquetaOrigen("manual"), etiquetaOrigen(null), etiquetaOrigen("otro")], ["QR del docente", "Manual", "—", "otro"]);
+  same(resumenBitacora([{ tipo: "curso" }, { tipo: "curso" }, { tipo: "ingreso" }]), { curso: 2, ingreso: 1 });
+});
+test("qr curso · el demo marca al estudiante una sola vez y rechaza QR cerrados, ajenos o de otro ciclo", async () => {
+  const sesion = { id: "11111111-1111-1111-1111-111111111111", curso_id: "c1", secreto: "s3cr3t", expira_en: new Date(Date.now() + 600000).toISOString(), cerrada_en: null };
+  const db = { alumnos: [{ id: "al1", user_id: "u1", nivel: "Enfermería", grado: "I ciclo", colegio_id: "col" }, { id: "al2", user_id: "u2", nivel: "Enfermería", grado: "II ciclo", colegio_id: "col" }],
+    cursos: [{ id: "c1", nivel: "Enfermería", grado: "I ciclo", nombre: "Anatomía" }], sesiones_qr_curso: [sesion], asistencias_curso: [] };
+  const { qrCursoDemo } = await import("../assets/js/api-qrcurso.js");
+  const fake = { db, reload() {}, persist() {} };
+  const t = (await qrCursoDemo.qrCursoToken.call(fake, sesion.id)).token;
+  assert(parsearTokenQrCurso(t), "el token generado debe tener formato válido");
+  const g = () => {};
+  const a = await marcarQrCursoDemo(db, g, "u1", t);
+  same(a.estado, "ok"); same(db.asistencias_curso.length, 1); same(db.asistencias_curso[0].origen, "qr-docente");
+  same((await marcarQrCursoDemo(db, g, "u1", t)).estado, "ya_marcado"); same(db.asistencias_curso.length, 1);
+  same((await marcarQrCursoDemo(db, g, "u2", t)).estado, "no_pertenece");
+  same((await marcarQrCursoDemo(db, g, "u1", t.slice(0, -1) + "0")).estado, "invalido");
+  same((await marcarQrCursoDemo(db, g, "u1", "carnet123")).estado, "invalido");
+  sesion.cerrada_en = new Date().toISOString();
+  same((await marcarQrCursoDemo(db, g, "u2", t)).estado, "cerrado");
+});
+
+await Promise.all(pendientes);   // pruebas asíncronas de QR curso
 /* render */
 const fail = results.filter((r) => !r.ok);
 if (typeof document !== "undefined") {

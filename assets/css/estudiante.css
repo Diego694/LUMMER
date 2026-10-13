@@ -55,3 +55,14 @@ body.est{min-height:100vh;display:flex;flex-direction:column}
 .aula-est-item small{display:block;color:var(--ink-soft)}.aula-est-item p{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .aula-est-entrega{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .aula-est-entrega p{flex-basis:100%;margin:0}
+
+/* Escanear el QR de asistencia del docente */
+.esc-card{display:grid;gap:14px}
+.esc-marco{position:relative;width:100%;max-width:360px;aspect-ratio:1;margin:0 auto;border-radius:16px;overflow:hidden;background:#0A101D;border:3px solid var(--navy)}
+.esc-marco video{width:100%;height:100%;object-fit:cover}
+.esc-guia{position:absolute;inset:16%;border:2px solid rgba(232,163,61,.9);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.28);pointer-events:none}
+.esc-res{padding:12px 14px;border-radius:12px;display:grid;gap:2px;border:1px solid var(--line)}
+.esc-res span{color:var(--ink-soft);font-size:.9em}
+.esc-err{border-color:#c0392b;background:rgba(192,57,43,.08)}.esc-warn{border-color:#b9770e;background:rgba(185,119,14,.1)}
+.esc-ok-grande{display:grid;gap:6px;justify-items:center;text-align:center;padding:18px 8px}
+.esc-ok-grande svg{color:#1e8449;width:56px;height:56px}
