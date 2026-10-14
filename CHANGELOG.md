@@ -3,6 +3,7 @@
 ## Sin publicar
 
 ### Añadido
+- **Quiosco: bloqueo si se sale de pantalla completa sin PIN (F11, Esc)**: una página no puede impedir F11, así que ahora se detecta y el quiosco queda tapado con «Pantalla completa requerida» hasta volver a pantalla completa o salir con el PIN; solo el cambio autorizado con el PIN a modo normal queda libre. Además se bloquea Esc con Keyboard Lock (Chrome/Edge) y se avisa antes de cerrar o recargar la pestaña.
 - **Quiosco: se elimina la opción «Olvidé el PIN: usar mi contraseña»**: usaba un `prompt()` del navegador que sacaba de pantalla completa y dejaba manipular la página libremente. Ahora solo el PIN permite salir o cambiar de modo.
 - **Quiosco: el botón «Pantalla completa / Modo normal» ahora pide el PIN** (solo el PIN, sin vía alternativa), igual que salir; evita que alguien salga de la página del quiosco sin autorización. El diálogo de PIN es reutilizable y se cierra con Esc.
 - **QR rotativo de ingreso al instituto y modo quiosco proyectado (migración 022)**:

@@ -271,11 +271,42 @@ function alternarPantallaCompleta() {
 }
 async function cambiarPantallaCompleta() {
   try {
-    if (enPantallaCompleta()) await document.exitFullscreen();
+    if (enPantallaCompleta()) { modoNormalOk = true; await document.exitFullscreen(); }   // salida autorizada con PIN: sin bloqueo
     else await document.documentElement.requestFullscreen();
   } catch { toast("Este navegador no permite pantalla completa.", "error"); }
   pintarBotonPantalla();
 }
+
+/* Salir de pantalla completa SIN PIN (F11, Esc, gesto del navegador) no se puede impedir desde una página:
+   se detecta y el quiosco queda tapado y bloqueado hasta volver a pantalla completa o salir con el PIN. */
+let modoNormalOk = false;   // true solo mientras el modo normal fue autorizado con el PIN
+const soportaPantallaCompleta = () => !!document.documentElement.requestFullscreen;
+function evaluarBloqueoPantalla() {
+  const q = document.getElementById("quiosco");
+  if (!q) return;
+  const bloquear = activo && soportaPantallaCompleta() && !enPantallaCompleta() && !modoNormalOk;
+  const actual = document.getElementById("q-bloqueo");
+  if (!bloquear) { actual?.remove(); return; }
+  if (actual) return;
+  const b = document.createElement("div");
+  b.id = "q-bloqueo"; b.className = "q-bloqueo"; b.setAttribute("role", "alertdialog"); b.setAttribute("aria-modal", "true");
+  b.innerHTML = `<div class="q-pin-card"><h3>Pantalla completa requerida</h3>
+    <p>Se salió de pantalla completa. El quiosco está bloqueado.</p>
+    <div class="q-pin-btns"><button class="btn btn-outline" id="q-bloq-salir" type="button">Salir con PIN</button><button class="btn btn-primary" id="q-bloq-volver" type="button">Volver a pantalla completa</button></div></div>`;
+  q.appendChild(b);
+  /** @type {HTMLElement} */ (b.querySelector("#q-bloq-volver")).addEventListener("click", async () => {
+    try { await document.documentElement.requestFullscreen(); } catch { toast("No se pudo volver a pantalla completa.", "error"); }
+  });
+  /** @type {HTMLElement} */ (b.querySelector("#q-bloq-salir")).addEventListener("click", pedirSalida);
+}
+const alCambiarPantalla = () => {
+  const completa = enPantallaCompleta();
+  if (completa) modoNormalOk = false;
+  try { const kb = /** @type {any} */ (navigator).keyboard; if (completa) kb?.lock?.(["Escape"]); else kb?.unlock?.(); } catch { /* sin Keyboard Lock */ }
+  pintarBotonPantalla();
+  evaluarBloqueoPantalla();
+};
+const avisarAlSalir = (/** @type {any} */ e) => { if (activo) { e.preventDefault(); e.returnValue = ""; } };
 function pintarBotonPantalla() {
   const b = /** @type {HTMLElement} */ (document.getElementById("q-pantalla"));
   if (!b) return;
@@ -485,10 +516,12 @@ export async function abrirQuiosco(/** @type {any} */ config) {
   const bp = /** @type {HTMLElement} */ (ov.querySelector("#q-pantalla"));
   if (!document.documentElement.requestFullscreen) bp.hidden = true;   // p. ej. iPhone/Safari: no existe pantalla completa para páginas
   bp.addEventListener("click", alternarPantallaCompleta);
-  document.addEventListener("fullscreenchange", pintarBotonPantalla);
+  document.addEventListener("fullscreenchange", alCambiarPantalla);
+  addEventListener("beforeunload", avisarAlSalir);
   pintarBotonPantalla();
   try { await document.documentElement.requestFullscreen?.(); } catch { /* sin pantalla completa */ }
   pintarBotonPantalla();
+  evaluarBloqueoPantalla();
   mantenerPantalla(true);
   iniciarNfc();
   if (ajustes.vista === "qr") {
@@ -507,7 +540,10 @@ function cerrarQuiosco() {
 
   removeEventListener("hashchange", bloquearHash); removeEventListener("keydown", teclado, true); removeEventListener("contextmenu", sinMenu);
   document.removeEventListener("visibilitychange", alVolver);
-  document.removeEventListener("fullscreenchange", pintarBotonPantalla);
+  document.removeEventListener("fullscreenchange", alCambiarPantalla);
+  removeEventListener("beforeunload", avisarAlSalir);
+  modoNormalOk = false;
+  try { /** @type {any} */ (navigator).keyboard?.unlock?.(); } catch { /* ok */ }
   document.getElementById("quiosco")?.remove();
   document.body.classList.remove("quiosco-activo");
   try { if (document.fullscreenElement) document.exitFullscreen(); } catch { /* ok */ }

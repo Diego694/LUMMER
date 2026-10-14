@@ -276,6 +276,8 @@ body.quiosco-activo{overflow:hidden}
 .q-ok{background:#12806A}.q-warn{background:#B8741A}.q-err{background:#C1443A}.q-info{background:#2F5D9E}.q-out{background:#22335A}
 .q-pie{display:flex;gap:28px;padding:12px 22px;background:#16223D;font-size:18px;color:#C9D3EA}.q-pie b{color:#fff;font-size:22px}.q-off{color:#ffb4a8;font-weight:700}
 .q-pin-modal{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:2}
+.q-bloqueo{position:absolute;inset:0;background:#0B1226;display:flex;align-items:center;justify-content:center;z-index:1}
+.q-bloqueo .q-pin-card p{margin:0}
 .q-pin-card{background:#fff;color:#16223D;border-radius:18px;padding:26px;width:min(92vw,360px);display:flex;flex-direction:column;gap:12px}.q-pin-card h3{margin:0}
 .q-pin-card input{font-size:28px;text-align:center;letter-spacing:.3em;padding:10px;border:2px solid #E3E8F0;border-radius:10px}.q-pin-btns{display:flex;gap:10px;justify-content:flex-end}.q-pin-err{color:#C1443A;margin:0;text-align:center}
 @media (max-width:820px){.q-main{grid-template-columns:1fr;grid-template-rows:1fr 1fr}.q-reloj{font-size:32px}.q-foto{width:120px;font-size:40px}.q-resultado{flex-direction:column;gap:12px}.q-textos{text-align:center}}
