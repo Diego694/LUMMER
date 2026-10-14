@@ -520,7 +520,7 @@ function pedirSalida() {
   pedirPin({ titulo: "Salir del modo quiosco", boton: "Salir", alExito: () => { cerrarQuiosco(); location.hash = "#/dashboard"; } });
 }
 
-/** Diálogo de PIN del quiosco (también acepta la contraseña de la cuenta si se olvidó el PIN).
+/** Diálogo de PIN del quiosco. Solo el PIN: no hay vía alternativa (un prompt del navegador saca de pantalla completa).
  * @param {{ titulo: string, boton: string, alExito: () => void }} o */
 function pedirPin(o) {
   if (/** @type {HTMLElement} */ (document.getElementById("q-pin-modal"))) return;
@@ -530,8 +530,7 @@ function pedirPin(o) {
   m.innerHTML = `<div class="q-pin-card"><h3>${o.titulo}</h3>
     <input id="q-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="PIN" aria-label="PIN de seguridad">
     <p class="q-pin-err" id="q-pin-err" hidden></p>
-    <div class="q-pin-btns"><button class="btn btn-outline" id="q-pin-no">Cancelar</button><button class="btn btn-primary" id="q-pin-ok">${o.boton}</button></div>
-    <button class="link-btn" id="q-pin-olvido">Olvidé el PIN: usar mi contraseña</button></div>`;
+    <div class="q-pin-btns"><button class="btn btn-outline" id="q-pin-no">Cancelar</button><button class="btn btn-primary" id="q-pin-ok">${o.boton}</button></div></div>`;
   /** @type {HTMLElement} */ (document.getElementById("quiosco")).appendChild(m);
   const inp = /** @type {HTMLInputElement} */ (m.querySelector("#q-pin")), err = /** @type {HTMLElement} */ (m.querySelector("#q-pin-err"));
   inp.focus();
@@ -543,12 +542,6 @@ function pedirPin(o) {
   };
   /** @type {HTMLElement} */ (m.querySelector("#q-pin-ok")).addEventListener("click", probar);
   inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); probar(); } else if (e.key === "Escape") { e.preventDefault(); m.remove(); } });
-  /** @type {HTMLElement} */ (m.querySelector("#q-pin-olvido")).addEventListener("click", async () => {
-    const pass = prompt("Escribe la contraseña de la cuenta con la que se inició sesión:");
-    if (!pass) return;
-    try { await api.signIn(DB.userEmail || "", pass); m.remove(); o.alExito(); }
-    catch { fallo("Contraseña incorrecta"); }
-  });
 }
 
 /** Al abrir la app: si el quiosco estaba activo (p. ej. la tablet se reinició), vuelve a abrirse solo. */

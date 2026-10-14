@@ -3,7 +3,8 @@
 ## Sin publicar
 
 ### Añadido
-- **Quiosco: el botón «Pantalla completa / Modo normal» ahora pide el PIN** (o la contraseña de la cuenta si se olvidó), igual que salir; evita que alguien salga de la página del quiosco sin autorización. El diálogo de PIN es reutilizable y se cierra con Esc.
+- **Quiosco: se elimina la opción «Olvidé el PIN: usar mi contraseña»**: usaba un `prompt()` del navegador que sacaba de pantalla completa y dejaba manipular la página libremente. Ahora solo el PIN permite salir o cambiar de modo.
+- **Quiosco: el botón «Pantalla completa / Modo normal» ahora pide el PIN** (solo el PIN, sin vía alternativa), igual que salir; evita que alguien salga de la página del quiosco sin autorización. El diálogo de PIN es reutilizable y se cierra con Esc.
 - **QR rotativo de ingreso al instituto y modo quiosco proyectado (migración 022)**:
   - **Modo quiosco bimodal**: configuración con campos `vista` (`camara` o `qr`) y `qrSeg` (`15` o `30` s), selectores `#qk-vista` y `#qk-qrseg` persistidos en almacenamiento local y botón conmutador dentro del overlay para alternar en vivo entre cámara y QR proyectado sin salir del quiosco.
   - **Rotación y temporizador de cuenta atrás**: renderizado de QR grande mediante `QRCode` con barra y contador de segundos restantes; limpieza de temporizadores y cierre de sesión (`qr_ingreso_cerrar`) al alternar de vista o salir con PIN.
