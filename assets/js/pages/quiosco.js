@@ -260,7 +260,16 @@ const sinMenu = (/** @type {any} */ e) => { if (activo) e.preventDefault(); };
 /* ------------------------------ Pantalla completa ↔ modo normal ------------------------------ */
 // El quiosco sigue activo en ambos casos (con su PIN): solo cambia si el navegador muestra o no su barra.
 const enPantallaCompleta = () => !!document.fullscreenElement;
-async function alternarPantallaCompleta() {
+/** Cambiar entre pantalla completa y modo normal también exige el PIN: así nadie puede salir de la página sin permiso. */
+function alternarPantallaCompleta() {
+  const completa = enPantallaCompleta();
+  pedirPin({
+    titulo: completa ? "Pasar a modo normal" : "Pasar a pantalla completa",
+    boton: "Confirmar",
+    alExito: cambiarPantallaCompleta,
+  });
+}
+async function cambiarPantallaCompleta() {
   try {
     if (enPantallaCompleta()) await document.exitFullscreen();
     else await document.documentElement.requestFullscreen();
@@ -508,13 +517,20 @@ function cerrarQuiosco() {
 
 /* ------------------------------ Salida con PIN ------------------------------ */
 function pedirSalida() {
+  pedirPin({ titulo: "Salir del modo quiosco", boton: "Salir", alExito: () => { cerrarQuiosco(); location.hash = "#/dashboard"; } });
+}
+
+/** Diálogo de PIN del quiosco (también acepta la contraseña de la cuenta si se olvidó el PIN).
+ * @param {{ titulo: string, boton: string, alExito: () => void }} o */
+function pedirPin(o) {
   if (/** @type {HTMLElement} */ (document.getElementById("q-pin-modal"))) return;
   const m = document.createElement("div");
   m.id = "q-pin-modal"; m.className = "q-pin-modal";
-  m.innerHTML = `<div class="q-pin-card"><h3>Salir del modo quiosco</h3>
+  m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true");
+  m.innerHTML = `<div class="q-pin-card"><h3>${o.titulo}</h3>
     <input id="q-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="PIN" aria-label="PIN de seguridad">
     <p class="q-pin-err" id="q-pin-err" hidden></p>
-    <div class="q-pin-btns"><button class="btn btn-outline" id="q-pin-no">Cancelar</button><button class="btn btn-primary" id="q-pin-ok">Salir</button></div>
+    <div class="q-pin-btns"><button class="btn btn-outline" id="q-pin-no">Cancelar</button><button class="btn btn-primary" id="q-pin-ok">${o.boton}</button></div>
     <button class="link-btn" id="q-pin-olvido">Olvidé el PIN: usar mi contraseña</button></div>`;
   /** @type {HTMLElement} */ (document.getElementById("quiosco")).appendChild(m);
   const inp = /** @type {HTMLInputElement} */ (m.querySelector("#q-pin")), err = /** @type {HTMLElement} */ (m.querySelector("#q-pin-err"));
@@ -522,15 +538,15 @@ function pedirSalida() {
   const fallo = (/** @type {any} */ t) => { err.textContent = t; err.hidden = false; inp.value = ""; inp.focus(); };
   /** @type {HTMLElement} */ (m.querySelector("#q-pin-no")).addEventListener("click", () => m.remove());
   const probar = async () => {
-    if ((await hashPin(inp.value)) === ajustes.pinHash) { m.remove(); cerrarQuiosco(); location.hash = "#/dashboard"; }
+    if ((await hashPin(inp.value)) === ajustes.pinHash) { m.remove(); o.alExito(); }
     else fallo("PIN incorrecto");
   };
   /** @type {HTMLElement} */ (m.querySelector("#q-pin-ok")).addEventListener("click", probar);
-  inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); probar(); } });
+  inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); probar(); } else if (e.key === "Escape") { e.preventDefault(); m.remove(); } });
   /** @type {HTMLElement} */ (m.querySelector("#q-pin-olvido")).addEventListener("click", async () => {
     const pass = prompt("Escribe la contraseña de la cuenta con la que se inició sesión:");
     if (!pass) return;
-    try { await api.signIn(DB.userEmail || "", pass); m.remove(); cerrarQuiosco(); location.hash = "#/dashboard"; }
+    try { await api.signIn(DB.userEmail || "", pass); m.remove(); o.alExito(); }
     catch { fallo("Contraseña incorrecta"); }
   });
 }
@@ -561,7 +577,7 @@ export const quioscoPage = {
       </section>
       <section class="card"><h3 style="margin-top:0">Cómo funciona</h3>
         <ul class="muted" style="margin:6px 0 0;padding-left:20px;line-height:1.7">
-          <li>Pantalla completa y sin menús; la pantalla no se apaga. <b>Solo se sale con el PIN.</b></li>
+          <li>Pantalla completa y sin menús; la pantalla no se apaga. <b>Salir, o cambiar entre pantalla completa y modo normal, solo se hace con el PIN.</b></li>
           <li>Acepta el <b>QR del carnet</b> (también el dinámico), <b>tags NFC</b> (en la app Android) y <b>lectores USB/Bluetooth</b>.</li>
           <li>Permite cambiar en vivo entre <b>cámara</b> y <b>código QR proyectado</b> que rota cada 15 o 30 segundos.</li>
           <li>En «automático»: el primer pase es el <b>ingreso</b>; la <b>salida</b> solo se habilita pasado el tiempo mínimo del horario (por defecto <b>2 horas</b> después del ingreso: evita fugas); antes de eso se avisa desde qué hora podrá salir. El ingreso respeta la <b>ventana</b> del horario (no antes de la apertura ni después del cierre).</li>

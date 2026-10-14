@@ -3,7 +3,7 @@
 //    Así cada cambio publicado (p. ej. la conexión a la base de datos en config.js) llega solo, sin reinstalar el APK.
 //  - Librerías de CDN (versión fijada): cache primero.
 //  - Cualquier otro origen (Supabase API, etc.): no se intercepta jamás.
-const CACHE = "ra-shell-v3";
+const CACHE = "ra-shell-v4";
 const SHELL = [
   "./", "index.html", "manifest.webmanifest", "assets/css/styles.css", "assets/icons/icon-192.png",
   "assets/js/theme-init.js", "assets/js/main.js", "assets/js/config.js", "assets/js/api.js", "assets/js/demo-data.js",
